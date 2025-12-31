@@ -1,0 +1,9 @@
+# Resumen
+
+La selección de modelos consiste en seleccionar el modelo que se espera que proporcione el mejor rendimiento de predicción en datos futuros. Para un sistema de detección de fraude, el mejor modelo se puede definir como el modelo que tiene el mayor rendimiento esperado de detección de fraude en el siguiente bloque de transacciones.
+
+La estimación del rendimiento del modelo en datos futuros se obtiene mediante un procedimiento de validación. Este capítulo cubrió diferentes tipos de procedimientos de validación y destacó los beneficios de la **estrategia de validación prequencial** para estimar el rendimiento de detección de fraude de un modelo de predicción. La validación prequencial permite proporcionar **estimaciones precisas del rendimiento de detección de fraude en transacciones futuras, junto con intervalos de confianza**.
+
+Sin embargo, los procedimientos de validación son tareas computacionalmente intensivas. Requieren repetir los procedimientos de entrenamiento muchas veces para evaluar el rendimiento de los modelos de predicción con diferentes hiperparámetros y utilizando diferentes conjuntos de datos. El tiempo de cálculo del procedimiento de validación puede convertirse en un cuello de botella cuando los modelos deben actualizarse regularmente.
+
+Un desafío clave para la selección de modelos consiste en explorar eficientemente el espacio de hiperparámetros del modelo para abordar mejor la compensación entre el rendimiento de detección de fraude y los tiempos de cálculo. Este capítulo cubrió la búsqueda aleatoria como una estrategia posible para explorar más eficientemente el espacio de hiperparámetros del modelo. El próximo capítulo presentará estrategias alternativas que pueden abordar esta compensación reduciendo el tamaño del conjunto de datos, en particular utilizando estrategias de submuestreo (Capítulo 6).
