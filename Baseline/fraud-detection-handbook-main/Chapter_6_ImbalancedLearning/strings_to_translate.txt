@@ -1,0 +1,1683 @@
+
+
+--- FILE: CostSensitive.ipynb ---
+
+[MARKDOWN CELL 0]
+(Cost_Sensitive_Learning)=
+
+# Cost-sensitive learning
+
+Cost-sensitive learning is a subfield of machine learning that addresses classification problems where the misclassification costs are not equal {cite}`fernandez2018learning,elkan2001foundations,ling2008cost`. Cost-sensitive problems occur in many disciplines such as medicine (e.g., disease detection), engineering (e.g., machine failure detection), transport (e.g., traffic-jam detection), finance (e.g., fraud detection), and so forth. They are often related to the class-imbalance problem since in most of these problems, the goal is to detect events that are rare. The training datasets therefore typically contain fewer examples of the event of interest.  
+
+We already addressed fraud detection as a cost-sensitive problem in [Chapter 4, Cost Matrix](Performance_CostMatrix). The section pointed out the cost matrix as the standard way to quantify the misclassification costs. Denoting by $C$ the *cost matrix*, its entries $c(i,j)$ quantify the cost of predicting class $i$ when the true class is $j$ {cite}`elkan2001foundations`. For a binary classification problem, the cost matrix is a $2*2$ matrix, as illustrated in Fig. 1. 
+
+![](images/cost_matrix.png)
+
+<div align="center">Fig. 1. Example of cost matrix.</div>    
+
+Correct classifications have a cost of zero, that is, $c_{00}=c_{11}=0$. Misclassification costs are however in practice difficult to estimate. As discussed in [Chapter 4, Cost Matrix](Performance_CostMatrix), missing a fraudulent transaction (false negative) involves a loss directly related to the amount of the transaction, but also on further fraudulent uses of the card, and on the company reputation. At the same time, the blocking of transactions that are legitimate (false positive) causes inconvenience to customers, generates useless investigation costs, and also impacts the company reputation.  
+
+In cost-sensitive imbalanced problems, the most popular heuristic approach to estimate the costs lies in utilizing the imbalance ratio (IR). Let us denote by $\mathcal{X}$ the imbalanced dataset, with $\mathcal{X}_0$ and $\mathcal{X}_1$ being the subsets of samples belonging to the majority and minority class, respectively. The IR of the dataset $\mathcal{X}$ is defined as {cite}`JMLR:v18:16-365`:
+
+$$
+
+IR=\frac{|\mathcal{X}_1|}{|\mathcal{X}_0|}
+
+$$
+
+where $|·|$ denotes the cardinality of a set. In this setting, $C(i,j) = IR$ and $C(j,i) = 1$, where the minority class is the i-th class, and the majority class is the j-th class. It is worth noting that using the IR as the cost for the majority class balances the overall cost of the two classes, that is, $|\mathcal{X}_1|=IR*|\mathcal{X}_0|$. The resulting cost matrix for a 2-class problem is given in Fig. 2.
+
+![](images/cost_matrix_IR.png)
+
+<div align="center">Fig. 2. Cost matrix for imbalanced data. The cost of a false negative is 1, and the cost of a false positive is the imbalance ratio (IR).</div>      
+
+Using the IR to set the misclassification costs is usually a good heuristic. It however has some limitations, in particular related to small sample size, class overlapping, and noisy or borderline instances {cite}`fernandez2018learning`. A common complementary practice consists in considering the misclassification costs as a hyperparameter to be identified through model selection. 
+
+Python sklearn provides support for cost-sensitive learning for most baseline classifiers thanks to the `class_weight` parameter. The parameter allows to specify costs in three different ways:
+
+* `None`: The misclassification costs are set to 1 (default)
+
+* `balanced`: The costs are set according to the imbalance ratio (as in Fig. 2)
+
+* `{0:c10, 1:c01}`: The misclassification costs are explicitly set for the two classes by means of a dictionary.
+
+The use of class weights usually implies a modification in the loss function of the learning algorithm. The modification depends on the type of algorithm. By strongly penalizing mistakes on the minority class, cost-sensitive learning improves their importance during the classifier training step. This pushes the decision boundary away from these instances, allowing to improve generalization on the minority class {cite}`fernandez2018learning,gupta2020class`.
+
+This section presents how cost-sensitive learning can be used with the Python sklearn library. For better visualization, we first rely on a simple imbalanced dataset with two variables to illustrate how different misclassification costs change the decision boundaries. We then apply the approach to the larger simulated dataset of transaction data.  
+
+[CODE CELL 1 - POTENTIAL TEXT]
+# Initialization: Load shared functions and simulated data 
+
+# Load shared functions
+
+#%run ../Chapter_References/shared_functions.ipynb
+
+# Get simulated data from Github repository
+
+if not os.path.exists("simulated-data-transformed"):
+
+[MARKDOWN CELL 2]
+(Imbalanced_Learning_Illustrative_Example)=
+
+## Illustrative example
+[MARKDOWN CELL 3]
+For illustrative purposes, let us first consider a simple classification task. We use the `make_classification` function of the sklearn library to generate a two-class imbalanced dataset with 5000 examples. The dataset contains 95% of examples of class 0 and 5% of examples of class 1.  
+[CODE CELL 4 - POTENTIAL TEXT]
+dataset_df = pd.DataFrame({'X1':X[:,0],'X2':X[:,1], 'Y':y})
+
+[MARKDOWN CELL 5]
+The distribution of the two classes slighly overlap, as illustrated below.
+[CODE CELL 6 - POTENTIAL TEXT]
+groups = dataset_df.groupby('Y')
+
+    ax.scatter(group.X1, group.X2, edgecolors='k', label=name,alpha=1,marker='o')
+
+ax.legend(loc='upper left', 
+
+          title="Class")
+[MARKDOWN CELL 8]
+### Decision tree
+[MARKDOWN CELL 9]
+Let us now train a decision tree to separate the two classes. We use a decision tree of depth 5, and a stratified 5-fold cross-validation to assess the performances of the classifier. The performances are assessed in terms of AUC ROC, Average precision, and balanced accuracy. The class weights are set to 1 for both classes.
+[CODE CELL 11 - POTENTIAL TEXT]
+                                                     scoring=['roc_auc',
+
+                                                              'average_precision',
+
+                                                              'balanced_accuracy'],
+
+[MARKDOWN CELL 12]
+The performances for each fold are returned in the `cv_results_` dictionary, which is better visualized as a DataFrame. 
+[MARKDOWN CELL 14]
+Let us take the mean and standard deviation of the performances across all folds.
+[CODE CELL 15 - POTENTIAL TEXT]
+pd.DataFrame([[str(round(results_mean[i],3))+'+/-'+str(round(results_std[i],3)) for i in range(len(results))]],
+
+            columns=['Fit time (s)','Score time (s)','AUC ROC','Average Precision','Balanced accuracy'])
+[MARKDOWN CELL 16]
+The performances are rather good since the AUC ROC is well beyond $0.5$ and the average precision over $0.05$. The balanced accuracy is however not so high, suggesting that the decision boundary misclassifies many of the samples from the minority class. 
+
+Let us finally plot the decision boundary provided by one of the decision trees. We use the decision tree obtained from the first fold of the cross-validation.
+[CODE CELL 17 - POTENTIAL TEXT]
+                                      input_features=['X1','X2'],
+
+                                      output_feature='Y',
+
+                                      title="",
+
+    plot_colors = ["tab:blue","tab:orange"]
+
+        # Plot the training points
+
+            ax.scatter(group[input_features[0]], group[input_features[1]], edgecolors='black', label=name)
+
+[CODE CELL 18 - POTENTIAL TEXT]
+# Retrieve the decision tree from the first fold of the cross-validation
+
+classifier_0 = cv_results_['estimator'][0]
+[CODE CELL 19 - POTENTIAL TEXT]
+# Retrieve the indices used for the training and testing of the first fold of the cross-validation
+
+# Recreate the train and test DafaFrames from these indices
+
+train_df = pd.DataFrame({'X1':X[train_index,0], 'X2':X[train_index,1], 'Y':y[train_index]})
+
+test_df = pd.DataFrame({'X1':X[test_index,0], 'X2':X[test_index,1], 'Y':y[test_index]})
+
+input_features = ['X1','X2']
+
+output_feature = 'Y'
+[CODE CELL 20 - POTENTIAL TEXT]
+                                  title="Decision surface of the decision tree\n With training data",
+
+                                  title="Decision surface of the decision tree\n",
+
+                                  title="Decision surface of the decision tree\n With test data",
+
+ax[-1].legend(loc='upper left', 
+
+              title="Class")
+
+[MARKDOWN CELL 22]
+For better visualization, we report the decision boundaries alone (middle), with the training data (left), and with the test data (right). The plots show that the decision tree correctly identifies the region where the minority class samples lie. The decision tree however mostly classifies samples from the overlapping region into the majority class (yellow/blue color gradient).
+
+We will reuse the functions above for computing the performances and for plotting the decision boundaries. For the sake of code conciseness, we implement two functions for computing the cross-validation results (`kfold_cv_with_classifier`) and for plotting the decision boundaries (`plot_decision_boundary`).
+[CODE CELL 23 - POTENTIAL TEXT]
+                             strategy_name="Basline classifier"):
+
+                                                         scoring=['roc_auc',
+
+                                                                  'average_precision',
+
+                                                                  'balanced_accuracy'],
+
+    results_df = pd.DataFrame([[str(round(results_mean[i],3))+'+/-'+
+
+                              columns=['Fit time (s)','Score time (s)',
+
+                                       'AUC ROC','Average Precision','Balanced accuracy'])
+
+    classifier_0 = cv_results_['estimator'][0]
+
+    train_df = pd.DataFrame({'X1':X[train_index,0], 'X2':X[train_index,1], 'Y':y[train_index]})
+
+    test_df = pd.DataFrame({'X1':X[test_index,0], 'X2':X[test_index,1], 'Y':y[test_index]})
+
+[CODE CELL 24 - POTENTIAL TEXT]
+                                  title="Decision surface of the decision tree\n With training data",
+
+                                  title="Decision surface of the decision tree\n",
+
+                                  title="Decision surface of the decision tree\n With test data",
+
+    ax[-1].legend(loc='upper left', 
+
+                  title="Class")
+
+[MARKDOWN CELL 25]
+Let us recompute the performances and decision boundaries with these two functions.
+[CODE CELL 26 - POTENTIAL TEXT]
+                                                                                     strategy_name="Decision tree - Baseline")
+
+[MARKDOWN CELL 29]
+Let us now set the class weights so that false positives have a weight equal to the imbalance ratio.
+[CODE CELL 32 - POTENTIAL TEXT]
+                                                                         strategy_name="Decision tree - Cost-sensitive")
+
+[MARKDOWN CELL 35]
+We observe that the decision boundary was shifted towards samples from the minority class. This shift allowed to increase the performance in terms of balanced accuracy, which increased from 0.786+/-0.046 to 0.898+/-0.021. We note however that the performances in terms of AUC ROC and Average Precision both decreased. 
+[MARKDOWN CELL 36]
+### Logistic regression
+[MARKDOWN CELL 37]
+Let us now apply the same methodology with a logistic regression classifier. We first build a classifier with equal weights for the two classes and run a stratified 5-fold cross-validation.
+[CODE CELL 38 - POTENTIAL TEXT]
+                                                                          strategy_name="Logistic regression - Baseline")
+
+[MARKDOWN CELL 40]
+The performances in terms of AUC ROC and Average Precision are higher than with a decision tree, but lower in terms of balanced accuracy. 
+[MARKDOWN CELL 42]
+The decision boundary illustrates the linear separation that results from logistic regression. Due to the class imbalance, we observe that the decision boundary slightly favors the majority class. 
+
+As for the decision tree, let us change the class weights, using the imbalance ratio as the weight for the majority class. 
+[CODE CELL 43 - POTENTIAL TEXT]
+                                                                         strategy_name="Logistic regression - Cost-sensitive")
+
+[MARKDOWN CELL 46]
+We observe that the decision boundary moved to the left, favoring the classification of the minority class. We note a strong increase of the balanced accuracy, from 0.641+/-0.048 to 0.899+/-0.01. The AUC ROC and Average Precision remain as good as the classifier with equal weights. 
+
+The examples above show that tuning the class weights can improve classification performances. It is however worth noting that the performance improvements depend on the performance metric. For both classifiers, reducing the class weight of the majority class allowed to increase the balanced accuracy. The accuracy in terms of AUC ROC and Average Precision however remained unchanged for logistic regression and decreased for decision trees. 
+[MARKDOWN CELL 48]
+(Cost_Sensitive_Learning_Transaction_Data)=
+
+## Transaction data
+
+Let us now explore whether changing the class weights can improve the classification performances on the simulated dataset of transaction data. We reuse the methodology of [Chapter 5, Model Selection](Model_Selection), using prequential validation as the validation strategy. 
+
+[MARKDOWN CELL 49]
+### Load data
+
+The loading of data and initialization of the parameters follow the same template as in [Chapter 5, Model Selection](Model_Selection).
+[CODE CELL 50 - POTENTIAL TEXT]
+# Load data from the 2018-07-11 to the 2018-09-14
+
+DIR_INPUT = 'simulated-data-transformed/data/' 
+
+BEGIN_DATE = "2018-06-11"
+
+END_DATE = "2018-09-14"
+
+print("Load  files")
+
+print("{0} transactions loaded, containing {1} fraudulent transactions".format(len(transactions_df),transactions_df.TX_FRAUD.sum()))
+
+# Number of folds for the prequential validation
+
+# Set the starting day for the training period, and the deltas
+
+start_date_training = datetime.datetime.strptime("2018-07-25", "%Y-%m-%d")
+
+output_feature = "TX_FRAUD"
+
+input_features = ['TX_AMOUNT','TX_DURING_WEEKEND', 'TX_DURING_NIGHT', 'CUSTOMER_ID_NB_TX_1DAY_WINDOW',
+
+       'CUSTOMER_ID_AVG_AMOUNT_1DAY_WINDOW', 'CUSTOMER_ID_NB_TX_7DAY_WINDOW',
+
+       'CUSTOMER_ID_AVG_AMOUNT_7DAY_WINDOW', 'CUSTOMER_ID_NB_TX_30DAY_WINDOW',
+
+       'CUSTOMER_ID_AVG_AMOUNT_30DAY_WINDOW', 'TERMINAL_ID_NB_TX_1DAY_WINDOW',
+
+       'TERMINAL_ID_RISK_1DAY_WINDOW', 'TERMINAL_ID_NB_TX_7DAY_WINDOW',
+
+       'TERMINAL_ID_RISK_7DAY_WINDOW', 'TERMINAL_ID_NB_TX_30DAY_WINDOW',
+
+       'TERMINAL_ID_RISK_30DAY_WINDOW']
+
+# Only keep columns that are needed as argument to the custom scoring function
+
+# (in order to reduce the serialization time of transaction dataset)
+
+transactions_df_scorer = transactions_df[['CUSTOMER_ID', 'TX_FRAUD','TX_TIME_DAYS']]
+
+performance_metrics_list_grid = ['roc_auc', 'average_precision', 'card_precision@100']
+
+performance_metrics_list = ['AUC ROC', 'Average precision', 'Card Precision@100']
+
+scoring = {'roc_auc':'roc_auc',
+
+           'average_precision': 'average_precision',
+
+           'card_precision@100': card_precision_top_100,
+
+[MARKDOWN CELL 51]
+### Decision tree
+
+The transaction dataset contains around 0.7% of fraudulent transactions. The imbalance ratio is therefore around 1/100. In order to assess the impact of the class weight parameter on the classification performance, we vary the class weight in the range 0.01 to 1, with the following set of possible values: $[0.01, 0.05, 0.1, 0.5, 1]$. 
+
+The implementation is the same as in [Chapter 5](Model_Selection_Decision_Tree). The only modification consists in varying the class weight parameter (`clf__class_weight`) instead of the decision tree depth. We use a decision tree depth of 5 (`clf__max_depth`). 
+
+[CODE CELL 52 - POTENTIAL TEXT]
+# Define classifier
+
+# Set of parameters for which to assess model performances
+
+parameters = {'clf__max_depth':[5], 'clf__random_state':[0],
+
+              'clf__class_weight':[{0: w} for w in [0.01, 0.05, 0.1, 0.5, 1]]}
+
+# Fit models and assess performances for all parameters
+
+[MARKDOWN CELL 53]
+Let us use the class weight as the varying parameter, and summarize the performances as a function of the class weight.
+[CODE CELL 54 - POTENTIAL TEXT]
+# Select parameter of interest (class_weight)
+
+parameters_dict = dict(performances_df['Parameters'])
+
+performances_df['Parameters summary'] = [parameters_dict[i]['clf__class_weight'][0] for i in range(len(parameters_dict))]
+
+# Rename to performances_df_dt for model performance comparison at the end of this notebook
+
+[CODE CELL 56 - POTENTIAL TEXT]
+summary_performances_dt = get_summary_performances(performances_df_dt, parameter_column_name="Parameters summary")
+
+[MARKDOWN CELL 57]
+We observe that the optimal class weight for the majority class depends on the performance metric. For better visualization, let us plot the performances as a function of the class weight for the three performance metrics. 
+[CODE CELL 58 - POTENTIAL TEXT]
+                       performance_metrics_list=['AUC ROC', 'Average precision', 'Card Precision@100'], 
+
+                       expe_type_list=['Test','Validation'], expe_type_color_list=['#008000','#FF0000'],
+
+                       parameter_name="Class weight for the majority class",
+
+[MARKDOWN CELL 59]
+The results are mitigated, showing conflicting trends between the class weight of the majority class and the performance gains. For AUC ROC and CP@100, a class weight close to the imbalance ratio (0.01) provides the highest performance for both the test set and validation set, but the lowest performance in terms of Average Precision. 
+[MARKDOWN CELL 60]
+### Logistic regression
+
+Let us follow the same methodology as above, using logistic regression as the classification algorithm.
+[CODE CELL 61 - POTENTIAL TEXT]
+# Define classifier
+
+# Set of parameters for which to assess model performances
+
+parameters = {'clf__C':[1], 'clf__random_state':[0],
+
+              'clf__class_weight':[{0: w} for w in [0.01, 0.05, 0.1, 0.5, 1]]}
+
+# Fit models and assess performances for all parameters
+
+[CODE CELL 62 - POTENTIAL TEXT]
+# Select parameter of interest (class_weight)
+
+parameters_dict=dict(performances_df['Parameters'])
+
+performances_df['Parameters summary']=[parameters_dict[i]['clf__class_weight'][0] for i in range(len(parameters_dict))]
+
+# Rename to performances_df_dt for model performance comparison at the end of this notebook
+
+[CODE CELL 64 - POTENTIAL TEXT]
+summary_performances_lr = get_summary_performances(performances_df_lr, parameter_column_name="Parameters summary")
+
+[CODE CELL 65 - POTENTIAL TEXT]
+                       performance_metrics_list=['AUC ROC', 'Average precision', 'Card Precision@100'], 
+
+                       expe_type_list=['Test','Validation'], expe_type_color_list=['#008000','#FF0000'],
+
+                       parameter_name="Class weight for the majority class",
+
+[MARKDOWN CELL 66]
+Similar to decision trees, the results are mitigated. Slightly higher performances are obtained for AUC ROC with a low class weight for the majority class. The performances in terms Average Precision and CP@100 however follow the opposite trend. 
+
+## Summary
+
+The benefits of relying on misclassification costs in the training procedure therefore appear to be strongly dependent on the characteristics of a dataset and on the performance metric to optimize. The experiments provided in this section showed that cost-sensitive learning effectively allows to shift the decision boundary of a classifier and to favor the classification of the minority class. Its benefits in terms of AUC ROC and Average Precision seem however conflicting. In particular, the shift of the decision boundary seems to lead to many false positives, that negatively impact the precision, and therefore, the performance in terms of Average Precision.   
+
+[MARKDOWN CELL 67]
+## Saving of results
+
+Let us finally save the performance results and execution times.
+[CODE CELL 68 - POTENTIAL TEXT]
+    "Decision Tree": performances_df_dt,
+
+    "Logistic Regression": performances_df_lr
+
+[MARKDOWN CELL 69]
+Both data structures are saved as a Pickle file.
+[CODE CELL 70 - POTENTIAL TEXT]
+filehandler = open('performances_cost_sensitive.pkl', 'wb') 
+
+
+
+--- FILE: Ensembling.ipynb ---
+
+[MARKDOWN CELL 0]
+(Ensembling_Strategies)=
+
+# Ensemble methods
+[MARKDOWN CELL 1]
+Ensemble methods consist in training multiple prediction models for the same prediction task, and in combining their outputs to make the final prediction {cite}`fernandez2018learning,haixiang2017learning,bontempi2021statistical`. Ensembles of models very often allow to provide better prediction performances than single models, since combining the predictions from multiple models usually allows to reduce the overfitting phenomenon. The prediction models making up an ensemble are referred to as *baseline learners*. Both the way with which the baseline learners are constructed and how their predictions are combined are key factors in the design of an ensemble {cite}`fernandez2018learning,bontempi2021statistical,friedman2001elements`.
+
+Ensemble methods can be broadly divided into *parallel-based* and *iterative-based* ensembles {cite}`haixiang2017learning`. In parallel-based ensembles, each baseline learner is trained in parallel, using either a subset of the training data, a subset of the training features, or a combination of both. The two most popular techniques for parallel-based ensembles are *bagging* {cite}`breiman1996bagging` and *random forest* {cite}`breiman2001random`. In iterative-based ensembles, also referred to as *boosting* {cite}`friedman2001elements,freund1997decision`, the baseline classifiers are trained in sequence, with each learner in the sequence aiming at minimizing the prediction errors of the previous learner. The currently most widely-used implementations for boosting are XGBoost {cite}`chen2016xgboost`, CatBoost {cite}`dorogush2018catboost` and LightGBM {cite}`ke2017lightgbm`. 
+
+The ability of ensemble methods to improve prediction performances was illustrated in the previous chapter (see Sections [](Model_Selection_Comparison_Performances) and [](Model_Selection_RWD_Comparison)). In particular, our experimental comparison showed that random forests and XGBoost allowed to significantly improve the AUC ROC and Average Precision compared to decision trees and logistic regression.
+
+This section takes a more specific look at ensemble methods in the context of imbalanced data. A common strategy when dealing with ensembles and imbalanced data is to use a different sampling of the training set for the training of the baseline learners. The procedure is illustrated in Fig. 1 for parallel-based ensembles. A first stage of resampling may aim at rebalancing samples by either oversampling the minority class, undersampling the majority class, or both. In a second stage, the number of features may also be sampled before proceeding to the training of baseline learners {cite}`haixiang2017learning,fernandez2018learning`.  
+
+![alt text](images/parallel_based_framework.png)
+
+```{div} caption-figure 
+
+Fig. 1. Parallel-based framework in the context of imbalanced data. Sampling strategies may be applied at the level of samples or features (or both) before training the baseline classifiers {cite}`haixiang2017learning`. 
+
+```
+
+[Cost-sensitive learning techniques](Cost_Sensitive_Learning) may also be used together with resampling techniques by weighting the classes during the training of the baseline learners. Ensemble methods therefore provide a very flexible framework, where all of the techniques presented in the two previous sections can be used, but also combined with different types of baseline learners. 
+
+The diversity of possible approaches is illustrated in this section by discussing three different ensemble methods for imbalanced learning: Balanced bagging {cite}`maclin1997empirical`, balanced random forest {cite}`chen2004using`, and weighted XGBoost {cite}`chen2016xgboost`.  
+
+[CODE CELL 2 - POTENTIAL TEXT]
+# Initialization: Load shared functions and simulated data 
+
+# Load shared functions
+
+#%run ../Chapter_References/shared_functions.ipynb
+
+# Get simulated data from Github repository
+
+if not os.path.exists("simulated-data-transformed"):
+
+[MARKDOWN CELL 3]
+## Illustrative example
+
+Let us first consider the simple classification task presented in [the previous section](Imbalanced_Learning_Illustrative_Example).
+[CODE CELL 4 - POTENTIAL TEXT]
+dataset_df = pd.DataFrame({'X1':X[:,0],'X2':X[:,1], 'Y':y})
+
+[CODE CELL 5 - POTENTIAL TEXT]
+groups = dataset_df.groupby('Y')
+
+    ax.scatter(group.X1, group.X2, edgecolors='k', label=name,alpha=1,marker='o')
+
+ax.legend(loc='upper left', 
+
+          title="Class")
+[MARKDOWN CELL 6]
+The dataset contains 5000 samples with two classes, labeled 0 and 1. 95% of the samples are associated to the class 0, and 5% of the samples to the class 1. 
+[MARKDOWN CELL 8]
+### Bagging
+
+Bagging relies on the concept of *bootstrap aggregating*, which consists of training several baseline learners with different replicas of the original training set {cite}`breiman1996bagging`. The most usual practice is to randomly draw, with replacement, instances from the original dataset. The dataset size is maintained, meaning that approximately 63.2% of the instances are present in each sample (and some instances appear more than once) {cite}`fernandez2018learning`.
+
+The standard Python implementation for bagging is provided as part of the `sklearn` library, with the [`BaggingClassifier`](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.BaggingClassifier.html#sklearn.ensemble.BaggingClassifier) object. Following the same methodology as in the previous sections, let us train a bagging classifier, assess its performances, and plot the resulting decision boundary. We use for this example decision trees of depth 5 as the baseline learners, and build an ensemble of 100 trees.  
+[CODE CELL 9 - POTENTIAL TEXT]
+                                                                                 strategy_name="Bagging")
+
+[MARKDOWN CELL 11]
+The classification performances of this bagging classifier are better than those of a single decision tree (see [baseline results in cost-sensitive larning](Imbalanced_Learning_Illustrative_Example)) for AUC ROC and Average Precision but lower in terms of balanced accuracy. 
+[MARKDOWN CELL 13]
+Compared to a single decision tree, the decision boundary is more refined. Most of the samples lying on the overlapping region are however classified into the majority class due to the imbalanced nature of the dataset.
+[MARKDOWN CELL 14]
+#### Balanced Bagging
+
+Balanced bagging {cite}`maclin1997empirical` follows the same strategy as bagging, except that the training data is resampled using imbalanced learning techniques. An implementation of balanced bagging is provided by the [`BalancedBaggingClassifier`](https://imbalanced-learn.org/dev/references/generated/imblearn.ensemble.BalancedBaggingClassifier.html) object of the `imblearn` library. The type of sampler and desired imbalance ratio are set with the `sampler` and `sampling_strategy` parameters, respectively. The default parameters consist of using a random undersampler and an imbalance ratio of 1, which means that samples from the majority class are randomly removed until their number equals that of the minority class (see Section [](Resampling_Strategies_Undersampling)). 
+
+Let us train an ensemble of decision trees using a `BalancedBaggingClassifier` with its default parameters, and assess its performances and decision boundary. 
+[CODE CELL 15 - POTENTIAL TEXT]
+                                                                                          strategy_name="Balanced bagging")
+
+[MARKDOWN CELL 17]
+The resulting performances are similar to bagging in terms of AUC ROC and Average Precision. The balanced accuracy is however much higher with balanced bagging. This results from the shift of the decision boundary towards the region that contains the minority class, as is illustrated below. 
+[MARKDOWN CELL 19]
+It is worth noting that the bottom right region is now associated with the minority class. This is due to the random undersampling, as was already observed in the [previous section](Resampling_Strategies_RUS) with a single decision tree.  
+[MARKDOWN CELL 20]
+###  Random forest
+
+Random forests were introduced by Breiman in 2001 {cite}`breiman2001random`. They have become one of the most popular ML technique for a wide range of prediction tasks among which fraud detection {cite}`priscilla2019credit,haixiang2017learning`. 
+
+A random forest is an ensemble of decision trees, where each tree is built using a random subset of the training data. The method is therefore closely related to bagging. The main difference lies in the building of the decision trees, where splitting is done using only a random subset of the features. This additional random variation has beneficial consequences. First, it usually leads to better predictive performances thanks to a higher diversity in the tree structures, lower overfitting, and higher robustness to noise and outliers. Second, it also speeds up the computation times since fewer features are considered in the construction of the trees {cite}`breiman2001random`. 
+
+The random forest procedure is provided in Python `sklearn` by the [`RandomForestClassifier`](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html) object. The main parameters are the maximum tree depth and the number of trees, which are set with the `max_depth` and `n_estimators` parameters, respectively. 
+
+Let us train a random forest classifier with 100 trees and a maximum depth of 5, and assess its performances and decision boundary. 
+[CODE CELL 21 - POTENTIAL TEXT]
+                                                                            strategy_name="Random forest")
+
+[MARKDOWN CELL 23]
+Performances in terms of AUC ROC and Average Precision are similar to bagging, and balanced accuracy slightly lower. The training time is significantly reduced.   
+[MARKDOWN CELL 25]
+The decision boundary is also similar to what was obtained with bagging, which reflects the similarity between the two procedures. 
+[MARKDOWN CELL 26]
+#### Balanced random forest
+
+Balanced random forest was introduced in {cite}`chen2004using` in order to deal with imbalanced data. The procedure follows the same rationale as balanced bagging, and consists in building the baseline learners with balanced training sets. The procedure is implemented with the [`BalancedRandomForestClassifier`](https://imbalanced-learn.org/dev/references/generated/imblearn.ensemble.BalancedRandomForestClassifier.html) object of the Python `imblearn` library.
+
+The `sampling_strategy` parameter determines the imbalance ratio of the training sets used to build the decision trees. Let us train a balanced random forest classifier with 100 trees, a maximum depth of 5, and an imbalance ratio of 1, and assess its performances and decision boundary. 
+[CODE CELL 27 - POTENTIAL TEXT]
+                                                                                     strategy_name="Balanced random forest")
+
+[MARKDOWN CELL 28]
+The resulting performances are on par with balanced bagging. 
+[MARKDOWN CELL 30]
+We note that the training procedure is faster than balanced bagging.
+[MARKDOWN CELL 32]
+Similar to balanced bagging, we also note that the decision boundary is shifted towards the minority class and that the bottom right region is associated with the minority class.
+[MARKDOWN CELL 33]
+### XGBoost
+
+XGBoost stands for *extreme gradient boosting* and is one of the most efficient ensemble techniques in machine learning. It was shown to provide state-of-the-art results in a range of machine learning benchmarks as well as in Kaggle competitions {cite}`bentejac2021comparative,chen2016xgboost`. 
+
+XGBoost provides a scalable implementation of gradient tree boosting {cite}`friedman2001greedy`. The implementation details go beyond the scope of this book, and we refer the reader to {cite}`chen2016xgboost` for the description of the algorithm and its optimization. 
+
+The Python implementation is provided by the [`XGBClassifier`](https://xgboost.readthedocs.io/en/latest/python/python_api.html#module-xgboost.sklearn) object of the `XGBoost` library. XGBoost features many tuning parameters, the most important ones being the number of boosting rounds `n_estimators`, the maximum tree depth of the base learners `max_depth`, and the learning rate `learning rate`. 
+
+Let us train an XGBoost classifier and assess its performances and decision boundary. We use in the following the default parameters, which consist of 100 boosting rounds, a maximum tree depth of 6, and a learning rate of 0.3.
+[CODE CELL 34 - POTENTIAL TEXT]
+                                                                                 strategy_name="XGBoost")
+
+[MARKDOWN CELL 35]
+The resulting classifier provides performances that are competitive with those obtained with bagging and random forest. 
+[MARKDOWN CELL 37]
+Let us plot the resulting decision boundary. 
+[MARKDOWN CELL 39]
+The decision boundary slightly differs from bagging and random forest. XGBoost more precisely isolates the region containing samples from the minority class.  
+[MARKDOWN CELL 40]
+#### Weighted XGBoost
+
+Cost-sensitive learning can be applied to XGBoost by means of the `scale_pos_weight` parameter. Assuming that the cost of a false positive is 1, the parameter determines the cost of a false negative. It is worth noting that this parameter is the only one to deal with imbalanced data using XGBoost: contrary to bagging and random forest, XGBoost cannot be combined with resampling techniques.   
+
+Let us use the [imbalance ratio](IR=0.05/0.95 ) to set the class weight. Since there is 5% of samples from the minority class, and 95% of samples from the majority class, the imbalance ratio IR is:
+
+[MARKDOWN CELL 42]
+Since `scale_pos_weight` quantifies the cost of a false negative, we set its value to the inverse of the imbalance ratio. 
+[CODE CELL 43 - POTENTIAL TEXT]
+                                                                                          strategy_name="Weighted XGBoost")
+
+[MARKDOWN CELL 44]
+Compared to XGBoost, the weighing of false negative allows a slight increase in terms of Average Precision and balanced accuracy and a similar performance in terms of AUC ROC. We note that the balanced accuracy is lower than those obtained with balanced bagging and balanced random forest. 
+[MARKDOWN CELL 47]
+The decision boundary shows that a larger region is now associated with the minority class. Interestingly, XGBoost does not overfit as much as balanced bagging and balanced random forest. In particular, the bottom right region remains associated with the majority class. 
+[MARKDOWN CELL 48]
+(Ensembling_Strategies_Transaction_Data)=
+
+## Transaction data
+[MARKDOWN CELL 49]
+Let us now apply these three ensemble techniques to the simulated dataset of transaction data. We reuse the methodology of [Chapter 5, Model Selection](Model_Selection), using prequential validation as the validation strategy.
+[MARKDOWN CELL 50]
+### Load data
+
+The loading of data and initialization of the parameters follow the same template as in [Chapter 5, Model Selection](Model_Selection).
+[CODE CELL 51 - POTENTIAL TEXT]
+# Load data from the 2018-07-11 to the 2018-09-14
+
+DIR_INPUT = 'simulated-data-transformed/data/' 
+
+BEGIN_DATE = "2018-06-11"
+
+END_DATE = "2018-09-14"
+
+print("Load  files")
+
+print("{0} transactions loaded, containing {1} fraudulent transactions".format(len(transactions_df),transactions_df.TX_FRAUD.sum()))
+
+# Number of folds for the prequential validation
+
+# Set the starting day for the training period, and the deltas
+
+start_date_training = datetime.datetime.strptime("2018-07-25", "%Y-%m-%d")
+
+output_feature = "TX_FRAUD"
+
+input_features = ['TX_AMOUNT','TX_DURING_WEEKEND', 'TX_DURING_NIGHT', 'CUSTOMER_ID_NB_TX_1DAY_WINDOW',
+
+       'CUSTOMER_ID_AVG_AMOUNT_1DAY_WINDOW', 'CUSTOMER_ID_NB_TX_7DAY_WINDOW',
+
+       'CUSTOMER_ID_AVG_AMOUNT_7DAY_WINDOW', 'CUSTOMER_ID_NB_TX_30DAY_WINDOW',
+
+       'CUSTOMER_ID_AVG_AMOUNT_30DAY_WINDOW', 'TERMINAL_ID_NB_TX_1DAY_WINDOW',
+
+       'TERMINAL_ID_RISK_1DAY_WINDOW', 'TERMINAL_ID_NB_TX_7DAY_WINDOW',
+
+       'TERMINAL_ID_RISK_7DAY_WINDOW', 'TERMINAL_ID_NB_TX_30DAY_WINDOW',
+
+       'TERMINAL_ID_RISK_30DAY_WINDOW']
+
+# Only keep columns that are needed as argument to the custom scoring function
+
+# (in order to reduce the serialization time of transaction dataset)
+
+transactions_df_scorer = transactions_df[['CUSTOMER_ID', 'TX_FRAUD','TX_TIME_DAYS']]
+
+performance_metrics_list_grid = ['roc_auc', 'average_precision', 'card_precision@100']
+
+performance_metrics_list = ['AUC ROC', 'Average precision', 'Card Precision@100']
+
+scoring = {'roc_auc':'roc_auc',
+
+           'average_precision': 'average_precision',
+
+           'card_precision@100': card_precision_top_100,
+
+[MARKDOWN CELL 52]
+(Ensembling_Strategies_Transaction_Data_Baseline)=
+
+### Baseline
+
+Let us first assess the performances of bagging, random forest, and XGBoost without imbalanced learning techniques. We refer to these performances as *baseline* performances. 
+
+The hyperparameters are chosen as follows:
+
+* Bagging and random forest: 100 trees, with a maximum depth of 20. These were shown to provide the best performances for random forests in [Chapter 5, Model Selection - Random forest](Model_Selection_Random_Forest).
+
+* XGBoost: 50 trees, with a maximum depth of 3, and a learning rate of 0.3. These were shown to provide the best trade-off in terms of performances in [Chapter 5, Model Selection - XGBoost](Model_Selection_XGBoost). 
+
+[CODE CELL 53 - POTENTIAL TEXT]
+#### Bagging
+
+# Define classifier
+
+# Set of parameters for which to assess model performances
+
+parameters = {'clf__base_estimator':[sklearn.tree.DecisionTreeClassifier(max_depth=20,random_state=0)], 
+
+              'clf__bootstrap':[True],
+
+              'clf__n_estimators':[100],
+
+              'clf__random_state':[0],
+
+              'clf__n_jobs':[-1]}
+
+# Fit models and assess performances for all parameters
+
+# Select parameter of interest (n_estimators)
+
+parameters_dict=dict(performances_df['Parameters'])
+
+performances_df['Parameters summary']=[parameters_dict[i]['clf__n_estimators'] for i in range(len(parameters_dict))]
+
+# Rename to performances_df_baseline_bagging for model performance comparison later in this section
+
+[CODE CELL 54 - POTENTIAL TEXT]
+summary_performances_baseline_bagging=get_summary_performances(performances_df_baseline_bagging, parameter_column_name="Parameters summary")
+
+[CODE CELL 55 - POTENTIAL TEXT]
+#### Random forest
+
+# Define classifier
+
+parameters = {'clf__max_depth':[20], 
+
+              'clf__n_estimators':[100],
+
+              'clf__random_state':[0],
+
+              'clf__n_jobs':[-1]}
+
+# Fit models and assess performances for all parameters
+
+# Select parameter of interest (n_estimators)
+
+parameters_dict=dict(performances_df['Parameters'])
+
+performances_df['Parameters summary']=[parameters_dict[i]['clf__n_estimators'] for i in range(len(parameters_dict))]
+
+# Rename to performances_df_baseline_rf for model performance comparison later in this section
+
+[CODE CELL 56 - POTENTIAL TEXT]
+summary_performances_baseline_rf=get_summary_performances(performances_df_baseline_rf, parameter_column_name="Parameters summary")
+
+[CODE CELL 57 - POTENTIAL TEXT]
+#### XGBoost
+
+# Define classifier
+
+parameters = {'clf__max_depth':[3], 
+
+              'clf__n_estimators':[50],
+
+              'clf__learning_rate':[0.3],
+
+              'clf__random_state':[0],
+
+              'clf__n_jobs':[-1]}
+
+# Fit models and assess performances for all parameters
+
+# Select parameter of interest (n_estimators)
+
+parameters_dict=dict(performances_df['Parameters'])
+
+performances_df['Parameters summary']=[parameters_dict[i]['clf__n_estimators'] for i in range(len(parameters_dict))]
+
+# Rename to performances_df_baseline_xgboost for model performance comparison later in this section
+
+[CODE CELL 58 - POTENTIAL TEXT]
+summary_performances_baseline_xgboost=get_summary_performances(performances_df_baseline_xgboost, parameter_column_name="Parameters summary")
+
+[MARKDOWN CELL 59]
+The baseline performances are reported in the table below. It is worth noting that the performances for random forest and XGBoost are the same as those reported in [Chapter 5, Model Selection - Random forest](Model_Selection_Random_Forest) and [Chapter 5, Model Selection - XGBoost](Model_Selection_XGBoost), respectively.
+[CODE CELL 60 - POTENTIAL TEXT]
+summary_test_performances.columns=['Baseline Bagging', 'Baseline RF', 'Baseline XGBoost']
+
+[MARKDOWN CELL 61]
+XGBoost provides slightly higher Average Precision than random forest and bagging. Bagging provides slightly lower AUC ROC and CP@100 than random forest and XGBoost. Overall, the three ensemble strategies achieve similar performances.
+[MARKDOWN CELL 62]
+(Ensembling_Strategies_Transaction_Data_Bagging)=
+
+### Balanced bagging
+
+Keeping the same hyperparameters as above (100 trees with a maximum depth of 20), let us assess the ability of balanced bagging to improve classification performances. We rely on random undersampling, which is the default sampler. The imbalance ratio (`sampling_strategy` parameter) is parametrized to take values in the set $[0.02, 0.05, 0.1, 0.5, 1]$ for the model selection procedure.    
+
+[CODE CELL 63 - POTENTIAL TEXT]
+# Define classifier
+
+# Set of parameters for which to assess model performances
+
+parameters = {'clf__base_estimator':[sklearn.tree.DecisionTreeClassifier(max_depth=20,random_state=0)], 
+
+              'clf__n_estimators':[100],
+
+              'clf__sampling_strategy':[0.02, 0.05, 0.1, 0.5, 1], 
+
+              'clf__bootstrap':[True],
+
+              'clf__sampler':[imblearn.under_sampling.RandomUnderSampler()],
+
+              'clf__random_state':[0],
+
+              'clf__n_jobs':[-1]}
+
+# Fit models and assess performances for all parameters
+
+[CODE CELL 64 - POTENTIAL TEXT]
+# Select parameter of interest (sampling_strategy)
+
+parameters_dict=dict(performances_df['Parameters'])
+
+performances_df['Parameters summary']=[parameters_dict[i]['clf__sampling_strategy'] for i in range(len(parameters_dict))]
+
+# Rename to performances_df_balanced_bagging for model performance comparison later in this section
+
+[MARKDOWN CELL 66]
+Let us summarize the performances to highlight the optimal imbalance ratios.
+[CODE CELL 67 - POTENTIAL TEXT]
+summary_performances_balanced_bagging = get_summary_performances(performances_df_balanced_bagging, parameter_column_name="Parameters summary")
+
+[MARKDOWN CELL 68]
+We note conflicting results, as the optimal imbalance ratio depends on the performance metric. For better visualization, let us plot the performances as a function of the imbalance ratio for the three performance metrics.
+[CODE CELL 69 - POTENTIAL TEXT]
+                       performance_metrics_list=['AUC ROC', 'Average precision', 'Card Precision@100'], 
+
+                       expe_type_list=['Test','Validation'], expe_type_color_list=['#008000','#FF0000'],
+
+                       parameter_name="Imbalance ratio",
+
+[MARKDOWN CELL 70]
+Undersampling is clearly detrimental to the Average Precision, where increasing the imbalance ratio leads to a decrease in performance. The highest Average Precision is obtained for an imbalance ratio of 0.02 which is the imbalance ratio of the transaction dataset. A different trend is observed for AUC ROC and CP@100 where increasing the imbalance ratio first leads to better performances, before reaching some optimum after which performances decrease. In this experiment, an imbalance ratio of 0.5 is found to be optimal for AUC ROC, while an imbalance ratio of 0.1 provides the best result in terms of CP@100.
+
+Let us finally compare the performances achieved with bagging and balanced bagging. 
+[CODE CELL 71 - POTENTIAL TEXT]
+summary_test_performances.columns=['Baseline Bagging', 'Balanced Bagging']
+
+[MARKDOWN CELL 72]
+As noted above, balanced bagging allows to improve both AUC ROC and CP@100, but does not appear to improve the Average Precision. 
+[MARKDOWN CELL 73]
+(Ensembling_Strategies_Transaction_Data_RF)=
+
+### Balanced Random Forest
+
+The same methodology is applied with balanced random forest. The imbalance ratio (`sampling_strategy` parameter) is parametrized to take values in the set $[0.01, 0.05, 0.1, 0.5, 1]$ for the model selection procedure.    
+
+[CODE CELL 74 - POTENTIAL TEXT]
+# Define classifier
+
+parameters = {'clf__max_depth':[20], 
+
+              'clf__n_estimators':[100],
+
+              'clf__sampling_strategy':[0.01, 0.05, 0.1, 0.5, 1], 
+
+              'clf__random_state':[0],
+
+              'clf__n_jobs':[-1]}
+
+# Fit models and assess performances for all parameters
+
+[CODE CELL 75 - POTENTIAL TEXT]
+# Select parameter of interest (sampling_strategy)
+
+parameters_dict = dict(performances_df['Parameters'])
+
+performances_df['Parameters summary'] = [parameters_dict[i]['clf__sampling_strategy'] for i in range(len(parameters_dict))]
+
+# Rename to performances_df_balanced_rf for model performance comparison later in this section
+
+[MARKDOWN CELL 77]
+Let us summarize the performances to highlight the optimal imbalance ratio, and plot the performances as a function of the imbalance ratio for the three performance metrics.
+[CODE CELL 78 - POTENTIAL TEXT]
+summary_performances_balanced_rf=get_summary_performances(performances_df=performances_df_balanced_rf, parameter_column_name="Parameters summary")
+
+[CODE CELL 79 - POTENTIAL TEXT]
+                       performance_metrics_list=['AUC ROC', 'Average precision', 'Card Precision@100'], 
+
+                       expe_type_list=['Test','Validation'], expe_type_color_list=['#008000','#FF0000'],
+
+                       parameter_name="Imbalance ratio",
+
+[MARKDOWN CELL 80]
+The results are qualitatively similar to balanced bagging. Increasing the imbalance ratio is detrimental to Average Precision, but can lead to marginal performance improvements for AUC ROC and CP@100. The optimum is found for an imbalance ratio of 0.05. 
+
+Let us finally compare the performances achieved with random forest and balanced random forest. 
+[CODE CELL 81 - POTENTIAL TEXT]
+summary_test_performances.columns=['Baseline RF', 'Balanced RF']
+
+[MARKDOWN CELL 82]
+The performance increase in terms of AUC ROC and CP@100 is only marginal. Overall, the balanced random forest did not allow to improve performances.
+[MARKDOWN CELL 83]
+(Ensembling_Strategies_Transaction_Data_Weighted_XGBoost)=
+
+### Weighted XGBoost
+[MARKDOWN CELL 84]
+For weighted XGBoost, the class weight is set with the `scale_pos_weight` parameter. Keeping the same hyperparameters as the baseline XGBoost (50 trees with a maximum depth of 3, and a learning rate of 0.3), we vary the `scale_pos_weight` parameter to take values in the set $[1,5,10,50,100]$. 
+[CODE CELL 85 - POTENTIAL TEXT]
+parameters = {'clf__max_depth':[3], 
+
+              'clf__n_estimators':[50],
+
+              'clf__learning_rate':[0.3],
+
+              'clf__scale_pos_weight':[1,5,10,50,100], 
+
+              'clf__random_state':[0],
+
+              'clf__n_jobs':[-1]}
+
+# Fit models and assess performances for all parameters
+
+[CODE CELL 86 - POTENTIAL TEXT]
+# Select parameter of interest (scale_pos_weight)
+
+parameters_dict = dict(performances_df['Parameters'])
+
+performances_df['Parameters summary'] = [parameters_dict[i]['clf__scale_pos_weight'] for i in range(len(parameters_dict))]
+
+# Rename to performances_df_weighted_xgboost for model performance comparison later in this section
+
+[MARKDOWN CELL 88]
+Let us summarize the performances to highlight the optimal class weights, and plot the performances as a function of the class weight for the three performance metrics.
+[CODE CELL 89 - POTENTIAL TEXT]
+summary_performances_weighted_xgboost=get_summary_performances(performances_df=performances_df_weighted_xgboost, parameter_column_name="Parameters summary")
+
+[CODE CELL 90 - POTENTIAL TEXT]
+                       performance_metrics_list=['AUC ROC', 'Average precision', 'Card Precision@100'], 
+
+                       expe_type_list=['Test','Validation'], expe_type_color_list=['#008000','#FF0000'],
+
+                       parameter_name="Class weight",
+
+[MARKDOWN CELL 91]
+The results show that for all metrics, increasing the class weight leads to a decrease in performances on the test set. The best class weight is therefore 1, that is, an equal weight for the minority and the majority class. 
+[CODE CELL 92 - POTENTIAL TEXT]
+summary_test_performances.columns=['Baseline XGBoost', 'Weighted XGBoost']
+
+[MARKDOWN CELL 93]
+The performances obtained with weighted XGBoost are therefore the same as those obtained with our baseline.   
+[MARKDOWN CELL 94]
+(Ensembling_Strategies_Transaction_Data_Summary)=
+
+## Summary 
+
+Let us finally summarize in a single table the results on the dataset of simulated transactions. Performance metrics are reported row-wise, while ensemble methods are reported column-wise. 
+[CODE CELL 95 - POTENTIAL TEXT]
+summary_test_performances.columns=['Baseline Bagging', 'Balanced Bagging', 
+
+                                   'Baseline RF', 'Balanced RF', 
+
+                                   'Baseline XGBoost', 'Weighted XGBoost']
+
+[MARKDOWN CELL 97]
+The best improvements were obtained for balanced bagging, which allowed to improve the bagging performances both in terms of AUC ROC and CP@100. These improvements are likely due to a higher diversity of trees in balanced bagging, stemming from the random sampling of the training set, and leading to less overfitting in the resulting ensemble. 
+
+Little or no improvements were however observed for balanced random forest and weighted XGBoost. These results illustrate that random forest and XGBoost are particularly robust to imbalanced data and overfitting. 
+
+Overall, the experimental results reported in this section do not provide remarkable improvements over the baseline ensembles. These results should however not lead to the conclusion that combining ensemble methods with imbalanced learning techniques has little benefit. Rather, they show that (i) ensemble methods like random forest and XGBoost provide baselines that are difficult to improve, (ii) imbalanced learning techniques do change the decision boundary of the resulting classifier, and (iii) imbalanced learning techniques might improve the predictive performances depending on which performance metric is used.       
+[MARKDOWN CELL 98]
+## Saving of results
+
+Let us finally save the performance results and execution times.
+[CODE CELL 99 - POTENTIAL TEXT]
+    "Baseline Bagging": performances_df_baseline_bagging,
+
+    "Baseline RF": performances_df_baseline_rf,
+
+    "Baseline XGBoost": performances_df_baseline_xgboost,
+
+    "Balanced Bagging": performances_df_balanced_bagging,
+
+    "Balanced RF": performances_df_balanced_rf,
+
+    "Weighted XGBoost": performances_df_weighted_xgboost
+
+[CODE CELL 100 - POTENTIAL TEXT]
+filehandler = open('performances_ensembles.pkl', 'wb') 
+
+
+
+--- FILE: Imbalanced_RealWorldData.ipynb ---
+
+[MARKDOWN CELL 0]
+# Real-world data
+[MARKDOWN CELL 1]
+The section reports the performances that are obtained on real-world data using imbalanced learning techniques. The dataset is the same as in [Chapter 3, Section 5](Baseline_FDS_RealWorldData). Results are reported following the methodology used in the previous sections with simulated data. 
+
+We first report the performances for cost-sensitive techniques, varying the class weight for decision trees and logistic regression models. We then report the performances for resampling techniques using decision trees, and varying the imbalance ratio with SMOTE, RUS, and a combination of SMOTE and RUS. We finally report the results using ensemble techniques, varying the imbalance ratio with Bagging and Random Forests models, and varying the class weight with an XGBoost model.
+
+[CODE CELL 2 - POTENTIAL TEXT]
+# Initialization: Load shared functions
+
+# Load shared functions
+
+#%run ../Chapter_References/shared_functions.ipynb
+[MARKDOWN CELL 3]
+## Cost-sensitive
+[MARKDOWN CELL 4]
+We followed the methodology reported in Section 6.2 ([](Cost_Sensitive_Learning_Transaction_Data)), saving the results in a `performances_cost_sensitive_real_world_data.pkl` pickle file. The performances and execution times can be retrieved by loading the pickle file.
+[CODE CELL 5 - POTENTIAL TEXT]
+filehandler = open('images/performances_cost_sensitive_real_world_data.pkl', 'rb') 
+
+[MARKDOWN CELL 6]
+### Decision tree
+
+The results for decision tree models are reported below. The tree depth was set to 6 (providing the best performances as reported in [Chapter 5](Model_Selection_RWD_Decision_Trees)). We varied the class weight in the range 0.01 to 1, with the following set of possible values: $[0.01, 0.05, 0.1, 0.5, 1]$.
+
+[CODE CELL 7 - POTENTIAL TEXT]
+performances_df_dt=performances_df_dictionary['Decision Tree']
+
+summary_performances_dt=get_summary_performances(performances_df_dt, parameter_column_name="Parameters summary")
+
+                       performance_metrics_list=['AUC ROC', 'Average precision', 'Card Precision@100'], 
+
+                       expe_type_list=['Test','Validation'], expe_type_color_list=['#008000','#FF0000'],
+
+                       parameter_name="Class weight for the majority class",
+
+[MARKDOWN CELL 8]
+We recall that a class weight of 1 consists in giving the same weight to positive and negative classes, whereas a class weight of 0.01 consists in giving 100 times more weight to the positive class (thus favoring the detection of fraud instances). We also note that a class weight of 1 provides the same results as in [Chapter 5](Model_Selection_Decision_Tree). 
+
+The results show that decreasing the class weight allows to increase the performances in terms of AUC ROC, but decreases the performances in terms of Average Precision and CP@100, particularly for very low values (close to 0.01).
+
+The performances as a function of the best parameters are summarized below.
+[MARKDOWN CELL 10]
+These results follow the same trends as those obtained with the [simulated data](Cost_Sensitive_Learning_Transaction_Data): Cost-sensitive learning is effective for improving AUC ROC performances, but detrimental to Average Precision. 
+[MARKDOWN CELL 11]
+### Logistic regression
+
+The results for logistic regression are reported below. The regularization parameter C was set to 0.1 (providing the best performances as was reported in [Chapter 5](Model_Selection_RWD_Logistic_Regression)). 
+[CODE CELL 12 - POTENTIAL TEXT]
+performances_df_lr=performances_df_dictionary['Logistic Regression']
+
+summary_performances_lr=get_summary_performances(performances_df_lr, parameter_column_name="Parameters summary")
+
+                       performance_metrics_list=['AUC ROC', 'Average precision', 'Card Precision@100'], 
+
+                       expe_type_list=['Test','Validation'], expe_type_color_list=['#008000','#FF0000'],
+
+                       parameter_name="Class weight for the majority class",
+
+[MARKDOWN CELL 14]
+Similar to decision trees, lowering the class weight of the majority class provides a boost of performances in terms of AUC ROC. The impact on Average Precision and CP@100 is however mitigated: the only noticeable impact is an improvement of the Average Precision on validation data, which however comes at the cost of a higher variance (as is visible from the large confidence interval).
+[MARKDOWN CELL 15]
+## Resampling
+
+We followed the methodology reported in Section 6.3 ([](Resampling_Strategies_Transaction_Data)), saving the results in the `performances_resampling_real_world_data.pkl` pickle file. The performances and execution times can be retrieved by loading the file. Performances were assessed for SMOTE, RUS, and a combined resampling with SMOTE and RUS. All the experiments relied on decision tree models, whose tree depth was set to 6 (providing the best performances as was reported in [Chapter 5](Model_Selection_RWD_Decision_Trees)). 
+
+[CODE CELL 16 - POTENTIAL TEXT]
+filehandler = open('images/performances_resampling_real_world_data.pkl', 'rb') 
+
+[MARKDOWN CELL 17]
+### SMOTE
+
+The results for SMOTE are reported below. The imbalance ratio was varied in the range 0.01 to 1, with the following set of possible values: $[0.01, 0.05, 0.1, 0.5, 1]$. We recall that the higher the imbalance ratio, the stronger the resampling. An imbalance ratio of 0.01 yields a distribution close to the original one (where the percentage of frauds is close to 0.25%). An imbalance ratio of 1 yields a distribution that contains as many positive instances as negative instances.  
+
+[CODE CELL 18 - POTENTIAL TEXT]
+performances_df_SMOTE=performances_df_dictionary['SMOTE']
+
+summary_performances_SMOTE=get_summary_performances(performances_df_SMOTE, parameter_column_name="Parameters summary")
+
+                       performance_metrics_list=['AUC ROC', 'Average precision', 'Card Precision@100'], 
+
+                       expe_type_list=['Test','Validation'], expe_type_color_list=['#008000','#FF0000'],
+
+                       parameter_name="Imbalance ratio",
+
+[MARKDOWN CELL 20]
+The results show that the benefits of SMOTE are mitigated. Creating new synthetic instances of the positive class tends to increase AUC ROC performances (left plot). It however comes with a decrease of performances for both Average Precision and CP@100 metrics. These results are in line with those observed on simulated data (Section 6.3, [](Resampling_Strategies_Transaction_Data_Oversampling)).
+[MARKDOWN CELL 21]
+### Random undersampling
+
+The results for random undersampling (RUS) are reported below. 
+[CODE CELL 22 - POTENTIAL TEXT]
+performances_df_RUS=performances_df_dictionary['RUS']
+
+summary_performances_RUS=get_summary_performances(performances_df_RUS, parameter_column_name="Parameters summary")
+
+                       performance_metrics_list=['AUC ROC', 'Average precision', 'Card Precision@100'], 
+
+                       expe_type_list=['Test','Validation'], expe_type_color_list=['#008000','#FF0000'],
+
+                       parameter_name="Imbalance ratio",
+
+[MARKDOWN CELL 24]
+Similarly, RUS allows to improve performances in terms of AUC ROC, but comes with a noticeable decrease of performances in terms of AP and CP@100. These results are also in line with those observed on simulated data (Section 6.3, [](Resampling_Strategies_Transaction_Data_RUS)).
+[MARKDOWN CELL 25]
+### Combining SMOTE with undersampling
+
+We finally report the results for combined resampling (SMOTE followed by RUS). 
+[CODE CELL 26 - POTENTIAL TEXT]
+performances_df_combined=performances_df_dictionary['Combined']
+
+summary_performances_combined=get_summary_performances(performances_df_combined, parameter_column_name="Parameters summary")
+
+                       performance_metrics_list=['AUC ROC', 'Average precision', 'Card Precision@100'], 
+
+                       expe_type_list=['Test','Validation'], expe_type_color_list=['#008000','#FF0000'],
+
+                       parameter_name="Imbalance ratio",
+
+[MARKDOWN CELL 28]
+Again, we observe that resampling allows to improve performances in terms of AUC ROC, but decreases performances in terms of AP and CP@100. The results are in line with those observed on simulated data (Section 6.3, [](Resampling_Strategies_Transaction_Data_Combining)).
+[MARKDOWN CELL 29]
+## Ensembling
+
+We followed the methodology reported in Section 6.4 ([](Ensembling_Strategies_Transaction_Data)), saving the results in a `performances_resampling_real_world_data.pkl` pickle file. The performances and execution times can be retrieved by loading the pickle file.
+
+[CODE CELL 30 - POTENTIAL TEXT]
+filehandler = open('images/performances_ensembles_real_world_data.pkl', 'rb') 
+
+[MARKDOWN CELL 31]
+Performances were assessed for balanced bagging, balanced random forest, and weighted XGBoost.
+
+### Baseline
+
+For the [baseline](Ensembling_Strategies_Transaction_Data_Baseline), the hyperparameters were chosen as follows:
+
+* Bagging and random forest: 100 trees, with a maximum depth of 10. These were shown to provide the best performances for random forests in [Chapter 5, Model Selection - Random forest](Model_Selection_RWD_RF).
+
+* XGBoost: 100 trees, with a maximum depth of 6, and a learning rate of 0.1. These were shown to provide the best trade-off in terms of performances in [Chapter 5, Model Selection - XGBoost](Model_Selection_RWD_XGBoost). 
+
+The baseline performances are reported in the table below. It is worth noting that the performances for random forest and XGBoost are the same as those reported in [Chapter 5, Model Selection - Random forest](Model_Selection_RWD_RF) and [Chapter 5, Model Selection - XGBoost](Model_Selection_RWD_XGBoost), respectively.
+
+[CODE CELL 32 - POTENTIAL TEXT]
+performances_df_baseline_bagging=performances_df_dictionary['Baseline Bagging']
+
+summary_performances_baseline_bagging=get_summary_performances(performances_df_baseline_bagging, parameter_column_name="Parameters summary")
+
+performances_df_baseline_rf=performances_df_dictionary['Baseline RF']
+
+summary_performances_baseline_rf=get_summary_performances(performances_df_baseline_rf, parameter_column_name="Parameters summary")
+
+performances_df_baseline_xgboost=performances_df_dictionary['Baseline XGBoost']
+
+summary_performances_baseline_xgboost=get_summary_performances(performances_df_baseline_xgboost, parameter_column_name="Parameters summary")
+
+summary_test_performances.columns=['Baseline Bagging', 'Baseline RF', 'Baseline XGBoost']
+
+[MARKDOWN CELL 34]
+XGBoost was observed to provide better performances than random forest across all performance metrics, as was already reported in [](Model_Selection_RWD_Comparison). The performances of bagging were on par with random forest in terms of AUC ROC, but lower in terms of Average Precision and CP@100. 
+[MARKDOWN CELL 35]
+### Balanced bagging
+
+Similar to [](Ensembling_Strategies_Transaction_Data_Bagging) with simulated data, the imbalance ratio (`sampling_strategy` parameter) was parametrized to take values in the set $[0.01, 0.05, 0.1, 0.5, 1]$ for the model selection procedure. The number of trees and maximum tree depth were set to 100 and 10 (as with baseline bagging).
+[CODE CELL 36 - POTENTIAL TEXT]
+performances_df_balanced_bagging=performances_df_dictionary['Balanced Bagging']
+
+[MARKDOWN CELL 37]
+Let us summarize the performances to highlight the optimal imbalance ratio, and plot the performances as a function of the imbalance ratio for the three performance metrics.
+[CODE CELL 38 - POTENTIAL TEXT]
+summary_performances_balanced_bagging=get_summary_performances(performances_df_balanced_bagging, parameter_column_name="Parameters summary")
+
+[CODE CELL 39 - POTENTIAL TEXT]
+                       performance_metrics_list=['AUC ROC', 'Average precision', 'Card Precision@100'], 
+
+                       expe_type_list=['Test','Validation'], expe_type_color_list=['#008000','#FF0000'],
+
+                       parameter_name="Imbalance ratio",
+
+[MARKDOWN CELL 40]
+The results show that increasing the imbalance ratio leads to a decrease of both Average Precision and CP@100. The trend is different with AUC ROC, where increasing the imbalance ratio first leads to a slight improvement of the metric, before reaching a plateau. It is worth noting that the results are qualitatively similar to [](Ensembling_Strategies_Transaction_Data_Bagging) with simulated data for AUC ROC and Average Precision. 
+[MARKDOWN CELL 41]
+### Balanced random forest
+
+Similar to [](Ensembling_Strategies_Transaction_Data_RF) with simulated data, the imbalance ratio (`sampling_strategy` parameter) was parametrized to take values in the set $[0.01, 0.05, 0.1, 0.5, 1]$ for the model selection procedure. The number of trees and maximum tree depth were set to 100 and 10 (as with baseline random forest).
+[CODE CELL 42 - POTENTIAL TEXT]
+performances_df_balanced_rf=performances_df_dictionary['Balanced RF']
+
+[MARKDOWN CELL 43]
+Let us summarize the performances to highlight the optimal imbalance ratio, and plot the performances as a function of the imbalance ratio for the three performance metrics.
+[CODE CELL 44 - POTENTIAL TEXT]
+summary_performances_balanced_rf=get_summary_performances(performances_df_balanced_rf, parameter_column_name="Parameters summary")
+
+[CODE CELL 45 - POTENTIAL TEXT]
+                       performance_metrics_list=['AUC ROC', 'Average precision', 'Card Precision@100'], 
+
+                       expe_type_list=['Test','Validation'], expe_type_color_list=['#008000','#FF0000'],
+
+                       parameter_name="Imbalance ratio",
+
+[MARKDOWN CELL 46]
+The results follow the same trends as with balanced bagging: increasing the imbalance ratio is detrimental to Average Precision and CP@100, but can slightly increase AUC ROC. The results are qualitatively similar to [](Ensembling_Strategies_Transaction_Data_RF) with simulated data for AUC ROC and Average Precision.
+[MARKDOWN CELL 47]
+### Weighted XGBoost
+
+Finally, similar to [](Ensembling_Strategies_Transaction_Data_Weighted_XGBoost) with simulated data, we varied the `scale_pos_weight` parameter to take values in the set $[1,5,10,50,100]$. The same hyperparameters as the baseline XGBoost were otherwise kept (100 trees with a maximum depth of 6, and a learning rate of 0.1).
+
+[CODE CELL 48 - POTENTIAL TEXT]
+performances_df_weighted_xgboost=performances_df_dictionary['Weighted XGBoost']
+
+[MARKDOWN CELL 49]
+Let us summarize the performances to highlight the optimal imbalance ratio, and plot the performances as a function of the class weight for the three performance metrics.
+[CODE CELL 50 - POTENTIAL TEXT]
+summary_performances_weighted_xgboost=get_summary_performances(performances_df_weighted_xgboost, parameter_column_name="Parameters summary")
+
+[CODE CELL 51 - POTENTIAL TEXT]
+                       performance_metrics_list=['AUC ROC', 'Average precision', 'Card Precision@100'], 
+
+                       expe_type_list=['Test','Validation'], expe_type_color_list=['#008000','#FF0000'],
+
+                       parameter_name="Class weight",
+
+[MARKDOWN CELL 52]
+Contrary to balanced bagging and balanced random forest, increasing the class weight of the minority class allows to slightly improve the performances in terms of Average Precision and CP@100. Improvements are only observed for a slight increase of the class weight (from 1 to 5). Higher values lead to slight decreases of performances. For AUC ROC, the optimal class weight is found to be 1 (equal cost for the minority and majority classes). 
+[MARKDOWN CELL 53]
+### Summary
+
+Let us finally summarize in a single table the results on the real-world dataset. Performance metrics are reported row-wise, while ensemble methods are reported column-wise. 
+[CODE CELL 54 - POTENTIAL TEXT]
+summary_test_performances.columns=['Baseline Bagging', 'Balanced Bagging', 
+
+                                   'Baseline RF', 'Balanced RF', 
+
+                                   'Baseline XGBoost', 'Weighted XGBoost']
+
+[MARKDOWN CELL 56]
+The best improvements were observed for balanced bagging and balanced random forest, for which better performances were obtained compared to baseline bagging and baseline random forest. However, as we noted for the [simulated data](Ensembling_Strategies_Transaction_Data), the benefits of resampling are most likely due to a higher diversity of the trees making up the ensembles, leading to a decrease of the overfitting phenomenon. In particular, the optimum imbalance ratio for Average Precision and CP@100 was found to be the lowest one (0.01), which shows that the best strategy for these metrics was to avoid rebalancing the training sets.
+
+On the contrary, we observed that rebalancing the training sets could slightly improve the performances in terms of AUC ROC. The improvements were observed for imbalance ratios ranging from 0.1 to 0.5, leading to a slight increase of around 1% of the AUC ROC (from 0.91 to 0.92). Besides allowing a slight increase in performances, it is worth noting that rebalancing the dataset with undersampling techniques could speed up computation times by up to 20%.
+
+As for the results obtained on [simulated data](Ensembling_Strategies_Transaction_Data_Summary), these experiments suggest that rebalancing can help improve performances in terms of AUC ROC or speed up the training time of an ensemble. It however appeared that keeping all of the training data was the best strategy if Average Precision and CP@100 are the performance metrics to optimize.
+
+Overall, the best performances were obtained with XGBoost for the three metrics. As for the [simulated data](Ensembling_Strategies_Transaction_Data_Summary), modifying the class weight through weighted XGBoost did not allow to significantly improve performances, illustrating the robustness of XGBoost in class imbalance scenarios.
+
+
+--- FILE: Resampling.ipynb ---
+
+[MARKDOWN CELL 0]
+(Resampling_Strategies)=
+
+# Resampling strategies
+[MARKDOWN CELL 1]
+Resampling strategies address class imbalance at the data level, by resampling the dataset to reduce the imbalance ratio. The resampling of an imbalanced dataset occurs before the training of the prediction model and can be seen as a data preprocessing step. Numerous methods have been proposed for resampling imbalanced datasets, which can be categorized into three main strategies: *oversampling*, *undersampling*, and *hybrid* strategies {cite}`fernandez2018learning,JMLR:v18:16-365,chawla2009data`. 
+
+Oversampling consists in artificially increasing the proportion of samples from the minority class. The most naive approach is *random oversampling* (ROS), in which samples from the minority class are randomly duplicated {cite}`fernandez2018learning`. More sophisticated approaches consist in generating synthetic data by interpolating samples from the minority class. Two standard methods based on interpolation are *SMOTE* (Synthetic Minority Oversampling Technique) {cite}`chawla2002smote` and *ADASYN* (Adaptive Synthetic Sampling) {cite}`he2008adasyn`. 
+
+Undersampling, on the contrary, consists in reducing the imbalance ratio by removing samples from the majority class. Samples may be simply randomly removed, as in *random undersampling* (RUS) {cite}`fernandez2018learning`. RUS is a fast and easy way to balance a dataset and is therefore widely used. A significant drawback of the method is that samples that are useful for the learning process may be discarded {cite}`ali2019review`. More advanced strategies aim at removing samples from overlapping regions (such as NearMiss {cite}`mani2003knn`, Tomek Links {cite}`tomek1976two` or Edited Nearest-Neighbors (ENN) {cite}`wilson1972asymptotic`), or by replacing subsets of samples by their centroids {cite}`yen2009cluster`.
+
+The ability of oversampling or undersampling techniques to improve classification performances largely depends on the characteristics of a dataset. As summarized in {cite}`haixiang2017learning`, oversampling techniques tend to be particularly effective when the number of samples from the minority class is very low. Undersampling techniques, on the other hand, are well-suited for large datasets. In particular, they allow to speed up the training times by reducing the dataset size. 
+
+Oversampling and undersampling techniques can also be combined, resulting in *hybrid* resampling techniques. Hybridization of undersampling and oversampling has been shown to almost always increase the classification performances (Chapter 5, Section 6 in {cite}`fernandez2018learning`). Popular combinations involve SMOTE, together with nearest neighbors based undersampling techniques such as Tomek Links {cite}`tomek1976two,batista2004study` or Edited Nearest-Neighbors (ENN) {cite}`wilson1972asymptotic,batista2003balancing`.
+
+This section explores the use of some popular resampling techniques and discusses their benefits and limitations. The proposed implementation relies on the `imblearn` Python library, which is the most complete and up-to-date Python library for imbalanced learning. The library provides a wide range of resampling techniques that can be easily integrated with the `sklearn` library {cite}`Imblearn`.
+
+[CODE CELL 2 - POTENTIAL TEXT]
+# Initialization: Load shared functions and simulated data 
+
+# Load shared functions
+
+#%run ../Chapter_References/shared_functions.ipynb
+
+# Get simulated data from Github repository
+
+if not os.path.exists("simulated-data-transformed"):
+
+[MARKDOWN CELL 3]
+## Illustrative example
+
+For illustrative purposes, we reuse the same simple classification task as in the [cost-sensitive learning section](Imbalanced_Learning_Illustrative_Example). 
+[CODE CELL 4 - POTENTIAL TEXT]
+dataset_df = pd.DataFrame({'X1':X[:,0],'X2':X[:,1], 'Y':y})
+
+[CODE CELL 5 - POTENTIAL TEXT]
+groups = dataset_df.groupby('Y')
+
+    ax.scatter(group.X1, group.X2, edgecolors='k', label=name,alpha=1,marker='o')
+
+ax.legend(loc='upper left', 
+
+          title="Class")
+[MARKDOWN CELL 6]
+The dataset contains 5000 samples with two classes, labeled 0 and 1. 95% of the samples are associated to the class 0, and 5% of the samples to the class 1.
+[MARKDOWN CELL 8]
+Following the same methodology as in the [cost-sensitive learning section](Imbalanced_Learning_Illustrative_Example), the performances of a baseline classifier without resampling is obtained with the `kfold_cv_with_classifier` function. A decision tree of depth five and a 5-fold stratified cross-validation gives us the following baseline classification performances. 
+[CODE CELL 9 - POTENTIAL TEXT]
+                                                                                     strategy_name="Decision tree - Baseline")
+
+[MARKDOWN CELL 11]
+The decision boundary of the first classifier of the cross-validation is reported below. Due to class imbalance, the classifier tends to return equal probabilities for the two classes in the overlapping region. 
+[MARKDOWN CELL 13]
+### Oversampling
+
+Oversampling techniques aim at rebalancing the dataset by creating new samples for the minority class. The two most widely-used methods are *random oversampling* and *SMOTE* {cite}`fernandez2018learning,haixiang2017learning,chawla2002smote`. The next two subsections show how these methods can be implemented, and illustrate their ability to move the decision boundaries towards the minority class. 
+
+#### Random oversampling
+
+Let us first briefly cover how the `imblearn` library allows to resample datasets. A more complete introduction can be found on the library's website, at https://imbalanced-learn.org/dev/introduction.html.
+
+The `imblearn` library provides objects called *samplers*, which take as input a dataset and a set of parameters that are specific to the sampler, and return a resampled dataset. 
+
+For example, the `imblearn` sampler for random oversampling is called [`RandomOverSampler`](https://imbalanced-learn.org/dev/references/generated/imblearn.over_sampling.RandomOverSampler.html). Its main parameter is the `sampling_strategy`, which determines the desired imbalance ratio after random oversampling.
+
+Let us for example create a sampler for random oversampling, where the resampled dataset should have an imbalance ratio of 1 (that is, where samples from the minority class are duplicated until their number equals the number of samples in the majority class).
+[CODE CELL 14 - POTENTIAL TEXT]
+# random_state is set to 0 for reproducibility
+
+[MARKDOWN CELL 15]
+Let us apply this sampler on the `train_df` DataFrame, which is the set of training data in the first fold of the cross-validation performed above. The DataFrame contains 3784 samples of class 0 and 216 samples of class 1. 
+[CODE CELL 16 - POTENTIAL TEXT]
+train_df['Y'].value_counts()
+[MARKDOWN CELL 17]
+The resampling of the dataset is performed by calling the `fit` method of the sampler object. Let `train_df_ROS` be the resampled DataFrame.
+[CODE CELL 18 - POTENTIAL TEXT]
+X_resampled, Y_resampled = ROS.fit_resample(train_df[['X1','X2']], train_df['Y'])
+
+train_df_ROS = pd.DataFrame({'X1':X_resampled['X1'],'X2':X_resampled['X2'], 'Y':Y_resampled})
+[MARKDOWN CELL 19]
+The resampled DataFrame now contains as many samples of class 1 as of class 0.
+[CODE CELL 20 - POTENTIAL TEXT]
+train_df_ROS['Y'].value_counts()
+[MARKDOWN CELL 21]
+Samplers can be combined with `sklearn` estimators using pipelines. The addition of a sampling step in the cross-validation procedure is therefore simple and consists in creating a pipeline made of a sampler, and an estimator. 
+
+The implementation is provided below, in the `kfold_cv_with_sampler_and_classifier` function.
+[CODE CELL 22 - POTENTIAL TEXT]
+                                         strategy_name="Baseline classifier"):
+
+    # Create a pipeline with the list of samplers, and the estimator
+
+    estimators.extend([('clf', classifier)])
+
+                                                         scoring=['roc_auc',
+
+                                                                  'average_precision',
+
+                                                                  'balanced_accuracy'],
+
+    results_df = pd.DataFrame([[str(round(results_mean[i],3))+'+/-'+
+
+                              columns=['Fit time (s)','Score time (s)',
+
+                                       'AUC ROC','Average Precision','Balanced accuracy'])
+
+    classifier_0 = cv_results_['estimator'][0]
+
+    test_df = pd.DataFrame({'X1':X[test_index,0],'X2':X[test_index,1], 'Y':y[test_index]})
+
+    train_df = pd.DataFrame({'X1':X_resampled[:,0],'X2':X_resampled[:,1], 'Y':Y_resampled})
+
+[MARKDOWN CELL 23]
+Let us assess the performances of the baseline classifier combined with random oversampling.
+[CODE CELL 24 - POTENTIAL TEXT]
+sampler_list = [('sampler',imblearn.over_sampling.RandomOverSampler(sampling_strategy=1, random_state=0))]
+
+                                                                                         strategy_name="Decision tree - ROS")
+
+[MARKDOWN CELL 25]
+As a sanity check, we can verify that the training set size contains the same number of samples for the two classes.
+[CODE CELL 26 - POTENTIAL TEXT]
+train_df['Y'].value_counts()
+[MARKDOWN CELL 27]
+The resampling allowed to shift the decision boundary towards the minority class, as can be seen in the figure below. Note that the training data for the minority class looks the same as the baseline classifier. Most instances have however been duplicated many times to reach an imbalance ratio of one.
+[MARKDOWN CELL 29]
+The classification performances show an increase in terms of balanced accuracy. We however note a decrease in terms of AUC ROC and Average Precision, due to the shift of the decision boundary which significantly increased the number of false positives. 
+[MARKDOWN CELL 31]
+#### SMOTE
+
+SMOTE {cite}`chawla2002smote` oversamples the minority class by generating synthetic examples in the neighborhood of observed ones. The idea is to form new minority examples by interpolating between samples of the same class. This has the effect of creating clusters around each minority observation. By creating synthetic observations, the classifier builds larger decision regions that contain nearby instances from the minority class. SMOTE has been shown to improve the performances of a base classifier in many applications {cite}`dal2015adaptive,chawla2002smote`
+
+The `imblearn` sampler for SMOTE is [`imblearn.over_sampling.SMOTE`](https://imbalanced-learn.org/dev/references/generated/imblearn.over_sampling.SMOTE.html). Let us illustrate the use of SMOTE, and its impact on the classifier decision boundary and the classification performances.
+
+The implementation follows the same structure as the random oversampling. The only difference is to change the sampler to SMOTE.
+
+[CODE CELL 32 - POTENTIAL TEXT]
+sampler_list = [('sampler', imblearn.over_sampling.SMOTE(sampling_strategy=1, random_state=0))]
+
+                                                                                           strategy_name="Decision tree - SMOTE")
+
+[MARKDOWN CELL 33]
+As with random oversampling, the number of samples in the minority class is increased to match the number of samples in the majority class (`sampling_strategy=1`).
+[CODE CELL 34 - POTENTIAL TEXT]
+train_df['Y'].value_counts()
+[MARKDOWN CELL 35]
+The decision boundary is also shifted towards the minority class. We note that, contrary to random oversampling, new examples have been generated for the minority class.
+[MARKDOWN CELL 37]
+SMOTE provides higher performances than random oversampling for the three metrics. The Average Precision however remains lower than the baseline classifier.
+[MARKDOWN CELL 39]
+#### Other oversampling strategies
+
+There exists a range of more sophisticated strategies for oversampling, whose details go beyond the scope of this book. We refer the reader to {cite}`fernandez2018learning` for a review and to the [`imblearn` page on oversampling methods](https://imbalanced-learn.org/stable/references/over_sampling.html) for their implementations in Python. In particular the `imblearn` library provides the following additional oversampling methods: `SMOTENC` {cite}`chawla2002smote`, `SMOTEN` {cite}`chawla2002smote`, `ADASYN` {cite}`he2008adasyn`, `BorderlineSMOTE` {cite}`han2005borderline`, `KMeansSMOTE` {cite}`last2017oversampling`, and `SVMSMOTE` {cite}`nguyen2011borderline`. These methods can be used by simply replacing the sampler with the desired method in the code above. 
+
+[MARKDOWN CELL 40]
+(Resampling_Strategies_Undersampling)=
+
+### Undersampling
+
+Undersampling refers to the process of reducing the number of samples in the majority class. The naive approach, called *random undersampling* (RUS), consists in randomly removing samples from the majority class until the desired imbalance ratio is achieved. 
+
+The major drawback of RUS is that the method may discard samples that are important for identifying the decision boundary. A range of more advanced techniques have been proposed that aim at removing samples in a more principled way {cite}`fernandez2018learning`. Besides RUS, the `imblearn` package proposes no less than ten different methods for undersampling {cite}`Imblearn`. Most of these methods rely on nearest neighbors heuristics that remove samples when they either lie close or far away from other samples. We refer the reader to {cite}`fernandez2018learning,Imblearn` for the detailed algorithms underlying more advanced undersampling methods.
+
+The next two subsections show how two of these methods can be implemented, and illustrate their ability to move the decision boundary towards the minority class. As examples, we rely on RUS, and Edited Nearest Neighbor (ENN).
+
+(Resampling_Strategies_RUS)=
+
+#### Random undersampling
+
+The `imblearn` sampler for RUS is [`imblearn.under_sampling.RandomUnderSampler`](https://imbalanced-learn.org/dev/references/generated/imblearn.under_sampling.RandomUnderSampler.html). Let us illustrate its use and its impact on the classifier decision boundary and the classification performances.
+[CODE CELL 41 - POTENTIAL TEXT]
+sampler_list = [('sampler', imblearn.under_sampling.RandomUnderSampler(sampling_strategy=1, random_state=0))]
+
+                                                                                         strategy_name="Decision tree - RUS")
+
+[MARKDOWN CELL 42]
+With a `sampling_strategy` set to one, RUS randomly removes samples from the majority class until their number reaches that of the minority class. After resampling, each class contains 216 samples.
+[CODE CELL 43 - POTENTIAL TEXT]
+train_df['Y'].value_counts()
+[MARKDOWN CELL 44]
+The plotting of training samples shows that the number of samples from the majority class was significantly reduced, allowing a shift of the decision boundary towards the minority class. Contrary to oversampling techniques, the region located at the bottom right is now associated with the minority class, since all samples of class 0 from this region have been removed.  
+[MARKDOWN CELL 46]
+The performances in terms of AUC ROC and balanced accuracy are on par with oversampling techniques. We however note a loss of performance in terms of Average Precision. 
+[MARKDOWN CELL 48]
+It is worth noting that the training time with RUS is faster. This results from the simple undersampling procedure and the smaller training set size. The method is therefore useful not only for reducing the imbalance ratio but also for speeding up the execution time of the modeling procedure.   
+[MARKDOWN CELL 49]
+#### Edited Nearest Neighbor 
+
+The Edited Nearest Neighbor rule is an undersampling technique that removes samples from the majority class in overlapping regions of the dataset {cite}`laurikkala2001improving,wilson1972asymptotic`. It is based on a nearest neighbor rule, that removes majority class samples as follows {cite}`fernandez2018learning` (Chapter 5, Page 84):
+
+* For each majority class sample, the k-nearest neighbors are found. If the majority of these samples are from the minority class, the majority class sample is removed.
+
+* For each minority class sample, the k-nearest neighbors are found. If the majority of these samples are from the majority class, the majority class sample(s) is (are) removed.
+
+The number of neighbors $k$ is by default set to $k=3$. It is worth noting that, contrary to RUS, the number of majority class samples that are removed depends on the degree of overlap between the two classes. The method does not allow to specify an imbalanced ratio. 
+
+The `imblearn` sampler for RUS is [`imblearn.under_sampling.EditedNearestNeighbours`](https://imbalanced-learn.org/stable/references/generated/imblearn.under_sampling.EditedNearestNeighbours.html). Let us illustrate its use and its impact on the classifier decision boundary and the classification performances. 
+
+[CODE CELL 50 - POTENTIAL TEXT]
+sampler_list = [('sampler', imblearn.under_sampling.EditedNearestNeighbours(sampling_strategy='majority',n_neighbors=3))]
+
+                                                                                         strategy_name="Decision tree - ENN")
+
+[MARKDOWN CELL 51]
+With a number of neighbors `n_neighbors` set to three, ENN only removes around 200 samples out of the 3784 samples of the majority class. The number of samples from the minority class is unchanged. 
+[CODE CELL 52 - POTENTIAL TEXT]
+train_df['Y'].value_counts()
+[MARKDOWN CELL 53]
+The plotting of training samples shows that the distributions of the two classes are similar to the original distributions. The samples that were removed lied in the overlapping region, and their removal is therefore not visible due to the large amount of remaining samples. We however observe a shift in the decicision boundary, since the decision tree now classifies samples from the overlapping region into the minority class. 
+[MARKDOWN CELL 55]
+On this dataset, the performances of ENN are poor compared to the previsouly tested techniques. The balanced accuracy was slightly improved compared to the baseline classifier. The performance in terms of AP is however lower than the baseline, and the AUC ROC is the worst of all tested tecniques (and on par with ROS). 
+[MARKDOWN CELL 57]
+#### Other undersampling strategies
+
+As for ovesampling techniques, we refer the reader to {cite}`fernandez2018learning` for a review of more sophisticated undersampling techniques and to the [`imblearn` page on undersampling methods](https://imbalanced-learn.org/stable/references/under_sampling.html) for their implementations in Python. In particular the `imblearn` library provides ten other undersampling methods, which can be tested by simply replacing the sampler with the desired method in the code above. 
+
+[MARKDOWN CELL 58]
+### Combining over and undersampling
+
+Oversampling and undersampling are often complementary. On the one hand, oversampling techniques allow to generate synthetic samples from the minority class, and help a classifier in identifying more precisely the decision boundary between the two classes. On the other hand, undersampling techniques reduce the size of the training set, and allow to speed-up the classifier training time.  Combining over and undersampling techniques has often been reported to successfully improve the classifier performances (Chapter 5, Section 6 in {cite}fernandez2018learning).
+
+In terms of implementation, the combination of samplers is obtained by chaining the samplers in a `pipeline`. The samplers can then be chained to a classifer. We illustrate below the chaining of an SMOTE oversampling to a random undersampling to a decision tree classifier. 
+
+```
+
+sampler_list = [('sampler1', imblearn.over_sampling.SMOTE(sampling_strategy=0.5,random_state=0)),
+
+                ('sampler2', imblearn.under_sampling.RandomUnderSampler(sampling_strategy=1.0,random_state=0))
+
+               ]
+
+classifier = sklearn.tree.DecisionTreeClassifier(max_depth=5, random_state=0)
+
+estimators = sampler_list.extend([('clf', classifier)])
+
+pipe = imblearn.pipeline.Pipeline(estimators)
+
+```
+
+The `kfold_cv_with_sampler_and_classifier` takes the `sampler_list` and the `classifier` as two separate arguments, and takes care of chaining the samplers and classifier together. We can therefore follow the same template as before for assessing the performances of a classifier based on a chain of resampling techniques. The samplers are provided as a list with the `sampler_list` variable.  
+[CODE CELL 59 - POTENTIAL TEXT]
+sampler_list = [('sampler1', imblearn.over_sampling.SMOTE(sampling_strategy=0.5,random_state=0)),
+
+                ('sampler2', imblearn.under_sampling.RandomUnderSampler(sampling_strategy=1.0,random_state=0))
+
+                                                                                              strategy_name='Decision tree - Combined SMOTE and RUS')
+
+[MARKDOWN CELL 60]
+The SMOTE oversampling aimed at an imbalance ratio of 0.5. Since the original dataset contains 3784 sample of the majority class, SMOTE create new samples until the number of minority class samples reached $3784/2=1892$ samples. The random undersampling aimed at an imbalance ratio of 1. Since the SMOTE resampled dataset contains 1892 samples of the minority class, samples of the majority class are removed until their number reached 1892 samples. 
+[CODE CELL 61 - POTENTIAL TEXT]
+train_df['Y'].value_counts()
+[MARKDOWN CELL 62]
+The resulting decision boundary is close to that obtained with SMOTE, except that a slightly larger region is now considered to be of class 1 by the classifier. This is coherent since less samples of the minority class were created. 
+[MARKDOWN CELL 64]
+The resulting performances are on par with those of SMOTE. For larger dataset, one should however expect faster training times than SMOTE, since the training set size is decreased thanks to undersampling. 
+[MARKDOWN CELL 66]
+(Resampling_Strategies_Transaction_Data)=
+
+## Transaction data
+
+Let us now apply resampling techniques to the simulated dataset of transaction data. We reuse the methodology of [Chapter 5, Model Selection](Model_Selection), using prequential validation as the validation strategy.
+[MARKDOWN CELL 67]
+### Load data
+
+The loading of data and initialization of the parameters follow the same template as in [Chapter 5, Model Selection](Model_Selection).
+[CODE CELL 68 - POTENTIAL TEXT]
+# Load data from the 2018-07-11 to the 2018-09-14
+
+DIR_INPUT = 'simulated-data-transformed/data/' 
+
+BEGIN_DATE = "2018-06-11"
+
+END_DATE = "2018-09-14"
+
+print("Load  files")
+
+print("{0} transactions loaded, containing {1} fraudulent transactions".format(len(transactions_df),transactions_df.TX_FRAUD.sum()))
+
+# Number of folds for the prequential validation
+
+# Set the starting day for the training period, and the deltas
+
+start_date_training = datetime.datetime.strptime("2018-07-25", "%Y-%m-%d")
+
+output_feature = "TX_FRAUD"
+
+input_features = ['TX_AMOUNT','TX_DURING_WEEKEND', 'TX_DURING_NIGHT', 'CUSTOMER_ID_NB_TX_1DAY_WINDOW',
+
+       'CUSTOMER_ID_AVG_AMOUNT_1DAY_WINDOW', 'CUSTOMER_ID_NB_TX_7DAY_WINDOW',
+
+       'CUSTOMER_ID_AVG_AMOUNT_7DAY_WINDOW', 'CUSTOMER_ID_NB_TX_30DAY_WINDOW',
+
+       'CUSTOMER_ID_AVG_AMOUNT_30DAY_WINDOW', 'TERMINAL_ID_NB_TX_1DAY_WINDOW',
+
+       'TERMINAL_ID_RISK_1DAY_WINDOW', 'TERMINAL_ID_NB_TX_7DAY_WINDOW',
+
+       'TERMINAL_ID_RISK_7DAY_WINDOW', 'TERMINAL_ID_NB_TX_30DAY_WINDOW',
+
+       'TERMINAL_ID_RISK_30DAY_WINDOW']
+
+# Only keep columns that are needed as argument to the custom scoring function
+
+# (in order to reduce the serialization time of transaction dataset)
+
+transactions_df_scorer = transactions_df[['CUSTOMER_ID', 'TX_FRAUD','TX_TIME_DAYS']]
+
+performance_metrics_list_grid = ['roc_auc', 'average_precision', 'card_precision@100']
+
+performance_metrics_list = ['AUC ROC', 'Average precision', 'Card Precision@100']
+
+scoring = {'roc_auc':'roc_auc',
+
+           'average_precision': 'average_precision',
+
+           'card_precision@100': card_precision_top_100,
+
+[MARKDOWN CELL 69]
+As a baseline, let us compute the fraud detection performances with a decision tree of depth 5 without any resampling. 
+[CODE CELL 70 - POTENTIAL TEXT]
+# Define classifier
+
+# Set of parameters for which to assess model performances
+
+parameters = {'clf__max_depth':[5], 'clf__random_state':[0]}
+
+# Fit models and assess performances for all parameters
+
+# Select parameter of interest (max_depth)
+
+parameters_dict=dict(performances_df['Parameters'])
+
+performances_df['Parameters summary']=[parameters_dict[i]['clf__max_depth'] for i in range(len(parameters_dict))]
+
+# Rename to performances_df_dt for model performance comparison at the end of this notebook
+
+[CODE CELL 71 - POTENTIAL TEXT]
+summary_performances_dt=get_summary_performances(performances_df_dt, parameter_column_name="Parameters summary")
+
+[MARKDOWN CELL 72]
+This baseline will be used at the end of the notebook to assess the benefits of different resampling techniques.  
+[MARKDOWN CELL 73]
+### Prequential validation with resampling
+
+The addition of resampling to the prequential validation simply consists in extending the pipeline defined in [Chapter 5, Validation Strategies](Sklearn_Validation_Pipeline) with the sampler objects. We add this step at the beginning of the `prequential_grid_search` function and rename it as `prequential_grid_search_with_sampler`. Note that the pipeline is created with the `Pipeline` object from the `imblearn` module so that samplers are properly processed.
+[CODE CELL 74 - POTENTIAL TEXT]
+                                         expe_type='Test',
+
+                                         performance_metrics_list_grid=['roc_auc'],
+
+                                         performance_metrics_list=['AUC ROC'],
+
+    estimators.extend([('clf', classifier)])
+
+        performances_df[performance_metrics_list[i]+' '+expe_type]=grid_search.cv_results_['mean_test_'+performance_metrics_list_grid[i]]
+
+        performances_df[performance_metrics_list[i]+' '+expe_type+' Std']=grid_search.cv_results_['std_test_'+performance_metrics_list_grid[i]]
+
+    performances_df['Parameters'] = grid_search.cv_results_['params']
+
+    performances_df['Execution time'] = grid_search.cv_results_['mean_fit_time']
+
+[MARKDOWN CELL 75]
+The `model_selection_wrapper` function is also modified into a `model_selection_wrapper_with_sampler` function, which calls the `prequential_grid_search_with_sampler` function for prequential grid search. 
+[CODE CELL 76 - POTENTIAL TEXT]
+                                         performance_metrics_list_grid=['roc_auc'],
+
+                                         performance_metrics_list=['AUC ROC'],
+
+    # Get performances on the validation set using prequential validation
+
+                            expe_type='Validation',
+
+    # Get performances on the test set using prequential validation
+
+                            expe_type='Test',
+
+    # Bind the two resulting DataFrames
+
+    performances_df_validation.drop(columns=['Parameters','Execution time'], inplace=True)
+
+    # And return as a single DataFrame
+
+[MARKDOWN CELL 77]
+Model selection with resampling can now be performed by calling the `model_selection_wrapper_with_sampler` function, following the same methodology as in [Chapter 5](Model_Selection). 
+[MARKDOWN CELL 78]
+(Resampling_Strategies_Transaction_Data_Oversampling)=
+
+### Oversampling
+
+Let us illustrate its use with SMOTE oversampling. We create a `SMOTE` object and store it in a `sampler_list` list. The list is passed as an argument to the `model_selection_wrapper_with_sampler` function. Additionally, the `sampling_strategy` parameter to the `SMOTE` object (imbalance ratio) is parametrized to take values in the set $[0.01, 0.05, 0.1, 0.5, 1]$ for the model selection procedure.  
+
+[CODE CELL 79 - POTENTIAL TEXT]
+# Define classifier
+
+# Define sampling strategy
+
+sampler_list = [('sampler', imblearn.over_sampling.SMOTE(random_state=0))]
+
+# Set of parameters for which to assess model performances
+
+parameters = {'clf__max_depth':[5], 'clf__random_state':[0],
+
+              'sampler__sampling_strategy':[0.01, 0.05, 0.1, 0.5, 1], 'sampler__random_state':[0]}
+
+# Fit models and assess performances for all parameters
+
+[MARKDOWN CELL 80]
+We then retrieve the performances for each of the tested imbalance ratios (`sampling_strategy` value) and store the results in a `performances_df_SMOTE` DataFrame.
+[CODE CELL 81 - POTENTIAL TEXT]
+# Select parameter of interest (sampling_strategy)
+
+parameters_dict=dict(performances_df['Parameters'])
+
+performances_df['Parameters summary']=[parameters_dict[i]['sampler__sampling_strategy'] for i in range(len(parameters_dict))]
+
+# Rename to performances_df_SMOTE for model performance comparison at the end of this notebook
+
+[MARKDOWN CELL 83]
+Let us summarize the performances to highlight the optimal imbalance ratios.
+[CODE CELL 84 - POTENTIAL TEXT]
+summary_performances_SMOTE = get_summary_performances(performances_df_SMOTE, parameter_column_name="Parameters summary")
+
+[MARKDOWN CELL 85]
+We note conflicting results, as the optimal imbalance ratio depends on the performance metric. For better visualization, let us plot the performances as a function of the imbalance ratio for the three performance metrics.
+[CODE CELL 86 - POTENTIAL TEXT]
+                       performance_metrics_list=['AUC ROC', 'Average precision', 'Card Precision@100'], 
+
+                       expe_type_list=['Test','Validation'], expe_type_color_list=['#008000','#FF0000'],
+
+                       parameter_name="Imbalance ratio",
+
+[MARKDOWN CELL 87]
+The performances tend to increase with the imbalance ratio for AUC ROC and CP@100. The opposite is however observed for Average Precision. The creation of synthetic samples with SMOTE is therefore beneficial to AUC ROC and CP@100, but detrimental to the Average Precision.  
+[MARKDOWN CELL 88]
+(Resampling_Strategies_Transaction_Data_RUS)=
+
+### Undersampling
+
+Let us follow the same methodology using random undersampling. The `RandomUnderSampler` object is used, and models are assessed for imbalance ratios taking values in the set $[0.01, 0.05, 0.1, 0.5, 1]$.
+[CODE CELL 89 - POTENTIAL TEXT]
+# Define classifier
+
+# Define sampling strategy
+
+sampler_list = [('sampler', imblearn.under_sampling.RandomUnderSampler())]
+
+# Set of parameters for which to assess model performances
+
+parameters = {'clf__max_depth':[5], 'clf__random_state':[0],
+
+              'sampler__sampling_strategy':[0.01, 0.05, 0.1, 0.5, 1], 'sampler__random_state':[0]}
+
+# Fit models and assess performances for all parameters
+
+# Select parameter of interest (sampling_strategy)
+
+parameters_dict=dict(performances_df['Parameters'])
+
+performances_df['Parameters summary']=[parameters_dict[i]['sampler__sampling_strategy'] for i in range(len(parameters_dict))]
+
+# Rename to performances_df_RUS for model performance comparison at the end of this notebook
+
+[MARKDOWN CELL 90]
+Let us summarize the performances to highlight the optimal imbalance ratios, and plot the performances as a function of the imbalance ratio. 
+[CODE CELL 91 - POTENTIAL TEXT]
+summary_performances_RUS=get_summary_performances(performances_df_RUS, parameter_column_name="Parameters summary")
+
+[CODE CELL 92 - POTENTIAL TEXT]
+                       performance_metrics_list=['AUC ROC', 'Average precision', 'Card Precision@100'], 
+
+                       expe_type_list=['Test','Validation'], expe_type_color_list=['#008000','#FF0000'],
+
+                       parameter_name="Imbalance ratio",
+
+[MARKDOWN CELL 93]
+As with oversampling, rebalancing the dataset leads to an increase in performance in terms of AUC ROC, but to a strong decrease of performance in terms of AP. The results in terms of CP@100 follow an intermediate trend: The performance first slightly increases with the imbalance ratio, and then decreases with more aggressive undersampling.  
+[MARKDOWN CELL 94]
+(Resampling_Strategies_Transaction_Data_Combining)=
+
+### Combining
+[MARKDOWN CELL 95]
+We finally illustrate the combination of oversampling and undersampling with SMOTE and random undersampling. A `SMOTE` and `RandomUnderSampler` objects are instantiated and stored in the `sampler_list` list. We parametrize the `SMOTE` sampler with a target imbalance ratio of $0.1$, and the `RandomUnderSampler` to take values in the set $[0.1, 0.5, 1]$.
+[CODE CELL 96 - POTENTIAL TEXT]
+# Define classifier
+
+# Define sampling strategy
+
+sampler_list = [('sampler1', imblearn.over_sampling.SMOTE()),
+
+                ('sampler2', imblearn.under_sampling.RandomUnderSampler())
+
+# Set of parameters for which to assess model performances
+
+parameters = {'clf__max_depth':[5], 'clf__random_state':[0],
+
+              'sampler1__sampling_strategy':[0.1], 
+
+              'sampler2__sampling_strategy':[0.1, 0.5, 1], 
+
+              'sampler1__random_state':[0], 'sampler2__random_state':[0]}
+
+# Fit models and assess performances for all parameters
+
+# Select parameter of interest (max_depth)
+
+parameters_dict = dict(performances_df['Parameters'])
+
+performances_df['Parameters summary']=[parameters_dict[i]['sampler2__sampling_strategy'] for i in range(len(parameters_dict))]
+
+# Rename to performances_df_combined for model performance comparison at the end of this notebook
+
+[MARKDOWN CELL 98]
+Let us summarize the performances to highlight the optimal imbalance ratios, and plot the performances as a function of the imbalance ratio. 
+[CODE CELL 99 - POTENTIAL TEXT]
+                                                         parameter_column_name="Parameters summary")
+
+[CODE CELL 100 - POTENTIAL TEXT]
+                       performance_metrics_list=['AUC ROC', 'Average precision', 'Card Precision@100'], 
+
+                       expe_type_list=['Test','Validation'], expe_type_color_list=['#008000','#FF0000'],
+
+                       parameter_name="Imbalance ratio",
+
+[MARKDOWN CELL 101]
+The results follow the same trends as with oversampling and undersampling: Rebalancing improves the performances in terms of AUC ROC, but decreases the performances in terms of Average Precision. The impact of rebalancing on CP@100 is mitigated.
+
+Let us finally compare the test performances obtained with the oversampling, undersampling, and combined resampling, and compare them to the baseline classifier.  
+[CODE CELL 102 - POTENTIAL TEXT]
+summary_test_performances.columns=['Baseline', 'SMOTE', 'RUS', 'Combined']
+
+[MARKDOWN CELL 103]
+Compared to the baseline classifier, all resampling techniques managed to improve the performances in terms of AUC ROC. All of them however led to a decrease in Average Precision. Slight improvements in terms of CP@100 could be achieved with SMOTE and the combined approach, but not with undersampling. 
+[MARKDOWN CELL 104]
+## Summary
+
+The experiments carried out in this section illustrated that the benefits of resampling techniques depend on the performance metric that is used. While resampling can generally be beneficial to AUC ROC, we observed that they led in almost all cases to a decrease of performances in terms of Average Precision. It is worth noting that the results are coherent with those obtained using cost-sensitive techniques in [the previous section](Cost_Sensitive_Learning). 
+[MARKDOWN CELL 105]
+## Saving of results
+[MARKDOWN CELL 106]
+Let us finally save the performance results and execution times.
+[CODE CELL 107 - POTENTIAL TEXT]
+    "SMOTE": performances_df_SMOTE,
+
+    "RUS": performances_df_RUS,
+
+    "Combined": performances_df_combined
+
+[CODE CELL 108 - POTENTIAL TEXT]
+filehandler = open('performances_resampling.pkl', 'wb') 
+

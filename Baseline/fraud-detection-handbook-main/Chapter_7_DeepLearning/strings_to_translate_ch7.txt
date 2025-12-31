@@ -1,0 +1,2426 @@
+
+
+--- FILE: Autoencoders.ipynb ---
+
+[MARKDOWN CELL 0]
+(Autoencoders)=
+
+# Autoencoders and anomaly detection
+
+This section explores the potential usage of autoencoders in the context of credit card fraud detection. 
+
+## Definition and usage
+
+An autoencoder is a special type of deep learning architecture used to learn representations of data based solely on descriptive features. The representation, which is a transformation of the raw data, is learned with the objective to reconstruct the original data the most accurately. This representation learning strategy can be used for dimensionality reduction, denoising, or even generative applications. 
+
+An autoencoder can be divided into two parts:
+
+* The **encoder part** that maps the input into the representation, also referred to as the "code" or the "bottleneck".
+
+* The **decoder that** maps the code to a reconstruction of the input.
+
+![Autoencoder](./images/autoencoder.png)
+
+The encoder and decoder can have complex architectures like recurrent neural networks when dealing with sequential data or convolutional neural networks when dealing with images. But in their simplest form, they are multi-layer feed-forward neural networks. The dimension of the code, which is also the input of the decoder, can be fixed arbitrarily. This dimension is generally chosen to be lower than the original input dimension to reduce the dimensionality and to learn underlying meta variables. The dimension of the output of the decoder is the same as the input of the encoder because its purpose is to reconstruct the input.  
+
+The architecture is generally trained end-to-end by optimizing the input reconstruction, i.e. by minimizing a loss that measures a difference between the model's output and the input. It can be trained with any unlabeled data. Note that when the autoencoder is "deep", i.e. there are intermediate layers $h_2$ and $h_2'$ respectively between the input $x$ and the bottleneck $h$ and between the bottleneck and the output $y$ (like in the figure above), one can train the layers successively instead of simultaneously. More precisely, one can first consider a submodel with only $x$, $h_2$ and $y$ and train it to reconstruct the input from the intermediate code $h_2$. Then, consider a second submodel with only $h_2$, $h$ and $h_2'$ and train it to reconstruct the intermediate code from the code $h$. Finally, fine-tune the whole model with $x$, $h_2$, $h$, $h_2'$ and $y$ to reconstruct the input.
+
+Autoencoders can be used as techniques for unsupervised or semi-supervised anomaly detection, which led them to be used multiple times for credit card fraud detection {cite}`an2015variational,zhou2017anomaly`. 
+
+### Anomaly detection
+
+Although not detailed before, fraud detection can be performed with both supervised and unsupervised techniques {cite}`carcillo2019combining,veeramachaneni2016ai`, as it is a special instance of a broader problem referred to as anomaly detection or outlier detection. The latter generally includes techniques to identify items that are rare or differ significantly from the "normal" behavior, observable in the majority of the data. 
+
+And one can easily see how a credit card fraud can be defined as an anomaly in transactions. These anomalies can be rare events or unexpected bursts in the activity of a single cardholder behavior, or specific patterns, not necessarily rare, in the global consumers' behavior. Rare events or outliers can be detected with unsupervised techniques that learn the normality and which are able to estimate discrepancy to this normality. But detection of other types of anomaly can require supervised techniques with proper training.
+
+Therefore, one can think of three types of anomaly detection techniques:
+
+* Supervised techniques that were widely explored in previous sections and chapters. These techniques require annotations on data that consist of two classes, "normal" (or "genuine") and "abnormal" (or "fraud"), and they learn to discriminate between those classes.
+
+* Unsupervised techniques that aim at detecting anomalies by modeling the majority behavior and considering it as "normal". Then they detect the "abnormal" or fraudulent behavior by searching for examples that do not fit well to the normal behavior.  
+
+* Semi-supervised techniques that are in between the two above cases and that can learn from both unlabeled and labeled data to detect fraudulent transactions. 
+
+An autoencoder can be used to model the normal behavior of data and detect outliers using the reconstruction error as an indicator. In particular, one way to do so is to train it to globally reconstruct transactions in a dataset. The normal trend that is observed in the majority of transactions will be better approximated than rare events. Therefore, the reconstruction error of "normal" data will be lower than the reconstruction error of outliers.
+
+An autoencoder can therefore be considered as an unsupervised technique for fraud detection. In this section, we will implement and test it for both semi-supervised and unsupervised fraud detection. 
+
+### Representation learning
+
+Other than unsupervised anomaly detection, an autoencoder can simply be used as a general representation learning method for credit card transaction data. In a more complex manner than PCA, an autoencoder will learn a transformation from the original feature space to a representation space with new variables that encodes all the useful information to reconstruct the original data. 
+
+If the dimension of the code is chosen to be 2 or 3, one can visualize the transaction in the novel 2D/3D space. Otherwise, the code can also be used for other purposes, like:
+
+* Clustering: Clustering can be performed on the code instead of the original features. Groups learned from the clustering can be useful to characterize the types of behaviors of consumers or fraudsters.
+
+* Additional or replacement variables: The code can be used as replacement variables, or additional variables, to train any supervised learning model for credit card fraud detection. 
+
+### Content of the section
+
+The following puts into practice the use of autoencoders for credit card fraud detection. It starts by defining the data structures for unlabeled transactions. It then implements and evaluates an autoencoder for unsupervised fraud detection. The autoencoder is then used to compute transaction representation for visualization and clustering. Finally, we explore a semi-supervised strategy for fraud detection.
+
+Let us dive into it by making all necessary imports.
+[CODE CELL 1 - POTENTIAL TEXT]
+# Initialization: Load shared functions and simulated data 
+
+# Load shared functions
+
+# Get simulated data from Github repository
+
+if not os.path.exists("simulated-data-transformed"):
+
+[MARKDOWN CELL 2]
+This section reuses some "deep learning" specific material that was implemented in the previous section. It includes the evaluation function, the preparation of generators, the early-stopping strategy, the training loop, and so on. This material has been added to the `shared functions`.
+[MARKDOWN CELL 3]
+## Data loading
+[MARKDOWN CELL 4]
+The same experimental setup as the previous section is used for our exploration, i.e. a fixed training and validation period, and the same features from the transformed simulated data (`simulated-data-transformed/data/`).
+[CODE CELL 5 - POTENTIAL TEXT]
+DIR_INPUT='simulated-data-transformed/data/' 
+
+BEGIN_DATE = "2018-06-11"
+
+END_DATE = "2018-09-14"
+
+print("Load  files")
+
+print("{0} transactions loaded, containing {1} fraudulent transactions".format(len(transactions_df),transactions_df.TX_FRAUD.sum()))
+
+output_feature="TX_FRAUD"
+
+input_features=['TX_AMOUNT','TX_DURING_WEEKEND', 'TX_DURING_NIGHT', 'CUSTOMER_ID_NB_TX_1DAY_WINDOW',
+
+       'CUSTOMER_ID_AVG_AMOUNT_1DAY_WINDOW', 'CUSTOMER_ID_NB_TX_7DAY_WINDOW',
+
+       'CUSTOMER_ID_AVG_AMOUNT_7DAY_WINDOW', 'CUSTOMER_ID_NB_TX_30DAY_WINDOW',
+
+       'CUSTOMER_ID_AVG_AMOUNT_30DAY_WINDOW', 'TERMINAL_ID_NB_TX_1DAY_WINDOW',
+
+       'TERMINAL_ID_RISK_1DAY_WINDOW', 'TERMINAL_ID_NB_TX_7DAY_WINDOW',
+
+       'TERMINAL_ID_RISK_7DAY_WINDOW', 'TERMINAL_ID_NB_TX_30DAY_WINDOW',
+
+       'TERMINAL_ID_RISK_30DAY_WINDOW']
+[CODE CELL 6 - POTENTIAL TEXT]
+# Set the starting day for the training period, and the deltas
+
+start_date_training = datetime.datetime.strptime("2018-07-25", "%Y-%m-%d")
+
+# By default, scales input data
+
+[MARKDOWN CELL 7]
+## Autoencoder implementation
+[MARKDOWN CELL 8]
+For the sake of consistency, the implementation of the autoencoders will be done with the `PyTorch` library. As usual, a seed will be used as follows to ensure reproducibility:
+[CODE CELL 9 - POTENTIAL TEXT]
+    DEVICE = "cuda" 
+
+    DEVICE = "cpu"
+
+print("Selected device is",DEVICE)
+
+[MARKDOWN CELL 10]
+Let us also convert our features and labels into torch tensors.
+[MARKDOWN CELL 12]
+The autoencoder has the same input as the baseline feed-forward neural network but a different output. Instead of the fraud/genuine label, its target will be the same as the input. Therefore, the experiments here will not rely on the `FraudDataset` defined before but on a new Dataset: `FraudDatasetUnsupervised`, which only receives the descriptive features of the transaction `x` and returns it as both input and output. 
+[CODE CELL 13 - POTENTIAL TEXT]
+        'Initialization'
+
+        'Returns the total number of samples'
+
+        'Generates one sample of data'
+
+        # Select sample index
+
+[MARKDOWN CELL 15]
+This Dataset can also be turned into `DataLoaders` with the function `prepare_generators` from the shared functions.
+[MARKDOWN CELL 17]
+The second and main element in our deep learning pipeline is the model/module. Since our data are tabular and each sample is a vector, we will resort to a regular feed-forward autoencoder. Its definition is very similar to our supervised feed-forward network for fraud detection, except that the output has as many neurons as the input, with linear activations, instead of a single neuron with sigmoid activation. An intermediate layer, before the representation layer, will also be considered such that the overall succession of layers with their dimensions (`input_dim`, `output_dim`) are the following:
+
+* A first input layer with ReLu activation (`input_size`, `intermediate_size`)
+
+* A second layer with ReLu activation (`intermediate_size`, `code_size`)
+
+* A third layer with ReLu activation (`code_size`, `intermediate_size`)
+
+* An output layer with linear activation (`intermediate_size`, `input_size`)
+[CODE CELL 18 - POTENTIAL TEXT]
+            # parameters
+
+            #encoder
+
+            #decoder 
+
+            #linear activation in final layer)            
+
+[MARKDOWN CELL 19]
+The third element of our pipeline is the optimization problem. The underlying machine learning problem is a regression here, where the predicted and expected outputs are real-valued variables. Therefore, the most adapted loss function is the mean squared error `torch.nn.MSELoss`. 
+[MARKDOWN CELL 21]
+## Using the autoencoder for unsupervised fraud detection
+
+As explained in the introduction, the autoencoder's goal is to predict the input from the input. Therefore, one cannot directly use its prediction for fraud detection. Instead, the idea is to use its reconstruction error, i.e. the mean squared error (MSE) between the input and the output, as an indicator for fraud likelihood. The higher the error, the higher the risk score. Therefore, the reconstruction error can be considered as a predicted fraud risk score, and its relevance can be directly measured with any threshold-free metric.
+
+For that purpose, let us define a function `per_sample_mse` that will compute the MSE of a `model` for each sample provided by a `generator`: 
+[CODE CELL 22 - POTENTIAL TEXT]
+    criterion = torch.nn.MSELoss(reduction="none")
+
+        # Forward pass
+
+        # Compute Loss
+
+[MARKDOWN CELL 23]
+Here is what happens when trying it on the validation samples with an untrained autoencoder. Let us use 100 neurons in the intermediate layer and 20 neurons in the representation layer:
+[MARKDOWN CELL 25]
+Before training it, here are the loss values for the first five samples, and the overall average loss.
+[MARKDOWN CELL 27]
+With random weights in its layers, the untrained autoencoder is rather bad at reconstruction. It has a squared error of 0.93 on average for the standardized transaction variables. 
+
+Let us now train it and see how this evolves. Like in the previous section, the process is the following:
+
+* Prepare the generators.
+
+* Define the criterion.
+
+* Instantiate the model.
+
+* Perform several optimization loops (with an optimization technique like gradient descent with Adam) on the training data.
+
+* Stop optimization with early stopping using validation data.
+
+All of these steps are implemented in the shared function `training_loop` defined in the previous section.
+[MARKDOWN CELL 32]
+When trained, the autoencoder is much better at encoding/decoding a transaction. It now obtains a very low squared error (0.00008) on average for our standardized transaction variables. Moreover, the example above (with `x_train[0]`) illustrates how well the reconstructed transaction is similar to the input transaction. 
+
+Now the remaining question is the following: are frauds less well reconstructed than genuine transactions such that reconstruction error can be used as an indicator of fraud risk?
+
+To answer, one can compute the average squared error for fraudulent and genuine transactions separately. 
+[CODE CELL 33 - POTENTIAL TEXT]
+print("Average fraud reconstruction error:", np.mean(fraud_losses))
+
+print("Average genuine reconstruction error:", np.mean(genuine_losses))
+[MARKDOWN CELL 34]
+It appears that frauds are indeed less well reconstructed than genuine transactions, which is very encouraging. Let us now compute the AUC ROC, the average precision, and card precision@100 on the validation set by considering the reconstruction error as a predicted fraud score.
+[CODE CELL 35 - POTENTIAL TEXT]
+predictions_df['predictions']=losses
+
+[MARKDOWN CELL 36]
+Although less accurate than the supervised techniques covered before, this unsupervised method leads to encouraging results and is much more accurate than the random classifier.
+[MARKDOWN CELL 37]
+## Comparison with another unsupervised baseline: Isolation Forest
+[MARKDOWN CELL 38]
+The autoencoder has a very high AUC ROC without making any use of the labels during training. To contrast this result and as a sanity check, it is interesting to implement and test another popular unsupervised baseline.
+
+Isolation Forest is a state-of-the-art anomaly detection technique that relies on tree-based models. It computes, for each sample of data, an anomaly score that reflects how atypical the sample is. In order to calculate this score, the algorithm tries to isolate the sample from the rest of the dataset recursively: it chooses a random cutoff (pair feature-threshold), and evaluates if it allows the sample at hand to be isolated. If so, the algorithm stops. Otherwise, it adds another cutoff, and repeats the process until the sample is isolated from the rest. This recursive data partitioning can be represented as a decision tree and the number of cutoffs necessary to isolate a sample can be considered as the anomaly score. The lower the number of cutoffs (i.e. the easier it is to isolate the data point), the more likely the sample is to be an outlier.
+
+This algorithm is implemented in `sklearn` under the class `sklearn.ensemble.IsolationForest`. Let us train it on the training data and evaluate the anomaly score of the validation data. On the latter, the anomaly score of a sample is computed from the average depth of the leaves reached by it.
+[CODE CELL 40 - POTENTIAL TEXT]
+predictions_df['predictions'] = -anomalyclassifier.score_samples(valid_df[input_features])
+
+[MARKDOWN CELL 41]
+We can see that this state-of-the-art unsupervised baseline provides performances that are close (slightly lower) to those of the autoencoder.
+[MARKDOWN CELL 42]
+## Transactions representation, visualization and clustering
+[MARKDOWN CELL 43]
+Additionally to its ability to detect anomalies, the autoencoder has other advantages, as was mentioned in the introduction. In particular, after training, one can use the encoder part alone to obtain representations of the transactions for visualization or clustering purposes. For that, let us train an autoencoder with a code dimension of 2.
+[MARKDOWN CELL 45]
+Once trained, to obtain the transactions 2D-representation from the encoder part alone, the idea is to simply apply the first two layers of the Autoencoder.
+[MARKDOWN CELL 49]
+After this process, the obtained representations of the training data are in 2D:
+[MARKDOWN CELL 51]
+Transactions can be now visualized on a plane (e.g. with different colors for frauds and genuine)
+[CODE CELL 52 - POTENTIAL TEXT]
+plt.scatter(x_train_representation[:, 0], x_train_representation[:, 1], c=y_train.numpy(), s=50, cmap='viridis')
+[MARKDOWN CELL 53]
+It is also possible to apply a K-means clustering and vizualize the clusters:
+[CODE CELL 55 - POTENTIAL TEXT]
+plt.scatter(x_train_representation[:, 0], x_train_representation[:, 1], c=y_kmeans, s=50, cmap='viridis')
+
+plt.scatter(centers[:, 0], centers[:, 1], c='black', s=200, alpha=0.5)
+[MARKDOWN CELL 56]
+## Semi-supervised fraud detection
+
+Finally, the autoencoder can be used in a semi-supervised credit card fraud detection system {cite}`carcillo2019combining`. There are two main ways to do this:
+
+* `W1`: The most natural one is to keep the autoencoder as is and train it on all available labeled and unlabeled data. Then, to combine it with a supervised neural network trained only on labeled data. The combination can be done by aggregating the predicted score from the supervised model and the predicted score from the unsupervised model (`W1A`), or more elegantly by providing the unsupervised risk score from the autoencoder (reconstruction error) as an additional variable to the supervised model (`W1B`) as in {cite}`alazizi2020dual`.
+
+* `W2`: Another possibility is to change the architecture of the autoencoder into a hybrid semi-supervised model. More precisely, one can add, to the autoencoder, output neurons similar to those of the supervised neural network from the previous section, and additionally predict them from the code neurons. Therefore, the learned representation (code neurons) will be shared between the decoder network that aims at reconstructing the input and the prediction network that aims at predicting fraud. The first is trained on all samples and the latter is only trained on labeled samples. The intuition with this approach is similar to pre-training in natural language processing: learning a representation that embeds the underlying structure in the input data can help with solving supervised tasks. 
+
+The following explores the `W1B` semi-supervised approach. But first, let us reevaluate here the baseline supervised model without the reconstruction error feature. `FraudDataset` and `SimpleFraudMLPWithDropout` are available in the shared functions and can be directly used here.
+[CODE CELL 58 - POTENTIAL TEXT]
+predictions_df['predictions']=np.vstack(predictions)
+
+[MARKDOWN CELL 59]
+Now, for the `W1B` semi-supervised approach, let us compute the reconstruction error of all transactions with our first autoencoder (stored in `model`) and add it as a new variable in `train_df` and `valid_df`. 
+[CODE CELL 60 - POTENTIAL TEXT]
+loader_params = {'batch_size': 64,
+
+                 'num_workers': 0}
+
+train_df["reconstruction_error"] = train_reconstruction
+
+valid_df["reconstruction_error"] = valid_reconstruction
+[MARKDOWN CELL 61]
+Then, we can reevaluate the supervised model with this extra variable.
+[CODE CELL 62 - POTENTIAL TEXT]
+input_features_new = input_features + ["reconstruction_error"]
+
+# Rescale the reconstruction error
+
+(train_df, valid_df)=scaleData(train_df, valid_df, ["reconstruction_error"])
+
+[CODE CELL 63 - POTENTIAL TEXT]
+predictions_df['predictions']=np.vstack(predictions)
+
+[MARKDOWN CELL 64]
+The three metrics are very close, with or without the additional feature. They respectively went from 0.859, 0.646 and 0.28 to 0.861, 0.651 and 0.276. The conclusion is therefore mitigated and does not show a significant benefit from this semi-supervised modeling. Nevertheless, keep in mind that, in practice in a different setting, there can be a benefit, especially if the quantity of available unlabeled data is much larger than the quantity of labeled data. 
+
+Also, note that there are several directions for improvement. For example, this semi-supervised technique can be pushed further by training two separate autoencoders, for each class, and by using both reconstruction errors as additional variables. 
+[MARKDOWN CELL 65]
+## Conclusion
+[MARKDOWN CELL 66]
+Autoencoders are part of the large deep learning models family. Their goal is to learn representations to reconstruct descriptive variables, so they have been widely used for unsupervised learning problems. Anomaly detection, and in particular fraud detection, can be tackled with unsupervised or semi-supervised techniques. 
+
+In this section, we used the autoencoder, and in particular its reconstruction error, as an indicator for fraud risk. Used solely (unsupervised method), it detects data points that are away from the rest of the distribution, which allows detecting many frauds but also introduces a lot of false alerts (e.g. genuine transactions that have rare characteristics). Therefore, it obtains a decent AUC ROC but low precision-based metrics. Used as an extra variable in a supervised method (semi-supervised usage), it can allow boosting the performance in specific settings.
+
+
+--- FILE: FeedForwardNeuralNetworks.ipynb ---
+
+[MARKDOWN CELL 0]
+(FeedForwardNeuralNetworks)=
+
+# Feed-forward neural network
+[MARKDOWN CELL 1]
+As neural networks are a pillar in both the early and the recent advances of artificial intelligence, their use for credit card fraud detection is not surprising. The first examples of simple feed-forward neural networks applied to fraud detection can bring us back to the early 90s {cite}`ghosh1994credit,aleskerov1997cardwatch`. Naturally, in recent FDS studies, neural networks are often found in experimental benchmarks, along with random forests, XGBoost, or logistic regression. 
+
+At the core of a feed-forward neural network is the artificial neuron, a simple machine learning model that consists of a linear combination of input variables followed by the application of an activation function $\sigma$ (sigmoid, ReLU, tanh, ...). More precisely, given a list of $n$ input variables $x_i$, the output $h$ of the artificial neuron is computed as follows:
+
+$h = \sigma(\sum_{i=1}^n w_i*x_i)$
+
+where $w_i$ are the weights of the model.
+
+A whole network is composed of a succession of layers containing neurons that take, as inputs, the output values of the previous layer.
+
+![A feed forward neural network architecture](./images/neuralnetwork.png)
+
+When applied to the fraud detection problem, the architecture is designed as follows:
+
+* At the beginning of the network, the neurons take as input the characteristics of a credit card transaction, i.e. the features that were defined in the previous chapters.
+
+* At the end, the network outputs a single neuron that aims at representing the probability for the input transaction to be a fraud. 
+[MARKDOWN CELL 2]
+The rest of the architecture (other layers), the neurons specificity (activation functions), and other hyperparameters (optimization, data processing, ...) are left to the practitioner's choice. 
+
+The most popular training algorithm for feedforward architectures is backpropagation {cite}`hecht1992theory`. The idea is to iterate over all samples of the dataset and perform two key operations: 
+
+* the forward pass: setting the sample's features values in the input neurons and computing all the layers to finally obtain a predicted output.
+
+* the backward pass: computing a cost function, i.e. a discrepancy between the prediction and the expected ground truth output, and trying to minimize it with an optimizer (e.g. gradient descent) by updating weights layer after layer, from output to input. 
+
+This section covers the design of a feed-foward neural network for fraud detection. It describes how to:
+
+* Implement a first simple neural network and study the impact of several architectures and design choices.
+
+* Wrap it to make it compatible with the model selection methodology from Chapter 5 and run a grid-search to select its optimal parameters.
+
+* Store the important functions for a final comparison between deep learning techniques and other baselines at the end of the chapter.
+[MARKDOWN CELL 3]
+Let us first start by importing all the necessary libraries and functions and retrieving the simulated data. 
+[CODE CELL 4 - POTENTIAL TEXT]
+# Initialization: Load shared functions and simulated data 
+
+# Load shared functions
+
+# Get simulated data from Github repository
+
+if not os.path.exists("simulated-data-transformed"):
+
+[MARKDOWN CELL 5]
+## Data Loading
+[MARKDOWN CELL 6]
+The experimental setup is the same as in Chapter 5. More precisely, at the end of the chapter, model selection will be based on a grid search with multiple validations. Each time, one week of data will be used for training a neural network and one week of data for testing the predictions.
+
+To implement the first base network and explore several architecture choices, let us start by selecting a training and validation period arbitrarily. The experiments will be based on the transformed simulated data (`simulated-data-transformed/data/`) and the same feature set as other models.
+[CODE CELL 7 - POTENTIAL TEXT]
+DIR_INPUT='simulated-data-transformed/data/' 
+
+BEGIN_DATE = "2018-06-11"
+
+END_DATE = "2018-09-14"
+
+print("Load  files")
+
+print("{0} transactions loaded, containing {1} fraudulent transactions".format(len(transactions_df),transactions_df.TX_FRAUD.sum()))
+
+output_feature="TX_FRAUD"
+
+input_features=['TX_AMOUNT','TX_DURING_WEEKEND', 'TX_DURING_NIGHT', 'CUSTOMER_ID_NB_TX_1DAY_WINDOW',
+
+       'CUSTOMER_ID_AVG_AMOUNT_1DAY_WINDOW', 'CUSTOMER_ID_NB_TX_7DAY_WINDOW',
+
+       'CUSTOMER_ID_AVG_AMOUNT_7DAY_WINDOW', 'CUSTOMER_ID_NB_TX_30DAY_WINDOW',
+
+       'CUSTOMER_ID_AVG_AMOUNT_30DAY_WINDOW', 'TERMINAL_ID_NB_TX_1DAY_WINDOW',
+
+       'TERMINAL_ID_RISK_1DAY_WINDOW', 'TERMINAL_ID_NB_TX_7DAY_WINDOW',
+
+       'TERMINAL_ID_RISK_7DAY_WINDOW', 'TERMINAL_ID_NB_TX_30DAY_WINDOW',
+
+       'TERMINAL_ID_RISK_30DAY_WINDOW']
+[CODE CELL 8 - POTENTIAL TEXT]
+# Setting the starting day for the training period, and the deltas
+
+start_date_training = datetime.datetime.strptime("2018-07-25", "%Y-%m-%d")
+
+# By default, scaling the input data
+
+[MARKDOWN CELL 9]
+## Overview of the neural network pipeline
+[MARKDOWN CELL 10]
+The first step here is to implement a base neural network. There are several Python libraries that we can use (TensorFlow, PyTorch, Keras, MXNet, ...). In this book, the PyTorch library {cite}`paszke2017automatic` is used, but the models and benchmarks that will be developed could also be implemented with other libraries.
+[MARKDOWN CELL 12]
+If torch and cuda libraries are installed properly, the models developed in this chapter can be trained on the GPU. For that, let us create a "DEVICE" variable and set it to "cuda" if a cuda device is available and "cpu" otherwise. In the rest of the chapter, all the models and tensors will be sent to this device for computations.
+[CODE CELL 13 - POTENTIAL TEXT]
+    DEVICE = "cuda" 
+
+    DEVICE = "cpu"
+
+print("Selected device is",DEVICE)
+[MARKDOWN CELL 14]
+To ensure reproducibility, a random seed will be fixed like in previous chapters. Additionally to setting the seed for `NumPy` and `random`, it is necessary to set it for `torch`:
+[CODE CELL 15 - POTENTIAL TEXT]
+    os.environ['PYTHONHASHSEED'] = str(seed)
+
+[MARKDOWN CELL 16]
+The function `seed_everything` defined above will be run before each model initialization and training.
+[MARKDOWN CELL 17]
+Before diving into the neural network implementation, let us summarize the main elements of a deep learning training/testing pipeline in Torch:
+
+* Datasets/Dataloaders: It is recommended to manipulate data with specific PyTorch classes. [Dataset](https://pytorch.org/docs/stable/data.html?highlight=dataset#torch.utils.data.Dataset) is the interface to access the data. Given a sample's index, it provides a well-formed input-output for the model. [Dataloader](https://pytorch.org/docs/stable/data.html?highlight=dataloader#torch.utils.data.DataLoader) takes the Dataset as input and provides an iterator for the training loop. It also allows to create batches, shuffle data, and parallelize data preparation. 
+
+* Model/Module: Any model in PyTorch is a [torch.module](https://pytorch.org/docs/stable/generated/torch.nn.Module.html). It has an init function in which it instantiates all the necessary submodules (layers) and initializes their weights. It also has a forward function that defines all the operations of the forward pass. 
+
+* The optimizer: The [optimizer](https://pytorch.org/docs/stable/optim.html) is the object that implements the optimization algorithm. It is called after the loss is computed to calculate the necessary model updates. The most basic one is SGD, but there are many others like RMSProp, Adagrad, Adam, ...
+
+* Training loop and evaluation: the training loop is the core of a model's training. It consists in performing several iterations (epochs), getting all the training batches from the loader, performing the forward pass, computing the loss, and calling the optimizer. After each epoch, an evaluation can be performed to track the model's evolution and possibly stop the process.
+
+The next subsections describe and implement in details each of these elements.
+[MARKDOWN CELL 18]
+### Data management: Datasets and Dataloaders
+[MARKDOWN CELL 19]
+The first step is to convert our data into objects that PyTorch can use, like `FloatTensors`.
+[MARKDOWN CELL 21]
+Next comes the definition of a custom `Dataset`. This dataset is initialized with `x_train`/`x_test` and `y_train`/`y_test` and returns the individual samples in the format required by our model, after sending them to the right device. 
+[CODE CELL 22 - POTENTIAL TEXT]
+        'Initialization'
+
+        'Returns the total number of samples'
+
+        'Generates one sample of data'
+
+        # Select sample index
+
+[MARKDOWN CELL 23]
+Note: This first custom Dataset `FraudDataset` seems useless because its role is very limited (simply returning a row from x and y) and because the matrices x and y are already loaded in RAM. This example is provided for educational purposes. But the concept of Dataset has a high interest when sample preparation requires more preprocessing. For instance, it becomes very handy for sequence preparation when using recurrent models (like an LSTM). This will be covered more in-depth later in this chapter but for example, a Dataset for sequential models performs several operations before returning a sample: searching for the history of transactions of the same cardholder and appending it to the current transaction before returning the whole sequence. It avoids preparing all the sequences in advance, which would entail repeating several transactions' features in memory and consuming more RAM than necessary. Datasets objects are also useful when dealing with large image datasets in order to load the images on the fly.
+[MARKDOWN CELL 24]
+Now that `FraudDataset` is defined, one can choose the training/evaluation parameters and instantiate DataLoaders. For now, let us consider a batch size of 64: this means that at each optimization step, 64 samples will be requested to the Dataset, turned into a batch, and go through the forward pass in parallel. Then the aggregation (sum or average) of the gradient of their losses will be used for backpropagation. 
+
+For the training DataLoader, the shuffle option will be set to `True` so that the order of the data seen by the model will not be the same from one epoch to another. This is recommended and known to be beneficial in Neural Network training {cite}`ruder2016overview`.
+[CODE CELL 25 - POTENTIAL TEXT]
+train_loader_params = {'batch_size': 64,
+
+          'shuffle': True,
+
+          'num_workers': 0}
+
+test_loader_params = {'batch_size': 64,
+
+          'num_workers': 0}
+
+# Generators
+
+[MARKDOWN CELL 26]
+The `num_workers` parameter allows parallelizing batch preparation. It can be useful when the `Dataset` requires a lot of processing before returning a sample. Here we do not use multiprocessing so we set `num_workers` to 0.
+[MARKDOWN CELL 27]
+### The model aka the module
+
+After defining the data pipeline, the next step is to design the module. Let us start with a first rather simple feed-forward neural network. 
+
+As suggested in the introduction, the idea is to define several fully connected layers (`torch.nn.Linear`). A first layer `fc1` which takes as input as many neurons as there are features in the input x. It can be followed by a hidden layer with a chosen number of neurons (`hidden_size`). Finally comes the output layer which has a single output neuron to fit the label (`fraud` or `genuine`, represented by 1 and 0). 
+
+In the past, the sigmoid activation function used to be the primary choice for all activation functions in all layers of a neural network. Today, the preferred choice is `ReLU` (or variants like `eLU`, `leaky ReLU`), at least for the intermediate neurons. It has empirically proven to be a better choice for optimization and speed {cite}`nair2010rectified`. For output neurons, the choice depends on the range or the expected distribution for the output value to be predicted.
+
+Below are plotted the output of several activation functions with respect to their input value to show how they behave and how they are distributed:
+[CODE CELL 28 - POTENTIAL TEXT]
+#linear activation
+
+axs[0, 0].set_title('Linear')
+
+#heavyside activation
+
+axs[0, 1].set_title('Heavyside (perceptron)')
+
+#sigmoid activation
+
+axs[1, 0].set_title('Sigmoid')
+
+#tanh activation
+
+axs[1, 1].set_title('Tanh')
+
+#relu activation
+
+axs[2, 0].set_title('ReLU')
+
+#leaky relu activation
+
+axs[2, 1].set_title('Leaky ReLU')
+
+[MARKDOWN CELL 30]
+For our fraud detection neural network, the `ReLU` activation will be used for the hidden layer and a `Sigmoid` activation for the output layer. The first is the primary choice for intermediate layers in deep learning. The latter is the primary choice for the output neurons in binary classification problems because it outputs values between 0 and 1 that can be interpreted as probabilities.
+
+To implement this, let us create a new class `SimpleFraudMLP` that will inherit from a torch module. Its layers (`fc1`, `relu`, `fc2`, `sigmoid`) are initialized in the `__init__` function and will be used successively in the forward pass.  
+[CODE CELL 31 - POTENTIAL TEXT]
+            # parameters
+
+            #input to hidden
+
+            #hidden to output
+
+[MARKDOWN CELL 32]
+Once defined, instantiating the model with `1000` neurons in its hidden layer and sending it to the device can be done as follows:
+[MARKDOWN CELL 34]
+### The optimizer and the training loop
+
+Optimization is at the core of neural network training. The above neural network is designed to output a single value between 0 and 1. The goal is that this value gets as close to 1 (resp. 0) as possible for an input describing a fraudulent (resp. genuine) transaction.
+
+In practice, this goal is formulated with an optimization problem that aims at minimizing or maximizing some cost/loss function. The role of the loss function is precisely to measure the discrepancy between the predicted value and the expected value (0 or 1), also referred to as the ground truth. There are many loss functions (mean squared error, cross-entropy, KL-divergence, hinge loss, mean absolute error) available in PyTorch, and each serves a specific purpose. Here we only focus on binary cross-entropy because it is the most relevant loss function for binary classification problems like fraud detection. It is defined as follows:
+
+$BCE(y,p) = −(y*log(p)+(1−y)*log(1−p))$
+
+Where $y$ is the ground truth (in $\{0,1\}$) and $p$ the predicted output (in $]0,1[$).
+[MARKDOWN CELL 36]
+Note: Pushing the criterion to the device is only required if this one stores/updates internal state variables or has parameters. It is unnecessary but not detrimental in the above case. We do it to show the most general implementation.
+
+Before even training the model, one can already measure its initial loss on the testing set. For this, the model has to be put in `eval` mode:
+[MARKDOWN CELL 38]
+Then, the process consists in iterating over the testing generator, making predictions, and evaluating the chosen `criterion` (here `torch.nn.BCELoss`)
+[CODE CELL 39 - POTENTIAL TEXT]
+        # Forward pass
+
+        # Compute Loss
+
+[MARKDOWN CELL 40]
+Recall that the optimization problem is defined as follows: minimize the total/average binary cross-entropy of the model over all samples from the training dataset. Therefore, training the model consists in applying an optimization algorithm (backpropagation) to numerically solve the optimization problem. 
+
+The optimization algorithm or `optimizer` can be the standard stochastic gradient descent with a constant learning rate (`torch.optim.SGD`) or with an adaptive learning rate (`torch.optim.Adagrad`, `torch.optim.Adam`, etc...). Several optimization hyperparameters (learning rate, momentum, batch size, ...) can be tuned. Note that choosing the right optimizer and hyperparameters will impact convergence speed and the quality of the reached optimum. Below is an illustration showing how fast different optimizers can reach the optimum (represented with a star) of a two dimensional optimization problem over the training process.
+
+![Optimizers convergence](https://ml-cheatsheet.readthedocs.io/en/latest/_images/optimizers.gif) 
+
+Source: https://cs231n.github.io/neural-networks-3/
+
+Here, let us start with the arbitrary choice `SGD`, with a learning rate of `0.07`.
+[MARKDOWN CELL 42]
+And let us implement the training loop for our neural network. First, the model has to be set in training mode. Then several iterations can be performed over the training generator (each iteration is called an epoch). During each iteration, a succession of training batches are provided by the generator and a forward pass is performed to get the model's predictions. Then the criterion is computed between predictions and ground truth, and finally, the backward pass is carried out to update the model with the optimizer.
+
+Let us start by setting the number of epochs to `150` arbitrarily. 
+[CODE CELL 43 - POTENTIAL TEXT]
+#Setting the model in training mode
+
+#Training loop
+
+        # Removing previously computed gradients
+
+        # Performing the forward pass on the current batch
+
+        # Computing the loss given the current predictions
+
+        # Computing the gradients over the backward pass
+
+        # Performing an optimization step from the current gradients
+
+        # Storing the current step's loss for display purposes
+
+    #showing last training loss after each epoch
+
+    print('Epoch {}: train loss: {}'.format(epoch, np.mean(train_loss)))
+
+    #evaluating the model on the test set after each epoch    
+
+    print('test loss: {}'.format(val_loss))   
+
+    print("")
+
+[MARKDOWN CELL 44]
+After training the model, a good practice is to analyze the training logs. 
+[CODE CELL 45 - POTENTIAL TEXT]
+plt.plot(np.arange(len(epochs_train_losses)-ma_window + 1)+1, np.convolve(epochs_train_losses, np.ones(ma_window)/ma_window, mode='valid'))
+
+plt.plot(np.arange(len(epochs_test_losses)-ma_window + 1)+1, np.convolve(epochs_test_losses, np.ones(ma_window)/ma_window, mode='valid'))
+
+plt.xlabel('epoch')
+
+plt.ylabel('loss')
+
+plt.legend(['train','valid'])
+
+#plt.ylim([0.01,0.06])
+[MARKDOWN CELL 47]
+One can note here how the training loss decreases epoch after epoch. This means that the optimization is going well: the chosen learning rate allows to update the model towards a better solution (lower loss) for the **training dataset**. However, neural networks are known to be very expressive models. In fact, the universal approximation theorem shows that, with enough neurons/layers, one can model any function with a neural network {cite}`cybenko1989approximation`. Therefore, it is expected for a complex neural network to be able to fit almost perfectly the training data. But the ultimate goal is to obtain a model that generalizes well on unseen data (like the validation set). Looking at the validation loss, one can see that it starts by decreasing (with oscillations) and it reaches an optimum around 0.019, and stops decreasing (or even starts increasing). This phenomenon is referred to as [overfitting](Model_Selection).
+
+Many aspects can be improved in the training. Although one cannot measure the performance on the final test set while training, one can rely on a validation set and try to stop training before overfitting (see [](Model_Selection)). One can also change the optimization algorithm and parameters to speed up training and reach a better optimum. This is investigated later, in the optimization paragraph.
+[MARKDOWN CELL 48]
+For now, let us consider this final fitted model and evaluate it the same way as the other models in previous chapters. For this, let us create a prediction DataFrame and call the `performance_assessment` function from the shared functions. 
+[CODE CELL 49 - POTENTIAL TEXT]
+print("Predictions took", prediction_execution_time,"seconds.")
+[CODE CELL 50 - POTENTIAL TEXT]
+predictions_df['predictions']=predictions_test.detach().cpu().numpy()
+
+[MARKDOWN CELL 51]
+This first shot feed-forward network already obtains a decent performance on the test set (refer to [Chapter 3.4](Baseline_FDS_Performances_Simulation) for comparison). But several elements can be modified to improve the AUC ROC, reduce the training time, etc.
+[MARKDOWN CELL 52]
+As stated above, for the first model, optimization was not carried out properly because the validation performance is not exploited during the training process. To avoid overfitting in practice, it is necessary to take it into account (See Chapter 5, [](Hold_Out_Validation)).
+[CODE CELL 53 - POTENTIAL TEXT]
+# By default, scales input data
+
+[MARKDOWN CELL 54]
+Let us implement an early stopping strategy. The idea is to detect overfitting, i.e. when validation error starts increasing, and stop the training process. Sometimes, the validation error might increase at a given epoch, but then decrease again. For that reason, it is important to also consider a patience parameter, i.e. a number of iterations for which the training process waits in order to make sure that the error is definitely increasing. 
+[CODE CELL 55 - POTENTIAL TEXT]
+                print("New best score:", current_score)
+
+                print(self.counter, " iterations since best score.")
+
+[CODE CELL 56 - POTENTIAL TEXT]
+    train_loader_params = {'batch_size': batch_size,
+
+              'shuffle': True,
+
+              'num_workers': 0}
+
+    valid_loader_params = {'batch_size': batch_size,
+
+              'num_workers': 0}
+
+    # Generators
+
+[MARKDOWN CELL 57]
+The training loop can now be adapted to integrate early stopping:
+[CODE CELL 58 - POTENTIAL TEXT]
+    #Setting the model in training mode
+
+    #Training loop
+
+        #showing last training loss after each epoch
+
+            print('')
+
+            print('Epoch {}: train loss: {}'.format(epoch, np.mean(train_loss)))
+
+        #evaluating the model on the test set after each epoch    
+
+            print('valid loss: {}'.format(valid_loss))
+
+                    print("Early stopping")
+
+[MARKDOWN CELL 59]
+After 251 epochs, the model stops learning because the validation performance has not improved for three iterations. Here the optimal model (from epoch 248) is not saved, but this could be implemented by simply adding `torch.save(model.state_dict(), checkpoint_path)` in the `EarlyStopping` class whenever a new best performance is reached. This allows reloading the saved best checkpoint at the end of the training. 
+[MARKDOWN CELL 60]
+Now that a clean optimization process is defined, one can consider several solutions to speed up and improve convergence towards a decent extremum. The most natural way to do so is to play with the optimizer hyperparameters like the learning rate and the batch size. With a large learning rate, gradient descent is fast at the beginning, but then the optimizer struggles to find the minimum. Adaptive learning rate techniques like Adam/RMSProp take into account the steepness by normalizing the learning rate with respect to the gradient norm. Below are the formulas to update on a model parameter $w_t$ with Adam.
+
+$w_{t+1} = w_t - \frac{\eta}{\sqrt{\hat{v_t}+\epsilon}}*\hat{m_t}$
+
+Where:
+
+$m_t = \beta_1 * m_{t-1} + (1-\beta_1)*\nabla w_t$
+
+$v_t = \beta_2 * v_{t-1} + (1-\beta_2)*(\nabla w_t)^2$
+
+$\hat{m_t}=\frac{m_t}{1-\beta_1^t}$
+
+$\hat{v_t}=\frac{v_t}{1-\beta_2^t}$
+
+The difference with SGD is that here the learning rate is normalized using the "gradient norm" ($\approx \hat{m_t}$). To be more precise, the approach does not use the "raw" gradient $\nabla w_t$ and gradient norm $\nabla w_t^2$ but a momentum instead (convex combination between previous values and the current value), respectively $m_t$ and $v_t$. It also applies a decay over the iterations.
+
+Let us try Adam with an initial learning rate of `0.0005` to see the difference with regular SGD. 
+[CODE CELL 62 - POTENTIAL TEXT]
+plt.title("SGD")
+
+plt.xlabel('epoch')
+
+plt.ylabel('loss')
+
+plt.legend(['train','valid'])
+
+plt.title("ADAM")
+
+plt.xlabel('epoch')
+
+plt.ylabel('loss')
+
+plt.legend(['train','valid'])
+
+[MARKDOWN CELL 63]
+The optimization is much faster with Adam (10 times fewer epochs) and it reaches a better optimum. Of course, increasing patience or changing the learning rate with SGD would probably help improve both speed and optimum. Nevertheless, Adam will be retained for the rest of the chapter as it usually allows very decent performance **without significant tuning**. To build the final neural network later, the tuning will mostly be made using batch size and initial learning rate. 
+[MARKDOWN CELL 64]
+Here are only mentioned the optimizer's choice and some hyperparameters tuning for the optimization process. But keep in mind that neural network optimization is a very wide and active area of research/engineering. For instance, with Deep Networks, one can apply batch normalization after each layer to standardize the distribution and speed up convergence. One can also reduce the learning rate when validation loss reaches a plateau (`torch.optim.ReduceLROnPlateau`). For a full guide on Deep Learning optimization, we recommend {cite}`ruder2016overview,le2011optimization`.
+[MARKDOWN CELL 65]
+## Regularization
+[MARKDOWN CELL 66]
+A classical way to improve generalization and reach a better validation performance is to regularize the model. Roughly speaking, regularization consists in limiting the model expressiveness in order to reduce overfitting. 
+
+The most common technique to regularize a machine learning model is to restrict its parameter space, for instance, its norm, by adding a term in the optimization problem. Additionally, to minimize the discrepancy between ground truth and prediction, integrating an L1 norm (resp. L2 norm) term in the loss will entail parameter sparsity (resp. will limit parameters amplitude). The initial solution space is generally full of equivalent solutions (e.g. with linear activations, dividing all input weights of a neuron by 2 and multiplying all of its output weights by 2 leads to an equivalent model), so the restrictions entailed by regularization not only limits overfitting but also reduces the search and can help with optimization. Finally, selecting a solution with minimal norm follows the principle of "All things being equal, the simplest solution tends to be the best one", a scientific principle often referred to as the [Occam's razor](https://en.wikipedia.org/wiki/Occam's_razor).
+
+In contrast to adding loss terms, there is a regularization technique specifically designed for Neural Networks called dropout. Dropout consists in randomly dropping some neurons from the network at each training step. More precisely, one fixes a dropout parameter p∈[0,1], and, for each mini-batch, for each neuron, performs a coin toss (Bernoulli) with probability p. If positive, one temporarily sets the neuron's weights to zero (so that the dropped neuron is not considered during the forward and backward passes). It is equivalent to training a random sub-network at each mini-batch (Figure 5), and it can be proven that this has an L2-regularization effect on specific architectures {cite}`srivastava2014dropout`.
+
+![alt text](./images/dropout.png)
+
+Image source: {cite}`srivastava2014dropout`
+
+To implement it, let us define a new model with an additional `torch.nn.Dropout` layer.
+[CODE CELL 67 - POTENTIAL TEXT]
+            # parameters
+
+            #input to hidden
+
+            #hidden to output
+
+[MARKDOWN CELL 68]
+Note that setting the model in training/evaluation mode with the methods `model.eval()` and `model.train()` take all its significance here. In particular, the dropout layer in the forward pass is only applied when the model is in training mode.
+[CODE CELL 70 - POTENTIAL TEXT]
+plt.title("Dropout effect")
+
+plt.xlabel('epoch')
+
+plt.ylabel('loss')
+
+plt.legend(['train w/o dropout','valid w/o dropout','train w/ dropout','valid w/ dropout'])
+[MARKDOWN CELL 71]
+It is generally reported that a small dropout value can lead to better generalization results than no dropout, but it can sometimes be the opposite if the training data are very rich, if the training distribution is close to the valid/test distribution, and if the model is already not too expressive. So, the best practice is to consider dropout as a hyperparameter (that could be set to 0) and tune it with a hyperparameter search. 
+
+In addition to the L2-regularization effect, dropout can be seen as a very powerful mechanism that mimics ensembling strategies like bagging (the model can be seen as an ensemble of submodels trained on different subsets of data) {cite}`goodfellow2016deep`. 
+[MARKDOWN CELL 72]
+## Scaling the inputs
+[MARKDOWN CELL 73]
+XGBoost and random forests learn splits on single features and therefore are robust to the scale and distribution of the values. On the contrary, in a neural network, each neuron of the first layer learns a linear combination of all the features. Therefore, it is easier to train the neurons when all features have the same range and are normally distributed. The first property can be easily implemented by applying min-max or standard scaling on the features. As for the second property, it depends on the original distribution of the features. Some of them are not normally distributed and have non-linear scales (e.g. amount): increasing the amount by 5 dollars should not have the same effect if the starting point is 5 dollars or if the starting point is 100 dollars. It turns out that applying the log function on such features can make their distribution slightly more normal which makes it easier for feed-forward neural networks to learn from them. 
+[MARKDOWN CELL 75]
+For instance here is how the original amounts look like:
+[CODE CELL 76 - POTENTIAL TEXT]
+_ = plt.hist(train_df['TX_AMOUNT'].values,bins=20)
+[MARKDOWN CELL 77]
+And now let us apply the log function to it. To obtain a positive log for the feature that is in [0,+∞[, an idea is to add 1 and then apply the log function (which is equivalent to applying the `log1p` function in `numpy`). This leads to a preprocessed feature that belongs to [0,+∞[ and it can then be standardized. Here is how the amounts are distributed after all these steps:
+[CODE CELL 78 - POTENTIAL TEXT]
+_ = plt.hist(sklearn.preprocessing.StandardScaler().fit_transform(np.log1p(train_df['TX_AMOUNT'].values).reshape(-1, 1)),bins=20)
+[MARKDOWN CELL 79]
+Note that here, our artificial data were generated with Gaussians so the `np.log1p` is not very useful in practice. But keep in mind that on real-world data, the original scale of features like amount is far from normally distributed and this operation turns out to be quite often useful. 
+
+Let us forget about the log for now and just analyze the impact of scaling the features on our Neural Network's training. More precisely, let us see the difference between no scaling at all and standard scaling. A smaller learning rate of `0.0001` will be chosen here for the experiment without scaling to avoid divergence.
+[CODE CELL 80 - POTENTIAL TEXT]
+#we did not call the function scaleData this time
+
+[CODE CELL 81 - POTENTIAL TEXT]
+plt.title('Scaling effect')
+
+plt.xlabel('epoch')
+
+plt.ylabel('loss')
+
+plt.legend(['train w/o scaling','valid w/o scaling','train w/ scaling','valid w/ scaling'])
+[MARKDOWN CELL 82]
+The train/valid losses are smoother and reach much better levels faster when the data is normalized with standard scaling.
+[CODE CELL 83 - POTENTIAL TEXT]
+# Let us rescale data for the next parts
+
+[MARKDOWN CELL 84]
+## Embeddings
+[MARKDOWN CELL 85]
+Properly taking into account categorical variables is maybe one of the main advantages of neural networks. In the first chapters, [feature transformation techniques](Baseline_Feature_Transformation) were applied to categorical features like day, Customer ID, Terminal ID, in order to make them binary or to extract numerical features from them. 
+
+In real-world data, categorical features are frequent (Country, Merchant Type, hour, type of payment, ...). But most machine learning algorithms require features to be numerical. Take the example of linear regression: it is basically a weighted sum of the features' values. For numerical features, it makes sense to consider that their impact is proportional to their value (e.g. the smaller the delay between two transactions, the higher the fraud risk), but it does not make sense for a nominal feature like a Country that can take the values "USA", "France", "Belgium". For the latter, a transformation is necessary. The most common choices are:
+
+* One-hot encoding: a binary feature is defined for each modality (e.g. "country_is_USA", "country_is_France" and "country_is_Belgium").
+
+* Frequency-based encoding: The frequency (or another statistic) of each modality is computed and the index of the modality is replaced with the value of the statistic. 
+
+* Label-correlation encoding: It is close to frequency encoding but here a statistic correlated with the label is computed. For instance, each modality can be replaced with its proportion of fraud in the training data. 
+
+With neural networks, one can make use of embedding layers to encode categorical variables. More precisely, the idea is to let the neural network itself learn a representation of each modality of the categorical variable in a continuous vector space of dimension k, chosen by the practitioner. These representations can be learned end-to-end to make the feed-forward network optimal for the fraud detection task. They can also be learned with a different objective like predicting the sequences of countries visited by cardholders (unsupervised pre-training) and then later used for fraud detection, either with a neural network classifier or any other classifier (XGBoost, random forest, etc.). 
+
+![Embedding layer illustration](./images/embedding.png)
+
+Note that learning an embedding of dimension $k$ for a categorical feature is computationally equivalent to learning a classical fully connected layer that takes as input the one-hot encoding of the feature and outputs $k$ neurons.
+
+To test embedding layers, let us try to add extra categorical inputs in $x$ and let the model learn embedding for them. Our last neural network was trained on the following features:
+[MARKDOWN CELL 87]
+Let us add, for example, the raw terminal id and the day of the week as categorical input features:
+[CODE CELL 88 - POTENTIAL TEXT]
+    # Transform date into weekday (0 is Monday, 6 is Sunday)
+
+[CODE CELL 89 - POTENTIAL TEXT]
+train_df['TX_WEEKDAY'] = train_df.TX_DATETIME.apply(weekday)
+
+valid_df['TX_WEEKDAY'] = valid_df.TX_DATETIME.apply(weekday)
+
+input_categorical_features = ['TX_WEEKDAY','TERMINAL_ID']
+
+[MARKDOWN CELL 90]
+Let us now define a new neural network model with two embedding layers. `TX_WEEKDAY` and `TERMINAL_ID` will both go through one of them, and each will be turned into a vector. Then they will be concatenated with the numerical features and the whole will go through a network similar to our previous architecture.
+[CODE CELL 91 - POTENTIAL TEXT]
+            # parameters
+
+            assert len(categorical_inputs_modalities)==len(embedding_sizes), 'categorical_inputs_modalities and embedding_sizes must have the same length'
+
+            #embedding layers
+
+            #contenated inputs to hidden
+
+            #hidden to output
+
+            #we assume that x start with numerical features then categorical features
+
+[CODE CELL 92 - POTENTIAL TEXT]
+    #categorical variables : encoding valid according to train
+
+    encoder = sklearn.preprocessing.OrdinalEncoder(handle_unknown='use_encoded_value',unknown_value=-1)
+
+    train_loader_params = {'batch_size': batch_size,
+
+              'shuffle': True,
+
+              'num_workers': 0}
+
+    valid_loader_params = {'batch_size': batch_size,
+
+              'num_workers': 0}
+
+    # Generators
+
+[MARKDOWN CELL 93]
+Now let us train this new model with an embedding dimension of 10 for each categorical feature. 
+[CODE CELL 95 - POTENTIAL TEXT]
+plt.title('Use of categorical features')
+
+plt.xlabel('epoch')
+
+plt.ylabel('loss')
+
+plt.legend(['train w/ cat','valid w/ cat','train w/o cat','valid w/o cat'])
+[MARKDOWN CELL 96]
+The performance here is not necessarily better with the categorical features (they do not add value compared to the engineered features, at least for the fraud patterns in our categorical data). This implementation is shown for educational purposes. Keep in mind that embedding layers are often a valuable solution in practice when training with a lot of data because it is a step forward in automation (instead of expert feature engineering, one can leave the representation choice to the model). 
+
+Embedding can also be interesting for interpretability. Indeed, at the end of training, one can extract `model.emb[i].weight`. Each row of this matrix represents the embedding vector of a given modality for the `i-th` categorical feature. This can be used to compute similarities between modalities. One can also reduce these vectors' dimensionality with TSNE or PCA and visualize all modalities on a 2D plane.
+[MARKDOWN CELL 97]
+## Ensemble
+[MARKDOWN CELL 98]
+To go further and improve the results, ensembling is a common strategy with neural networks in general and for fraud detection. 
+
+The idea is to simply train the architecture several times and average the predictions of all the obtained models at inference {cite}`zhou2021ensemble`. Layer initialization and the random batch order are generally enough to ensure diversity between each submodel and make the ensemble better than each individual. To go further, one can also train each individual on a different train/valid split {cite}`breiman1996bagging`.
+
+Ensembling is also very useful for fraud detection, in particular, because of concept drift. Indeed, in fraud detection, the fraudsters' techniques are varied and change over time. A single model can struggle to both learn and remember all the different patterns for the target class. In this context, it is expected that an ensemble of models, efficiently built, can cope with the issue. The intuition is that the different components of the ensemble can be specialized for different tasks. For example, a component could be specialized for the recent patterns and another for the old patterns {cite}`lebichot2021incremental`. Similarly, a component could be specialized for the easiest and generic fraudsters’ strategies and another for advanced concepts.
+[MARKDOWN CELL 99]
+(Model_Selection_FFNN)=
+
+## Prequential grid search
+[MARKDOWN CELL 100]
+The above sections have shown many design choices for the neural network. Let us now follow the prequential methodology from Chapter 5 and perform a grid search to see the impact of some hyperparameters on the performance and be able to compare the results with other baselines from previous chapters.
+
+Let us consider the following ranges:
+
+* Batch size : [64,128,256]
+
+* Initial learning rate: [0.0001, 0.0002, 0.001]
+
+* Dropout rate : [0, 0.2, 0.4]
+
+* Hidden layer dimension : [500]
+
+* Number of hidden layers : [1,2]
+
+To use the same procedure as in previous chapters (with GridSearchCV), we have to make the neural network compatible with `sklearn` functions. We will resort to the library `skorch`, which provides an `sklearn` wrapper for `PyTorch` modules. Also, early stopping won't be used, but instead the number of epochs ([10,20,40]) will be another parameter to search.
+[MARKDOWN CELL 103]
+In order to make this work, several aspects of our previous Python classes have to be adapted. First, `sklearn`'s classifiers have two output probabilities (one for each class) that are complementary. Therefore, the output of `fc2` has to be changed to 2, and the activation to `softmax` (similar to the sigmoid activation but with a global normalization). Second, the dataset has to expect arrays instead of tensors, so the conversion will be done within the dataset. 
+[CODE CELL 104 - POTENTIAL TEXT]
+            # parameters
+
+            #input to hidden
+
+            #hidden to output
+
+[CODE CELL 105 - POTENTIAL TEXT]
+        'Initialization'
+
+        'Returns the total number of samples'
+
+        'Generates one sample of data'
+
+        # Select sample index
+
+[MARKDOWN CELL 106]
+Now that the module and Dataset are adapted, one can obtain an "sklearn-like" model using the `NeuralNetClassifier` wrapper from `skorch`. Note that we can set the device directly as a parameter in that class.
+[MARKDOWN CELL 108]
+To test it, let us perform a first small grid search by playing on the number of epochs and number of layers.
+[CODE CELL 109 - POTENTIAL TEXT]
+# Testing the wrapper
+
+#X=train_df[input_features].values
+
+#y=train_df[output_feature]
+
+#
+
+#net.fit(X, y)
+
+#net.predict_proba(X)
+[CODE CELL 110 - POTENTIAL TEXT]
+# Only keep columns that are needed as argument to custom scoring function
+
+# to reduce serialization time of transaction dataset
+
+transactions_df_scorer=transactions_df[['CUSTOMER_ID', 'TX_FRAUD','TX_TIME_DAYS']]
+
+# Make scorer using card_precision_top_k_custom
+
+[CODE CELL 111 - POTENTIAL TEXT]
+    'clf__lr': [0.001 ],
+
+    'clf__batch_size': [64],
+
+    'clf__max_epochs': [10, 20],
+
+    'clf__module__hidden_size': [100],
+
+    'clf__module__num_layers': [1,2],
+
+    'clf__module__p': [0],
+
+scoring = {'roc_auc':'roc_auc',
+
+           'average_precision': 'average_precision',
+
+           'card_precision@100': card_precision_top_100,
+
+performance_metrics_list_grid=['roc_auc', 'average_precision', 'card_precision@100']
+
+performance_metrics_list=['AUC ROC', 'Average precision', 'Card Precision@100']
+
+    expe_type='Validation',
+
+print("Validation: Total execution time: "+str(round(time.time()-start_time,2))+"s")
+[MARKDOWN CELL 113]
+Validation seems to be running smoothly and the results already look promising. 
+
+Let us now perform a proper model selection using the protocol from Chapter 5.3, [](Model_Selection).
+[CODE CELL 114 - POTENTIAL TEXT]
+    'clf__lr': [0.001 , 0.0001, 0.0002],
+
+    'clf__batch_size': [64,128,256],
+
+    'clf__max_epochs': [10,20,40],
+
+    'clf__module__hidden_size': [500],
+
+    'clf__module__num_layers': [1,2],
+
+    'clf__module__p': [0,0.2,0.4],
+
+    'clf__module__input_size': [int(len(input_features))],
+
+parameters_dict=dict(performances_df['Parameters'])
+
+performances_df['Parameters summary']=[str(parameters_dict[i]['clf__lr'])+
+
+                                   '/'+
+
+                                   str(parameters_dict[i]['clf__batch_size'])+
+
+                                   '/'+
+
+                                   str(parameters_dict[i]['clf__max_epochs'])+
+
+                                   '/'+
+
+                                   str(parameters_dict[i]['clf__module__p'])+
+
+                                   '/'+
+
+                                   str(parameters_dict[i]['clf__module__num_layers'])
+
+[MARKDOWN CELL 117]
+Since the number of parameters to tune is large here, and the training (with 20-40 epochs) is rather slow, the execution of the grid-search can take a long time (7350 seconds here). Indeed, it requires training 162 neural networks for each train/valid split of the prequential validation. To speed up the process, it would be beneficial to adopt the random search as suggested at the end of Section 5.3 or to use a hyperparameter tuning method more adapted to neural networks.
+[CODE CELL 118 - POTENTIAL TEXT]
+summary_performances_nn=get_summary_performances(performances_df_nn, parameter_column_name="Parameters summary")
+
+[MARKDOWN CELL 119]
+The optimal sets of hyperparameters strongly depend on the metric. The majority slightly favors the largest learning rate `0.001` and 2 hidden layers. Let us consider these values and visualize the impact of the others (batch size, number of epochs, and dropout).
+[CODE CELL 120 - POTENTIAL TEXT]
+parameters_dict=dict(performances_df_nn['Parameters'])
+
+performances_df_nn['Parameters summary']=[
+
+                                   str(parameters_dict[i]['clf__batch_size'])+
+
+                                   '/'+
+
+                                   str(parameters_dict[i]['clf__max_epochs'])+
+
+                                   '/'+
+
+                                   str(parameters_dict[i]['clf__module__p'])
+
+[CODE CELL 121 - POTENTIAL TEXT]
+performances_df_nn_subset = performances_df_nn[performances_df_nn['Parameters'].apply(lambda x:x['clf__lr']== 0.001 and x['clf__module__hidden_size']==500 and x['clf__module__num_layers']==2 and x['clf__module__p']==0.2 and x['clf__max_epochs']==20).values]
+
+summary_performances_nn_subset=get_summary_performances(performances_df_nn_subset, parameter_column_name="Parameters summary")
+
+indexes_summary[0] = 'Best estimated parameters'
+
+                       performance_metrics_list=['AUC ROC', 'Average precision', 'Card Precision@100'], 
+
+                       expe_type_list=['Test','Validation'], expe_type_color_list=['#008000','#FF0000'],
+
+                       parameter_name="batch size",
+
+[MARKDOWN CELL 122]
+First, if we fix the number of epochs to 20, the dropout level to 0.2, the lower batch size leads to better results for average precision and card precision on the test set, whereas there is a sweet spot according to AUC-ROC. In fact, the optimal batch size is strongly connected to other optimizer parameters. Often, a larger batch size requires a larger number of epochs. To verify that, let us visualize the same plots but with the number of epochs to 40.
+[CODE CELL 123 - POTENTIAL TEXT]
+performances_df_nn_subset = performances_df_nn[performances_df_nn['Parameters'].apply(lambda x:x['clf__lr']== 0.001 and x['clf__module__hidden_size']==500 and x['clf__module__num_layers']==2 and x['clf__module__p']==0.2 and x['clf__max_epochs']==40).values]
+
+summary_performances_nn_subset=get_summary_performances(performances_df_nn_subset, parameter_column_name="Parameters summary")
+
+indexes_summary[0] = 'Best estimated parameters'
+
+                       performance_metrics_list=['AUC ROC', 'Average precision', 'Card Precision@100'], 
+
+                       expe_type_list=['Test','Validation'], expe_type_color_list=['#008000','#FF0000'],
+
+                       parameter_name="batch size",
+
+[MARKDOWN CELL 124]
+With this higher number of epochs, the optimal batch size is now globally higher. Let us now do the contrary, i.e. fix the batch size to some value (e.g. 64) and visualize the impact of the number of epochs.
+[CODE CELL 125 - POTENTIAL TEXT]
+performances_df_nn_subset = performances_df_nn[performances_df_nn['Parameters'].apply(lambda x:x['clf__lr']== 0.001 and x['clf__module__hidden_size']==500 and x['clf__module__num_layers']==2 and x['clf__module__p']==0.2 and x['clf__batch_size']==64).values]
+
+summary_performances_nn_subset=get_summary_performances(performances_df_nn_subset, parameter_column_name="Parameters summary")
+
+indexes_summary[0] = 'Best estimated parameters'
+
+                       performance_metrics_list=['AUC ROC', 'Average precision', 'Card Precision@100'], 
+
+                       expe_type_list=['Test','Validation'], expe_type_color_list=['#008000','#FF0000'],
+
+                       parameter_name="Epochs",
+
+[MARKDOWN CELL 126]
+The optimal number of epochs also depends on the metric and has a sweet spot strongly connected to the choice of other hyperparameters.
+[CODE CELL 127 - POTENTIAL TEXT]
+performances_df_nn_subset = performances_df_nn[performances_df_nn['Parameters'].apply(lambda x:x['clf__lr']== 0.001 and x['clf__module__hidden_size']==500 and x['clf__module__num_layers']==2 and x['clf__max_epochs']==20 and x['clf__batch_size']==64).values]
+
+summary_performances_nn_subset=get_summary_performances(performances_df_nn_subset, parameter_column_name="Parameters summary")
+
+indexes_summary[0] = 'Best estimated parameters'
+
+                       performance_metrics_list=['AUC ROC', 'Average precision', 'Card Precision@100'], 
+
+                       expe_type_list=['Test','Validation'], expe_type_color_list=['#008000','#FF0000'],
+
+                       parameter_name="Dropout",
+
+parameters_dict=dict(performances_df_nn['Parameters'])
+
+performances_df_nn['Parameters summary']=[str(parameters_dict[i]['clf__lr'])+
+
+                                   '/'+
+
+                                   str(parameters_dict[i]['clf__batch_size'])+
+
+                                   '/'+
+
+                                   str(parameters_dict[i]['clf__max_epochs'])+
+
+                                   '/'+
+
+                                   str(parameters_dict[i]['clf__module__p'])+
+
+                                   '/'+
+
+                                   str(parameters_dict[i]['clf__module__num_layers'])
+
+[MARKDOWN CELL 128]
+As for the dropout, it helps generalize and improve the valid/test metrics. However, when the dropout value is too high (0.4), it can deteriorate the results, e.g. by limiting the fitting power or by requiring a larger number of epochs.
+[MARKDOWN CELL 129]
+## Saving of results 
+
+Let us save the performance results and execution times of the neural network models in a Python pickle format. 
+[CODE CELL 130 - POTENTIAL TEXT]
+    "Neural Network": performances_df_nn
+
+filehandler = open('performances_model_selection_nn.pkl', 'wb') 
+
+[MARKDOWN CELL 131]
+## Benchmark summary
+
+Let us finally retrieve the performance results obtained in [Chapter 5](Model_Selection_Comparison_Performances) with decision tree, logistic regression, random forest and XGBoost, and compare them with those obtained with a feed-forward neural network. The results can be retrieved by loading the `performances_model_selection.pkl` and `performances_model_selection_nn.pkl` pickle files, and summarized with the `get_summary_performances` function.
+[CODE CELL 132 - POTENTIAL TEXT]
+# Load performance results for decision tree, logistic regression, random forest and XGBoost
+
+filehandler = open('../Chapter_5_ModelValidationAndSelection/performances_model_selection.pkl', 'rb') 
+
+# Load performance results for feed-forward neural network
+
+filehandler = open('performances_model_selection_nn.pkl', 'rb') 
+
+[CODE CELL 133 - POTENTIAL TEXT]
+performances_df_dt=performances_df_dictionary['Decision Tree']
+
+summary_performances_dt=get_summary_performances(performances_df_dt, parameter_column_name="Parameters summary")
+
+performances_df_lr=performances_df_dictionary['Logistic Regression']
+
+summary_performances_lr=get_summary_performances(performances_df_lr, parameter_column_name="Parameters summary")
+
+performances_df_rf=performances_df_dictionary['Random Forest']
+
+summary_performances_rf=get_summary_performances(performances_df_rf, parameter_column_name="Parameters summary")
+
+performances_df_xgboost=performances_df_dictionary['XGBoost']
+
+summary_performances_xgboost=get_summary_performances(performances_df_xgboost, parameter_column_name="Parameters summary")
+
+performances_df_nn=performances_df_dictionary_nn['Neural Network']
+
+summary_performances_nn=get_summary_performances(performances_df_nn, parameter_column_name="Parameters summary")
+
+summary_test_performances.columns=['Decision Tree', 'Logistic Regression', 'Random Forest', 'XGBoost', 'Neural Network']
+
+[MARKDOWN CELL 134]
+The results are summarized in a `summary_test_performances` table. Rows provide the average performance results on the test sets in terms of AUC ROC, Average Precision and CP@100. 
+[MARKDOWN CELL 136]
+Overall, it appears that our simple feed-forward neural network is a good competitor in terms of predictive performance for the fraud detection problem, providing the best performances in terms of AUC ROC and CP@100, and competitive performances in terms of Average Precision. Moreover, it benefits from many advantages (e.g. its ability for incremental learning), as mentioned in the previous section.
+[MARKDOWN CELL 137]
+## Conclusion
+[MARKDOWN CELL 138]
+This section gave an overview of how to design a feed-forward neural network for fraud detection. Comparatively to classical machine learning models, neural networks have an infinite set of hyperparameters. This modularity in the design has a lot of advantages in terms of expressivity but it comes at the cost of a time-consuming hyper optimization of the architecture, the activations, the loss, the optimizers, the preprocessing, etc. Nevertheless, there are many ways to automate hyper optimization and architecture design, for instance with AutoML including Neural Architecture Search (or NAS) {cite}`elsken2019neural`.
+
+Here only the top of the iceberg is covered. There are many other aspects to consider even with such a simple neural network. Many of them can be found in good practice guides and generally also apply to fraud detection. Some are even specific to problems like the latter. An important one is to manage imbalance (refer to Chapter 6 for more details): it can be done with neural networks by replacing binary cross-entropy with a weighted BCE (putting more importance on the loss terms associated with fraud samples) or with focal loss, a variant of cross-entropy specifically designed to automatically focus on under-represented samples. Another way is to implement a custom Dataloader with a [balanced sampler](https://github.com/ufoym/imbalanced-dataset-sampler).
+
+The rest of the chapter rather focuses on different types of neural network models like autoencoders or sequential models and the way they can be used in a fraud detection context.
+
+
+--- FILE: RealWorldData.ipynb ---
+
+[MARKDOWN CELL 0]
+# Real-world data
+
+The section reports the performances that are obtained on real-world data using neural network architectures. The dataset is the same as in [Chapter 3, Section 5](Baseline_FDS_RealWorldData). Results are reported following the prequential grid search methodology used in the previous sections with simulated data. 
+
+We first report the performances for the feed-forward neural network, the convolutional neural network, the long short term memory, and the LSTM with attention. We also considered variations in the hyperparameters:
+
+* `Feed-forward Neural Network`: 2 layers, 500 neurons, a dropout level of 0 or 0.2, Adam with a learning rate of 0.001 or 0.0001, 5, 10 or 20 epochs, and a batch size of 64, 128, or 256. 
+
+* `Convolutional Neural Network`: 2 convolutional layers with 200 filters of size 2, 1 hidden layer with 500 neurons, a dropout level of 0 or 0.2, Adam with a learning rate of 0.001 or 0.0001, 5, 10 or 20 epochs, and a batch size of 64, 128 or 256.
+
+* `Long Short Term Memory`: 1 recurrent layer with 200 neurons for the hidden state, 1 hidden layer with 500 neurons, a dropout level of 0 or 0.2, Adam with a learning rate of 0.001 or 0.0001, 5, 10 or 20 epochs, and a batch size of 64, 128 or 256.
+
+* `Long Short Term Memory with Attention`: 1 recurrent layer with 200 neurons for the hidden state, 1 hidden layer with 500 neurons, a dropout level of 0 or 0.2, Adam with a learning rate of 0.001 or 0.0001, 5, 10 or 20 epochs, and a batch size of 64, 128 or 256.
+
+We finally report global results and compare them to the other supervised baselines (decision tree, logistic regression, random forest, and XGBoost).
+[CODE CELL 1 - POTENTIAL TEXT]
+# Initialization: Load shared functions
+
+# Load shared functions
+
+#%run ../Chapter_References/shared_functions.ipynb
+[MARKDOWN CELL 2]
+## Feed-forward neural network
+[CODE CELL 3 - POTENTIAL TEXT]
+filehandler = open('performances_model_selection_nn_real_data.pkl', 'rb') 
+
+[MARKDOWN CELL 4]
+The results for the feed-forward network are reported below. Let us first have a look at global trends with the performance summary.
+[CODE CELL 5 - POTENTIAL TEXT]
+performances_df_nn = performances_df_dictionary['Neural Network']
+[CODE CELL 6 - POTENTIAL TEXT]
+summary_performances_nn=get_summary_performances(performances_df_nn, parameter_column_name="Parameters summary")
+
+[MARKDOWN CELL 7]
+As well as for the synthetic data, the optimal set of hyperparameters strongly depends on the metric. The smallest learning rate `0.0001`, and the largest number of epochs `20` are slightly favored. Let us consider these values and visualize the impact of the batch size and dropout level.
+[CODE CELL 8 - POTENTIAL TEXT]
+parameters_dict=dict(performances_df_nn['Parameters'])
+
+performances_df_nn['Parameters summary']=[
+
+                                   str(parameters_dict[i]['clf__batch_size'])    
+
+performances_df_nn_subset = performances_df_nn[performances_df_nn['Parameters'].apply(lambda x:x['clf__lr']== 0.0001 and x['clf__module__hidden_size']==500 and x['clf__module__num_layers']==2 and x['clf__module__p']==0.2 and x['clf__max_epochs']==20).values]
+
+summary_performances_nn_subset=get_summary_performances(performances_df_nn_subset, parameter_column_name="Parameters summary")
+
+indexes_summary[0] = 'Best estimated parameters'
+
+                       performance_metrics_list=['AUC ROC', 'Average precision', 'Card Precision@100'], 
+
+                       expe_type_list=['Test','Validation'], expe_type_color_list=['#008000','#FF0000'],
+
+                       parameter_name="batch size",
+
+[CODE CELL 9 - POTENTIAL TEXT]
+parameters_dict=dict(performances_df_nn['Parameters'])
+
+performances_df_nn['Parameters summary']=[
+
+                                   str(parameters_dict[i]['clf__module__p'])    
+
+performances_df_nn_subset = performances_df_nn[performances_df_nn['Parameters'].apply(lambda x:x['clf__lr']== 0.0001 and x['clf__module__hidden_size']==500 and x['clf__module__num_layers']==2 and x['clf__max_epochs']==20 and x['clf__batch_size']==128).values]
+
+summary_performances_nn_subset=get_summary_performances(performances_df_nn_subset, parameter_column_name="Parameters summary")
+
+indexes_summary[0] = 'Best estimated parameters'
+
+                       performance_metrics_list=['AUC ROC', 'Average precision', 'Card Precision@100'], 
+
+                       expe_type_list=['Test','Validation'], expe_type_color_list=['#008000','#FF0000'],
+
+                       parameter_name="Dropout",
+
+[MARKDOWN CELL 10]
+Similar to results on synthetic data, these hyperparameters related to optimization all have sweet spots that depend on each other. This confirms the importance of tuning for this kind of model.
+
+Overall, our simple feed-forward neural network reaches a competitive performance. It is comparable to the Random Forest baseline on the real-world data (global comparison at the end), which is very promising for applications to incremental fraud detection systems.
+[MARKDOWN CELL 11]
+## Sequential models
+
+Let us now analyze the performance of sequential models on real-world data with respect to some of their optimization parameters. 
+[CODE CELL 12 - POTENTIAL TEXT]
+filehandler = open('performances_model_selection_seq_model_real_data.pkl', 'rb') 
+
+[CODE CELL 13 - POTENTIAL TEXT]
+performances_df_cnn=performances_df_dictionary_seq_model['CNN']
+
+summary_performances_cnn=get_summary_performances(performances_df_cnn, parameter_column_name="Parameters summary")
+
+performances_df_lstm=performances_df_dictionary_seq_model['LSTM']
+
+summary_performances_lstm=get_summary_performances(performances_df_lstm, parameter_column_name="Parameters summary")
+
+performances_df_lstm_attn=performances_df_dictionary_seq_model['LSTM_Attention']
+
+summary_performances_lstm_attn=get_summary_performances(performances_df_lstm_attn, parameter_column_name="Parameters summary")
+[MARKDOWN CELL 14]
+### Convolutional Neural Network
+
+We start with the 1D convolutional neural network. The performance summary and the impact of batch size, number of epochs, and dropout are analyzed.
+[CODE CELL 16 - POTENTIAL TEXT]
+parameters_dict=dict(performances_df_cnn['Parameters'])
+
+performances_df_cnn['Parameters summary']=[str(parameters_dict[i]['clf__max_epochs'])+
+
+                                   '/'+
+
+                                   str(parameters_dict[i]['clf__batch_size'])+
+
+                                   '/'+    
+
+                                   str(parameters_dict[i]['clf__module__p'])
+
+performances_df_cnn_subset = performances_df_cnn[performances_df_cnn['Parameters'].apply(lambda x:x['clf__lr']== 0.0001 and x['clf__module__num_filters']==200 and x['clf__max_epochs']==10 and x['clf__module__num_conv']==2 and x['clf__module__p']==0.2).values]
+
+summary_performances_cnn_subset=get_summary_performances(performances_df_cnn_subset, parameter_column_name="Parameters summary")
+
+indexes_summary[0] = 'Best estimated parameters'
+
+                       performance_metrics_list=['AUC ROC', 'Average precision', 'Card Precision@100'], 
+
+                       expe_type_list=['Test','Validation'], expe_type_color_list=['#008000','#FF0000'],
+
+                       parameter_name="batch size",
+
+performances_df_cnn_subset = performances_df_cnn[performances_df_cnn['Parameters'].apply(lambda x:x['clf__lr']== 0.0001 and x['clf__module__num_filters']==200 and x['clf__batch_size']==128 and x['clf__module__num_conv']==2 and x['clf__module__p']==0.2).values]
+
+summary_performances_cnn_subset=get_summary_performances(performances_df_cnn_subset, parameter_column_name="Parameters summary")
+
+indexes_summary[0] = 'Best estimated parameters'
+
+                       performance_metrics_list=['AUC ROC', 'Average precision', 'Card Precision@100'], 
+
+                       expe_type_list=['Test','Validation'], expe_type_color_list=['#008000','#FF0000'],
+
+                       parameter_name="epochs",
+
+performances_df_cnn_subset = performances_df_cnn[performances_df_cnn['Parameters'].apply(lambda x:x['clf__lr']== 0.0001 and x['clf__module__num_filters']==200 and x['clf__batch_size']==128 and x['clf__module__num_conv']==2 and x['clf__max_epochs']==20).values]
+
+summary_performances_cnn_subset=get_summary_performances(performances_df_cnn_subset, parameter_column_name="Parameters summary")
+
+indexes_summary[0] = 'Best estimated parameters'
+
+                       performance_metrics_list=['AUC ROC', 'Average precision', 'Card Precision@100'], 
+
+                       expe_type_list=['Test','Validation'], expe_type_color_list=['#008000','#FF0000'],
+
+                       parameter_name="dropout",
+
+[MARKDOWN CELL 17]
+Similar to the regular neural network, the performance highly depends on the optimization parameters. A little level of dropout appears to be beneficial, in particular on the test dataset, where the distribution is further from the training distribution.
+
+Overall, except for the AUC ROC, the 1D convolutional neural network is able to outperform the feed-forward neural network and obtain a very competitive Average precision.
+[MARKDOWN CELL 18]
+### Long Short Term Memory
+
+Let us carry on with the LSTM. 
+[MARKDOWN CELL 20]
+The long short term memory globally outperforms the convolutional neural network on the test datasets and obtains the best average precision overall.
+[CODE CELL 21 - POTENTIAL TEXT]
+parameters_dict=dict(performances_df_lstm['Parameters'])
+
+performances_df_lstm['Parameters summary']=[str(parameters_dict[i]['clf__max_epochs'])
+
+performances_df_lstm_subset = performances_df_lstm[performances_df_lstm['Parameters'].apply(lambda x:x['clf__lr']== 0.0001 and x['clf__batch_size']==256 and x['clf__module__hidden_size_lstm']==200 and x['clf__module__p']==0.2).values]
+
+summary_performances_lstm_subset=get_summary_performances(performances_df_lstm_subset, parameter_column_name="Parameters summary")
+
+indexes_summary[0] = 'Best estimated parameters'
+
+                       performance_metrics_list=['AUC ROC', 'Average precision', 'Card Precision@100'], 
+
+                       expe_type_list=['Test','Validation'], expe_type_color_list=['#008000','#FF0000'],
+
+                       parameter_name="epochs",
+
+performances_df_lstm_subset = performances_df_lstm[performances_df_lstm['Parameters'].apply(lambda x:x['clf__lr']== 0.001 and x['clf__batch_size']==64 and x['clf__module__hidden_size_lstm']==200 and x['clf__module__p']==0.2).values]
+
+summary_performances_lstm_subset=get_summary_performances(performances_df_lstm_subset, parameter_column_name="Parameters summary")
+
+indexes_summary[0] = 'Best estimated parameters'
+
+                       performance_metrics_list=['AUC ROC', 'Average precision', 'Card Precision@100'], 
+
+                       expe_type_list=['Test','Validation'], expe_type_color_list=['#008000','#FF0000'],
+
+                       parameter_name="epochs",
+
+[MARKDOWN CELL 22]
+The charts above show the evolution of the three metrics with the number of epochs, for the two extreme sets of "convergence"-related hyperparameters. On the top charts, the learning rate is `0.0001`, and the batch size is `256`. On the bottom charts, the learning rate is `0.001`, and the batch size is `64`. The best performance is obtained for the lowest learning rate, the largest batch size, and the lowest number of epochs which suggests that reducing the convergence speed or the number of epochs could potentially push the performance further. In spite of this, the optimal performance on the test sets is already very competitive with the baseline (see the results at the end of this section).
+[MARKDOWN CELL 23]
+### LSTM with Attention
+
+For the LSTM with Attention, we finally perform the exact same analysis as for the regular LSTM. The results, shown below, are slightly better and could also be improved by performing fewer optimization steps or by slowing down the convergence. 
+[CODE CELL 25 - POTENTIAL TEXT]
+parameters_dict=dict(performances_df_lstm_attn['Parameters'])
+
+performances_df_lstm_attn['Parameters summary']=[str(parameters_dict[i]['clf__max_epochs'])+
+
+                                   '/'+
+
+                                   str(parameters_dict[i]['clf__module__hidden_size_lstm'])
+
+performances_df_lstm_attn_subset = performances_df_lstm_attn[performances_df_lstm_attn['Parameters'].apply(lambda x:x['clf__lr']== 0.0001 and x['clf__batch_size']==256 and x['clf__module__hidden_size_lstm']==200 and x['clf__module__p']==0.2).values]
+
+summary_performances_lstm_attn_subset=get_summary_performances(performances_df_lstm_attn_subset, parameter_column_name="Parameters summary")
+
+indexes_summary[0] = 'Best estimated parameters'
+
+                       performance_metrics_list=['AUC ROC', 'Average precision', 'Card Precision@100'], 
+
+                       expe_type_list=['Test','Validation'], expe_type_color_list=['#008000','#FF0000'],
+
+                       parameter_name="hidden states size",
+
+performances_df_lstm_attn_subset = performances_df_lstm_attn[performances_df_lstm_attn['Parameters'].apply(lambda x:x['clf__lr']== 0.001 and x['clf__batch_size']==64 and x['clf__module__hidden_size_lstm']==200 and x['clf__module__p']==0.2).values]
+
+summary_performances_lstm_attn_subset=get_summary_performances(performances_df_lstm_attn_subset, parameter_column_name="Parameters summary")
+
+indexes_summary[0] = 'Best estimated parameters'
+
+                       performance_metrics_list=['AUC ROC', 'Average precision', 'Card Precision@100'], 
+
+                       expe_type_list=['Test','Validation'], expe_type_color_list=['#008000','#FF0000'],
+
+                       parameter_name="epochs",
+
+[MARKDOWN CELL 26]
+## Global comparison
+
+To contrast the results obtained on the simulated dataset in previous sections, let us also make here a complete comparison of the approaches (baselines and deep learning models) on the real-world data. In particular, let us complement the results above with the ones obtained with baseline models (the Linear Regression, the Decision Tree, the Random Forest, and XGBoost) and display everything on a global table.
+[CODE CELL 27 - POTENTIAL TEXT]
+# Load performance results for decision tree, logistic regression, random forest and XGBoost
+
+filehandler = open('../Chapter_5_ModelValidationAndSelection/images/performances_model_selection_real_world_data.pkl', 'rb') 
+
+# Load performance results for feed-forward neural network
+
+filehandler = open('performances_model_selection_nn_real_data.pkl', 'rb') 
+
+# Load performance results for CNN, LSTM and LSTM with Attention
+
+filehandler = open('performances_model_selection_seq_model_real_data.pkl', 'rb') 
+
+[CODE CELL 28 - POTENTIAL TEXT]
+performances_df_dt=performances_df_dictionary['Decision Tree']
+
+summary_performances_dt=get_summary_performances(performances_df_dt, parameter_column_name="Parameters summary")
+
+performances_df_lr=performances_df_dictionary['Logistic Regression']
+
+summary_performances_lr=get_summary_performances(performances_df_lr, parameter_column_name="Parameters summary")
+
+performances_df_rf=performances_df_dictionary['Random Forest']
+
+summary_performances_rf=get_summary_performances(performances_df_rf, parameter_column_name="Parameters summary")
+
+performances_df_xgboost=performances_df_dictionary['XGBoost']
+
+summary_performances_xgboost=get_summary_performances(performances_df_xgboost, parameter_column_name="Parameters summary")
+
+performances_df_nn=performances_df_dictionary_nn['Neural Network']
+
+summary_performances_nn=get_summary_performances(performances_df_nn, parameter_column_name="Parameters summary")
+
+performances_df_cnn=performances_df_dictionary_seq_model['CNN']
+
+summary_performances_cnn=get_summary_performances(performances_df_cnn, parameter_column_name="Parameters summary")
+
+performances_df_lstm=performances_df_dictionary_seq_model['LSTM']
+
+summary_performances_lstm=get_summary_performances(performances_df_lstm, parameter_column_name="Parameters summary")
+
+performances_df_lstm_attention=performances_df_dictionary_seq_model['LSTM_Attention']
+
+summary_performances_lstm_attention=get_summary_performances(performances_df_lstm_attention, parameter_column_name="Parameters summary")
+
+summary_test_performances.columns=['Decision Tree', 'Logistic Regression', 'Random Forest', 'XGBoost', 
+
+                                   'Neural Network', 'CNN', 'LSTM', 'LSTM with Attention']
+
+[MARKDOWN CELL 30]
+The conclusions here are different from the results obtained with the simulated data. It appears that all neural network-based models have better performance than the Logistic Regression and the Decision Tree for the three metrics.
+
+In comparison with XGBoost and Random Forest, the sequential models are better w.r.t Average Precision, similar w.r.t Card Precision@100, and worse w.r.t AUC-ROC.  
+
+The sequential models are better than the regular feed-forward network, suggesting that the information brought by the history of transactions is relevant for fraud detection. The LSTM performs better than the CNN for the set of chosen hyperparameters, and the Attention brings a little value.
+
+The competitivity of the deep learning architectures comes at the great cost of hyperoptimization and tuning but is definitely valuable for all the reasons mentioned in the introduction (e.g. incremental).
+
+
+--- FILE: SequentialModeling.ipynb ---
+
+[MARKDOWN CELL 0]
+(SequentialModeling)=
+
+# Sequential models and representation learning
+
+In credit card fraud detection, the choice of features is crucial for accurate classification. Considerable research effort has been dedicated to the development of features that are relevant to characterize fraudulent patterns. Feature engineering strategies based on feature aggregations have become commonly adopted {cite}`bahnsen2016feature`. Feature aggregation establishes a connection between the current transaction and other related transactions by computing statistics over their variables. They often originate from complex rules defined from human expertise, and many experiments report that they significantly improve detection {cite}`dal2014learned,jurgovsky2018sequence,dastidar2020nag`.
+
+Using feature aggregation for fraud detection is part of a research topic referred to as "context-aware fraud detection", where one considers the context (e.g. the cardholder history) associated with a transaction to make the decision. This allows, for instance, to give insights into the properties of the transaction relative to the usual purchase patterns of the cardholder and/or terminal, which is intuitively a relevant piece of information. 
+
+## Context-aware fraud detection
+
+The context is established based on a landmark variable, which is in most of the cases the Customer ID. Concretely, one starts by building the sequence of historical transactions, chronologically ordered from the oldest to the current one, that have the same value for the landmark variable as the current transaction. 
+
+![Building the transaction sequence](./images/transaction_sequence.png)
+
+This whole sequence is the raw basis for context-aware approaches. Indeed, the general process relies on the construction of new features or representations for each given transaction based on its contextual sequence. However, approaches can be divided into two broad categories, the first (Expert representations) relying on domain knowledge from experts to create rules and build feature aggregation, and the second (Automatic representations) oriented towards automated feature extraction strategies with deep learning models. 
+
+### Expert representations
+
+To build expert features from the base sequence, a selection layer relying on expert constraints (same Merchant Category code, same Country, more recent than a week, etc.) is first applied to obtain a more specific subsequence. Then, an aggregation function (sum, avg, ...) is computed over the values of a chosen feature (e.g. amount) in the subsequence. For more details, {cite}`bahnsen2016feature` provides a formal definition of such feature aggregations. Expert features are not necessarily transferable in any fraud detection domain since they rely on specific features that might not always be available. Nevertheless, in practice, the landmark features, constraints features, and aggregated features are often chosen from a set of frequent attributes, comprising Time, Amount, Country, Merchant Category, Customer ID, transaction type.
+
+![Expert features creation](./images/expert_agg.png)
+
+### Automatic representations
+
+The other family of context-aware approaches considers the sequence directly as input in a model and lets it automatically learn the right connections to optimize fraud detection. The advantage of not relying on human knowledge to build the relevant features is obviously to save the costly resources and to ease adaptability and maintenance. Moreover, models can be pushed towards large architectures and learn very complex variable relationships automatically from data. However, it requires a sufficiently large dataset to properly identify the relevant patterns. Otherwise, the feature representations are not very accurate or useful. 
+
+A baseline technique for automatic usage of contextual data would be to exploit the transaction sequence in its entirety (e.g. flattening it into a set of features), but this removes the information about the order and could lead to a very high dimensional feature space. A more popular strategy consists of (1) turning the sequences into fixed-size sequences and (2) using a special family of models that are able to deal with sequences naturally and summarizing them into relevant vector representations for fraud classification. 
+
+This strategy is often referred to as sequential learning, the study of learning algorithms for sequential data. The sequential dependency between data points is learned at the algorithmic level. This includes sliding window methods, which often tend to ignore the order between data points within the window, but also models that are designed explicitly to consider the sequential order between consecutive data points (e.g. a Markov Chain). Such models can be found in the family of deep learning architectures under the *recurrent neural networks* category. The link between consecutive elements of the sequence is embedded in the design of the recurrent architecture, where the computation of the hidden state/layer of a more recent event depends on hidden states of previous events. 
+
+![Illustration of a recurrent model](./images/recurrent_model.png)
+
+Sliding window methods include architectures like 1D *convolutional neural networks* (1D-CNN), and sequential methods include architectures like the *long short-term memory* (LSTM). Such architectures have proven to be very efficient in the context of fraud detection in the past {cite}`jurgovsky2018sequence`. 
+
+In this section, the goal is to explore automatic representation learning from cardholders' sequences of transactions and its application in context-aware fraud detection. The content starts with the practical aspects of building the pipeline to manage sequential data. Then, three architectures are successively explored: a 1D-CNN, an LSTM, and a more complex model that uses an LSTM with *Attention* {cite}`bahdanau2014neural`. The section concludes on perspectives of other modeling possibilities such as sequence-to-sequence autoencoders {cite}`sutskever2014sequence,alazizi2020dual`, or other combinations of the explored models. 
+[MARKDOWN CELL 1]
+## Data processing
+
+With sequence modeling, the building of the data processing pipeline has special importance. In particular, as explained in the introduction, its role is to create the input sequences for the sequential models to learn the representations. 
+
+The most popular landmark variable to establish the sequence is the Customer ID. Indeed, by the very definition of credit card fraud being a payment done by someone other than the cardholder, it makes the most sense to look at the history of the customer in order to determine when a card payment is fraudulent. 
+
+Therefore, the goal here is to establish `Datasets` and `DataLoaders` that provide, given a transaction index in the dataset, the sequence of previous transactions (including the one referred by the index) from the same cardholder. Moreover, since models usually deal with fixed-sized sequences, the sequence length will be a parameter, and sequences that are too long (resp. too short) will be cut (resp. padded).
+
+As usual, let us start by loading a fixed training and validation period from the processed dataset.
+[CODE CELL 2 - POTENTIAL TEXT]
+# Initialization: Load shared functions and simulated data 
+
+# Load shared functions
+
+# Get simulated data from Github repository
+
+if not os.path.exists("simulated-data-transformed"):
+
+[CODE CELL 3 - POTENTIAL TEXT]
+DIR_INPUT='simulated-data-transformed/data/' 
+
+BEGIN_DATE = "2018-06-11"
+
+END_DATE = "2018-09-14"
+
+print("Load  files")
+
+print("{0} transactions loaded, containing {1} fraudulent transactions".format(len(transactions_df),transactions_df.TX_FRAUD.sum()))
+
+output_feature="TX_FRAUD"
+
+input_features=['TX_AMOUNT','TX_DURING_WEEKEND', 'TX_DURING_NIGHT', 'CUSTOMER_ID_NB_TX_1DAY_WINDOW',
+
+       'CUSTOMER_ID_AVG_AMOUNT_1DAY_WINDOW', 'CUSTOMER_ID_NB_TX_7DAY_WINDOW',
+
+       'CUSTOMER_ID_AVG_AMOUNT_7DAY_WINDOW', 'CUSTOMER_ID_NB_TX_30DAY_WINDOW',
+
+       'CUSTOMER_ID_AVG_AMOUNT_30DAY_WINDOW', 'TERMINAL_ID_NB_TX_1DAY_WINDOW',
+
+       'TERMINAL_ID_RISK_1DAY_WINDOW', 'TERMINAL_ID_NB_TX_7DAY_WINDOW',
+
+       'TERMINAL_ID_RISK_7DAY_WINDOW', 'TERMINAL_ID_NB_TX_30DAY_WINDOW',
+
+       'TERMINAL_ID_RISK_30DAY_WINDOW']
+[CODE CELL 4 - POTENTIAL TEXT]
+# Set the starting day for the training period, and the deltas
+
+start_date_training = datetime.datetime.strptime("2018-07-25", "%Y-%m-%d")
+
+# By default, scales input data
+
+[MARKDOWN CELL 6]
+This time, additionally to the above features, building the sequences will require two additional fields from the DataFrames:
+
+* `CUSTOMER_ID`: the landmark variable that will be used to select past transactions.
+
+* `TX_DATETIME`: the time variable that will allow building sequences in chronological order.
+[CODE CELL 7 - POTENTIAL TEXT]
+dates = train_df['TX_DATETIME'].values
+[CODE CELL 8 - POTENTIAL TEXT]
+customer_ids = train_df['CUSTOMER_ID'].values
+[MARKDOWN CELL 9]
+There are multiple ways to implement sequence creation for training/validation. One way is to precompute, for each transaction, the indices of the previous transactions of the sequence and to store them. Then, to build the sequences of features on the fly from the indices. 
+
+Here we propose some steps to proceed but keep in mind that other solutions are just as valid.
+
+### Setting the sequence length
+
+The first step is to set a sequence length. In the literature, 5 or 10 are two values that are often chosen {cite}`jurgovsky2018sequence`. This can later be a parameter to tune but here, let us arbitrarily set it to 5 to begin with. 
+[MARKDOWN CELL 11]
+### Ordering elements chronologically
+
+In our case, transactions are already sorted, but in the most general case, to build the sequences, it is necessary to sort all transactions chronologically and keep the sorting indices:
+[MARKDOWN CELL 13]
+### Separating data according to the landmark variable (Customer ID)
+
+After sorting, the dataset is a large sequence with all transactions from all cardholders. We can separate it into several sequences that each contain only the transactions of a single cardholder. Finally, each customer sequence can be turned into several fixed-size sequences using a sliding window and padding. 
+[MARKDOWN CELL 14]
+To separate the dataset, let us get the list of customers:
+[MARKDOWN CELL 17]
+For each customer, the associated subsequence can be selected with a boolean mask. Here is for example the sequence of transaction IDs for customer `0`.
+[CODE CELL 18 - POTENTIAL TEXT]
+# this is the full sequence of transaction indices (after sort) for customer 0
+
+# this is the full sequence of transaction indices (before sort) for customer 0
+
+[MARKDOWN CELL 19]
+### Turning a customer sequence into fixed size sequences
+
+The above sequence is the whole sequence for customer `0`. But the goal is to have, for each transaction `i` of this sequence, a fixed size sequence that ends with transaction `i`, which will be used as input in the sequential model to predict the label of transaction `i`. In the example above:
+
+* For transaction 1888: the 4 previous transactions are [none,none,none,none] (Note: none can be replaced with a default value like -1). So the sequence [none, none, none, none, 1888] will be created.
+
+* For transaction 10080, the sequence will be [none, none, none, 1888, 10080]
+
+* ...
+
+* For transaction 37972, the sequence will be [12847, 15627, 18908, 22842, 37972]
+
+* Etc.
+
+Using a sliding window (or rolling window) allows to obtain those sequences:
+[MARKDOWN CELL 23]
+### Generating the sequences of transaction features on the fly from the sequences of indices
+
+From the indices' sequences and the features of each transaction (available in `x_train`), building the features sequences is straightforward. Let us do it for the 6th sequence:
+[MARKDOWN CELL 29]
+Note: Here, the sequence of indices (`customer_all_seqs[5]`) was made of valid indices. When there are invalid indices (`-1`), the idea is to put a "padding transaction" (e.g. with all features equal to zero or equal to the average value that they have in the training set) in the final sequence. To obtain a homogeneous code that can be used for both valid and invalid indices, on can append the "padding transaction" to `x_train` at the end and replace all `-1` with the index of this added transaction.
+[MARKDOWN CELL 30]
+### Efficient implementation with pandas and groupby
+
+The above steps are described for educational purposes as they allow to understand all the necessary operations to build the sequences of transactions. In practice, because this process requires a time-consuming loop over all Customer IDs, it is better to rely on a dataframe instead and use the pandas `groupby` function. More precisely, the idea is to group the elements of the transaction dataframe by Customer ID and to use the `shift` function to determine, for each transaction, the ones that occurred before. In order not to edit the original dataframe, let us first create a new one that only contains the necessary features.
+[CODE CELL 31 - POTENTIAL TEXT]
+df_ids_dates = pd.DataFrame({'CUSTOMER_ID': customer_ids,
+
+        'TX_DATETIME': dates})
+
+#checking if the transaction are chronologically ordered
+
+datetime_diff = (df_ids_dates["TX_DATETIME"] - df_ids_dates["TX_DATETIME"].shift(1)).iloc[1:].dt.total_seconds()
+
+[MARKDOWN CELL 32]
+Let us now add a new column with the initial row indices, that will be later used with the `shift` function.
+[CODE CELL 33 - POTENTIAL TEXT]
+df_ids_dates["tmp_index"]  = np.arange(len(df_ids_dates))
+[MARKDOWN CELL 35]
+The next step is to group the elements by Customer ID:
+[CODE CELL 36 - POTENTIAL TEXT]
+df_groupby_customer_id = df_ids_dates.groupby("CUSTOMER_ID")
+[MARKDOWN CELL 37]
+Now it is possible to compute a shifted `tmp_index` with respect to the grouping by `CUSTOMER_ID`. For instance, shifting by 0 gives the current transaction index and shifting by 1 gives the previous transaction index (or NaN if the current transaction is the first transaction of the customer).
+[CODE CELL 38 - POTENTIAL TEXT]
+df_groupby_customer_id["tmp_index"].shift(0)
+[CODE CELL 39 - POTENTIAL TEXT]
+df_groupby_customer_id["tmp_index"].shift(1)
+[MARKDOWN CELL 40]
+To obtain the whole sequences of indices, the only thing to do is to loop over the shift parameter, from `seq_len` - 1 to 0. 
+[CODE CELL 41 - POTENTIAL TEXT]
+                "tx_{}".format(n): df_groupby_customer_id["tmp_index"].shift(seq_len - n - 1)
+
+[MARKDOWN CELL 43]
+As a sanity check, let us see if this method computes the same sequences as the previous method for transaction 12847, 15627 and 18908 which were (see 4.2.4):
+
+* [   -1,    -1,  1888, 10080, 12847]
+
+* [   -1,  1888, 10080, 12847, 15627]
+
+* [ 1888, 10080, 12847, 15627, 18908]
+[MARKDOWN CELL 45]
+### Managing sequence creation into a torch Dataset
+
+Now that the process is ready and tested, the final step is to implement it within a torch `Dataset` to use it in a training loop. To simplify the usage, let us consider the "zeros" padding strategy as default. The precomputation of indices and the creation of the padding transaction (a transaction with all features to zero) will be done at initialization. Then, the `__getitem__` function will build the sequence of features on the fly. 
+[CODE CELL 46 - POTENTIAL TEXT]
+    DEVICE = "cuda" 
+
+    DEVICE = "cpu"
+
+print("Selected device is",DEVICE)
+[CODE CELL 47 - POTENTIAL TEXT]
+    def __init__(self, x,y,customer_ids, dates, seq_len, padding_mode = 'zeros', output=True):
+
+        'Initialization'
+
+        # x,y,customer_ids, and dates must have the same length
+
+        # storing the features x in self.features and adding the "padding" transaction at the end
+
+        if padding_mode == "mean":
+
+        elif padding_mode == "zeros":
+
+            raise ValueError('padding_mode must be "mean" or "zeros"')
+
+        #===== computing sequences ids =====  
+
+        df_ids_dates = pd.DataFrame({'CUSTOMER_ID':customer_ids,
+
+        'TX_DATETIME':dates})
+
+        df_ids_dates["tmp_index"]  = np.arange(len(df_ids_dates))
+
+        df_groupby_customer_id = df_ids_dates.groupby("CUSTOMER_ID")
+
+                "tx_{}".format(n): df_groupby_customer_id["tmp_index"].shift(seq_len - n - 1)
+
+        #replaces -1 (padding) with the index of the padding transaction (last index of self.features)
+
+        'Denotes the total number of samples'
+
+        # not len(self.features) because of the added padding transaction
+
+        'Generates one sample of data'
+
+        # Select sample index
+
+            #transposing because the CNN considers the channel dimension before the sequence dimension
+
+[MARKDOWN CELL 48]
+As a sanity check, let us try the `Dataset` within a `DataLoader`
+[CODE CELL 51 - POTENTIAL TEXT]
+train_loader_params = {'batch_size': 64,
+
+          'shuffle': True,
+
+          'num_workers': 0}
+
+# Generators
+
+training_set = FraudSequenceDataset(x_train, y_train,train_df['CUSTOMER_ID'].values, train_df['TX_DATETIME'].values,seq_len,padding_mode = "zeros")
+
+[MARKDOWN CELL 52]
+Let us see how the first training batch looks like:
+[MARKDOWN CELL 56]
+The shape of `x_batch` is (`batch_size`= 64,`number of features`= 15, `seq_len`= 5) which is the expected input for a 1-D convolutional network or a recurrent model like an LSTM.
+[MARKDOWN CELL 57]
+## Convolutional neural network for fraud detection
+[MARKDOWN CELL 58]
+Convolutional neural networks (CNN) are neural networks with specific convolutional layers that allow (1) detecting specific patterns or shapes in patches of input and (2) reducing spatial complexity when dealing with large inputs (e.g. an image with millions of pixels). 
+
+To do that, they replace the regular fully connected layer with a layer of convolutional filters that performs a convolution operation over the input neurons. 
+
+![Illustration of a 2D-convolutional layer](./images/convnet.png)
+
+A convolutional layer has `num_filters` filters, with weights of a chosen dimension. If we consider a 2D-convolutional layer, each filter has 2 dimensions (width and height). In the example above, we consider an 8x6 input and a 3x3 filter. The convolution operation consists in sliding the filter over the input from left to right and from up to bottom, and each time computing the weighted sum of the input patch using the filter weights and applying an activation function to obtain an output similar to a regular neuron. In the figure, we represent with dashed squares on the left the first two input patches that the filter goes through and on the right the two corresponding outputs. Here we considered a `stride` parameter of 1, which means that the filter slides by 1 input each time. There is no padding, so the filter does not slide outside of the input, therefore the result is a map of features of dimension (8-(3-1))x(6-(3-1)), i.e. 6x4. But one can apply padding (considering that values outside the input are zeros) so that the output feature map has the same dimension as the input. 
+
+The convolution operation can be seen as a filter scanning the input to identify a specific pattern. The weights of the filters are learned by the model. Having multiple filters allows capturing multiple patterns that are useful to reduce the loss for the task at hand. 
+
+In order to summarize the information in final layers or to save memory in intermediate ones, the obtained feature maps can be aggregated into smaller maps with pooling layers (average, max).
+
+### 1D-convolutions 
+
+Note: Although not represented in the figure, if the input is an image, the input is in fact 3-dimensional (a 2D map of 3 features also called channels, namely RGB levels). The user only defines 2 dimensions for the filter (along the "sliding" directions) but the filters are in reality 3-dimensional as well, the last dimension matching the channel dimension.
+
+2D-convolutions are only used to analyze inputs for which it makes sense to slide along 2 dimensions. In our case, to deal with transaction sequences, it only makes sense to slide along the sequence axis. Therefore, for fraud detection, we resort to 1D-convolutions and define a single filter dimension (with length equal to the number of consecutive sequence elements on which the filter looks for patterns).
+
+### Stacking convolutional layers
+
+One can stack convolution layers just like fully connected layers. For instance, let us consider an input transaction sequence with 5 transactions and 15 features for each transaction. If one defines a convolutional neural network with a first 1D-convolutional layer with 100 filters of length 2 and a second convolutional layer with 50 filters of length 2. Without padding, the successive features map's dimension will be the following:
+
+* The input dimension is (5,15): 5 is the sequence length and 15 is the number of channels.
+
+* The output dimension of the first convolutional layer is (4,100): each filter of dimension (2,15) will output a 1D feature map with 5-(2-1) = 4 features.
+
+* The output dimension of the second convolutional layer is (3,50): each filter of dimension (2,100) will output a 1D feature map with 4-(2-1) = 3 features.
+
+With padding, we can make sure that the sequence length does not change and obtain the dimensions (5,100) and (5,50) instead of (4,100) and (3,50). 
+
+### Classification with a convolutional neural network
+
+Convolutional layers produce high-level features that detect the presence of patterns or combinations of patterns within the input. These features can be considered as automatic feature aggregates and can then be used in a final regular fully connected layer for classification, after a flattening operation. This operation can be done using a pooling operator along the sequence dimension or with a flattening operator that simply concatenates the channels of all elements of the sequence into a single global vector. 
+
+### Implementation
+
+Convolutional layers are defined like regular layers. Instead of using the `torch.nn.Linear` module, one uses the specific layers for convolutional neural networks:
+
+* `torch.nn.Conv1d`: this module defines a convolutional layer. The parameters are the number of input channels, the number of filters, and the dimension of the filters. 
+
+* `torch.nn.ConstantPad1d`: this module allows us to pad a sequence with a constant value (e.g. 0) to obtain the desired sequence length after the subsequent convolutional layer.
+
+* `torch.nn.MaxPool1d` or `AvgPool1d`: these modules perform a pooling operation over the sequence dimension. 
+
+Let us define a `FraudConvNet` module that makes use of the above `torch` modules to take as input a sequence of `seq_len` transactions with `len(input_features)` features and predict if the last transaction is fraudulent. We will consider 2 padded convolutional layers, a max-pooling layer, a hidden fully connected layer, and an output fully connected layer with 1 output neuron. 
+[CODE CELL 59 - POTENTIAL TEXT]
+            # parameters
+
+            # representation learning part
+
+            # feed forward part at the end
+
+            #representation to hidden
+
+            #hidden to output
+
+[MARKDOWN CELL 60]
+### Training the 1D convolutional neural etwork
+
+To train the CNN, let us reuse the same functions as in previous sections with the `FraudSequenceDataset` as `Dataset` and the `FraudConvNet` as `module`. The objective is the same as the feed-forward Network, so the criterion is binary cross-entropy as well.
+[CODE CELL 61 - POTENTIAL TEXT]
+                                    y_train,train_df['CUSTOMER_ID'].values, 
+
+                                    train_df['TX_DATETIME'].values,
+
+                                    padding_mode = "zeros")
+
+                                 valid_df['CUSTOMER_ID'].values, 
+
+                                 valid_df['TX_DATETIME'].values,
+
+                                 padding_mode = "zeros")
+
+[MARKDOWN CELL 63]
+### Evaluation
+
+To evaluate the model on the validation dataset, the command `predictions_test = model(x_test)` that we previously used on the Feed-forward Network won't work here since the ConvNet expects the data to be in the form of sequences. The predictions need to be made properly using the validation generator. Let us implement the associated function and add it to the shared functions as well.
+[CODE CELL 64 - POTENTIAL TEXT]
+        # Forward pass
+
+        # append to all preds
+
+[CODE CELL 66 - POTENTIAL TEXT]
+predictions_df['predictions'] = valid_predictions[:,0]
+
+[MARKDOWN CELL 67]
+Without any specific hyperparameter tuning, the performance seems to be competitive with the feed-forward neural network. A the end of this section, we'll perform a grid search on this model for global comparison purposes.
+[MARKDOWN CELL 68]
+## Long Short-Term Memory network
+[MARKDOWN CELL 69]
+As stated in the introduction, the transaction sequences can also be managed with a Long Short-Term Memory network (LSTM). 
+
+An LSTM is a special type of Recurrent Neural Network (RNN). The development of RNNs started early in the 80s {cite}`rumelhart1986learning` to model data in the form of sequences (e.g. times series). The computations in an RNN are very similar to a regular feed-forward network, except that there are multiple input vectors in the form of sequence instead of a single input vector, and the RNN models the order of the vectors: it performs a succession of computations that follow the order of inputs in the sequence. In particular, it repeats a recurrent unit (a network with regular layers), from the first item to the last, that each time takes as input the output of hidden neurons (hidden state) from the previous step and the current item of the input sequence to produce a new output and a new hidden state. 
+
+The specificity of the LSTM is its advanced combination of the hidden state and the current sequence item to produce the new hidden state. In particular, it makes use of several gates (neurons with sigmoid activations) to cleverly select the right information to keep from the previous state and the right information to integrate from the current input. To get more into details with the specific mechanisms in the LSTM layer, we refer the reader to the following material: https://colah.github.io/posts/2015-08-Understanding-LSTMs/
+
+### LSTM for fraud detection
+
+LSTM have been successfully used for fraud detection in the literature {cite}`jurgovsky2018sequence`. The key information to remember is that when the LSTM takes as input a sequence of `seq_len` transactions, it produces a sequence of `seq_len` hidden states of dimension `hidden_dim`. The first hidden state will be based only on an initial state of the model and the first transaction of the sequence. The second hidden state will be based on the first hidden state and the second transaction of the sequence. Therefore, one can consider that the final hidden state is an aggregated representation of the whole sequence, as long as the sequence is not too long, which can be used as input in a feed-forward layer to classify the last transaction as either fraudulent or genuine. 
+
+### Implementation
+
+PyTorch provides a module `torch.nn.LSTM` that implements an LSTM unit. It takes as input the number of features of each vector in the sequence, the dimension of the hidden states, the number of layers, and other parameters like the percentage of dropout. 
+
+Let us use it to implement a module `FraudLSTM` that takes as input a sequence of transactions to predict the label of the last transaction. The first layer will be the LSTM module. Its last hidden state will be used in a fully connected network with a single hidden layer to finally predict the output neuron.
+
+Note: Our `DataLoader` produces batches of dimension `(batch_size, num_features, seq_len)`. When using the option `batch_first = True`, `torch.nn.LSTM` expects the first dimension to be the `batch_size` which is the case. However, it expects `seq_len` to come before `num_features`, so the second and third elements of the input must be transposed.  
+[CODE CELL 70 - POTENTIAL TEXT]
+            # parameters
+
+            # representation learning part
+
+            #representation to hidden
+
+            #hidden to output
+
+            #transposing sequence length and number of features before applying the LSTM 
+
+            #the second element of representation is a tuple with (final_hidden_states,final_cell_states)  
+
+            #since the LSTM has 1 layer and is unidirectional, final_hidden_states has a single element
+
+[MARKDOWN CELL 71]
+### Training the LSTM
+
+To train the LSTM, let us apply the same methodology as the CNN.
+[MARKDOWN CELL 73]
+### Evaluation
+
+Evaluation is also the same as with the CNN.
+[CODE CELL 75 - POTENTIAL TEXT]
+predictions_df['predictions'] = valid_predictions[:,0]
+
+[MARKDOWN CELL 76]
+This first result with the LSTM is very encouraging and highly competitive with the other architectures tested in the chapter. 
+
+It is worth noting that in this example, only the last hidden state is used in the final classification network. When dealing with long sequences and complex patterns, this state alone can become limited to integrate all the useful information for fraud detection. Moreover, it makes it difficult to identify the contribution of the different parts of the sequence to a specific prediction. To deal with these issues, one can use all the hidden states from the LSTM and resort to Attention to select and combine them.
+[MARKDOWN CELL 77]
+## Towards more advanced modeling with Attention
+[MARKDOWN CELL 78]
+The Attention mechanism is one of the major recent breakthroughs in neural network architectures {cite}`bahdanau2014neural`. It has led to significant advances in Natural Language Processing (NLP), for instance, in the *Transformer architecture* {cite}`vaswani2017attention` and its multiple variants, e.g. into BERT {cite}`devlin2018bert` or GPT {cite}`radford2019language`.
+
+The Attention mechanism is an implementation of the concept of Attention, namely selectively focusing on a subset of relevant items (e.g. states) in deep neural networks. It was initially proposed as an additional layer to improve the classical encoder-decoder LSTM architecture for neural machine translation. It allows aligning the usage of the encoder hidden states and the element currently being generated by the decoder, and solving the long-range dependency problem of LSTMs.
+
+The difference with the regular usage of an LSTM is that instead of only using the last hidden state, the Attention mechanism takes as input all the hidden states and combines them in a relevant manner with respect to a certain context. More precisely, in its most popular form, Attention performs the following operations:
+
+* Given a context vector $c$ and the sequence of hidden states $h_i$, it computes an attention score $a_i$ for each hidden state, generally using a similarity measure like a dot product between $c$ and $h_i$.
+
+* It normalizes all the attention scores with a softmax.
+
+* It computes a global output state with a linear combination $\sum a_i*h_i$.
+
+For applications like machine translation with an encoder-decoder architecture, the context vector will generally be the current hidden state of the decoder, and the Attention will be applied to all hidden states of the encoder. In such application, the encoder LSTM takes as input a sentence (sequence of words) in a language (e.g. French), and the decoder LSTM takes as input the beginning of the translated sentence in another language (e.g. English). Therefore, it makes sense to consider the current state of the translation as context to select/focus the right elements of the input sequence that will be taken into account to predict the next word of the translation. 
+
+### Attention for fraud detection
+
+For fraud detection, only an encoder LSTM is used in our implementation above. The choice of a relevant context vector will therefore be based on our intuition of what kind of context makes sense to select the right hidden states of the sequence. A reasonable choice is to consider a representation of the transaction that we aim at classifying (the last transaction) as context to select the right elements from the previous transactions. Two choices are possible: directly use the last hidden state as a context vector, or a projection of the last transaction (e.g. after applying a `torch.nn.Linear` layer). In the following, we resort to the second option, which is represented in the global architecture below:
+
+![Illustration of a sequential model with Attention](./images/attention.png)
+
+Additionally to allow dynamic selection of the relevant hidden states for the sample at hand, the attention scores can provide interpretability by showing the parts of the sequence used for the current prediction. 
+
+### Implementation
+
+There is no native implementation of a simple Attention layer in the current Pytorch version (1.9). However, a more general `torch.nn.MultiheadAttention`, like the one used in the Transformer architecture, is available. Although it would allow implementing regular attention, we will instead make use of an unofficial module that implements a simpler attention mechanism for educational purposes. This Attention module is available in the following widely validated git repository: https://github.com/IBM/pytorch-seq2seq/blob/master/seq2seq/models/attention.py 
+
+Let us copy its content in the following cell:
+[CODE CELL 79 - POTENTIAL TEXT]
+# source : https://github.com/IBM/pytorch-seq2seq/blob/master/seq2seq/models/attention.py
+
+    r"""
+
+    """
+
+        """
+
+        """
+
+        # (batch, out_len, dim) * (batch, in_len, dim) -> (batch, out_len, in_len)
+
+            attn.data.masked_fill_(self.mask, -float('inf'))
+
+        # (batch, out_len, in_len) * (batch, in_len, dim) -> (batch, out_len, dim)
+
+        # concat -> (batch, out_len, 2*dim)
+
+        # output -> (batch, out_len, dim)
+
+[MARKDOWN CELL 80]
+### How does it work?
+
+The custom `Attention` module above has a single initialization parameter which is the dimension of the input hidden states and the context vector. During the forward pass, it takes as input the sequence of hidden states and the context vector and outputs the combined state and the attention scores. 
+
+To familiarize with the module, let us manually compute the hidden states of our previous LSTM on a random training batch, and test the Attention mechanism. 
+[MARKDOWN CELL 83]
+The outputs of the LSTM are the sequence of all hidden states, and the last hidden and cell states. 
+[MARKDOWN CELL 86]
+Let us store the sequences of hidden states in a variable `test_hidden_states_seq`:
+[MARKDOWN CELL 88]
+To create our context vector, let us apply a fully connected layer on the last element of the input sequence (which is the transaction that we aim at classifying) and store the result in a variable `test_context_vector`:
+[MARKDOWN CELL 91]
+The hidden states and context vectors of the whole batch have the following dimensions:
+[MARKDOWN CELL 94]
+Now that the inputs for the Attention mechanism are ready, let us try the module:
+[MARKDOWN CELL 99]
+We obtain two outputs. `attn` contains the attention scores of the hidden states and `output_state` is the output combined state, i.e. the linear combination of the hidden states based on the attention scores. 
+
+Here the components of `attn` are rather balanced because, since the module `test_context_projector` was only randomly initialized, the context vectors `test_context_vector` are "random" and not specifically more similar to a state than another.
+
+Let us see what happens if the last hidden state `test_hidden_states_seq[:,4:,:]` is used as context vector instead. 
+[MARKDOWN CELL 102]
+This time, it is clear that the attention score is much larger for the last transaction since it is equal to the context vector. Interestingly, one can observe that the scores decrease from the most recent previous transaction to the oldest. 
+
+Nevertheless, using the last hidden state as a context vector will not necessarily guarantee better behavior on fraud classification. Instead, let us hold on to our strategy with a feed-forward layer that will compute a context vector from the last transaction and train this layer, the LSTM and the final classifier (which takes as input the combined state to classify the transaction) altogether. To do so, we implement a custom module `FraudLSTMWithAttention`.
+[CODE CELL 103 - POTENTIAL TEXT]
+            # parameters
+
+            # sequence representation
+
+            # layer that will project the last transaction of the sequence into a context vector
+
+            # attention layer
+
+            #representation to hidden
+
+            #hidden to output
+
+            #computing the sequence of hidden states from the sequence of transactions
+
+            #computing the context vector from the last transaction
+
+[MARKDOWN CELL 104]
+### Training the LSTM with Attention
+
+The LSTM with Attention takes the same input as the regular LSTM so it can be trained and evaluated in the exact same manner.
+[MARKDOWN CELL 107]
+### Validation
+[CODE CELL 108 - POTENTIAL TEXT]
+predictions_df['predictions'] = valid_predictions[:,0]
+
+[MARKDOWN CELL 109]
+The results are competitive with the LSTM. Additionnaly, the advantage with this architecture is the interpretability of the attention scores for a given prediction. 
+
+In other settings, for instance with longer sequences, this model might also be able to reach better performance thant the regular LSTM.
+[MARKDOWN CELL 110]
+## Seq-2-Seq Autoencoders
+
+The previous section of this chapter covered the use of regular autoencoders on single transactions for fraud detection. It is worth noting that the same principles could be applied here to create a semi-supervised method for sequential inputs. Instead of a feed-forward architecture, a sequence-to-sequence autoencoder with an encoder-decoder architecture could be used. This is not covered in this version of the section, but it will be proposed in the future.
+
+## Prequential grid search
+
+Now that we have explored different sequential models architectures, let us finally evaluate them properly with a prequential grid search. Compared to the grid search performed on the feed-forward neural network, the sequential models add a little complexity to the process. Indeed, they have been designed to take as input a sequence of transactions. For this purpose, the specific `FraudSequenceDataset` was implemented, and it requires two additional features to build the sequences: the landmark feature (`CUSTOMER_ID`) and the chronological feature (`TX_DATETIME`). Our previous model selection function (`model_selection_wrapper`) does not directly allow passing these extra parameters to the `torch` Dataset. The trick here will be to simply pass them as regular features but only use them to build the sequences. For that, the `FraudSequenceDataset` needs to be updated into a new version (that will be referred to as `FraudSequenceDatasetForPipe`) that only takes as input `x` and `y` and assumes that the last column of `x` is `TX_DATETIME`, the previous column is `CUSTOMER_ID`, and the rest are the transactions regular features.
+[CODE CELL 111 - POTENTIAL TEXT]
+        'Initialization'
+
+        # lets us assume that x[:,-1] are the dates, and x[:,-2] are customer ids, padding_mode is "mean"
+
+        # storing the features x in self.feature and adding the "padding" transaction at the end
+
+        #===== computing sequences ids =====       
+
+        df_ids_dates_cpy = pd.DataFrame({'CUSTOMER_ID':customer_ids,
+
+        'TX_DATETIME':dates})
+
+        df_ids_dates_cpy["tmp_index"]  = np.arange(len(df_ids_dates_cpy))
+
+        df_groupby_customer_id = df_ids_dates_cpy.groupby("CUSTOMER_ID")
+
+                "tx_{}".format(n): df_groupby_customer_id["tmp_index"].shift(seq_len - n - 1)
+
+        df_ids_dates_cpy = df_ids_dates_cpy.drop("tmp_index", axis=1)
+
+        'Denotes the total number of samples'
+
+        # not len(self.features) because of the added padding transaction
+
+        'Generates one sample of data'
+
+        # Select sample index
+
+            #transposing because the CNN considers the channel dimension before the sequence dimension
+
+[MARKDOWN CELL 112]
+### Grid search on the 1-D Convolutional Neural Network
+
+Let us perform a grid search on the 1-D CNN with the following hyperparameters:
+
+* Batch size : [64,128,256]
+
+* Initial learning rate: [0.0001, 0.0002, 0.001]
+
+* Number of epochs : [10, 20, 40]
+
+* Dropout rate : [0, 0.2]
+
+* Number of convolutional layers : [1,2]
+
+* Number of convolutional filters : [100, 200]
+
+For that, the `FraudCNN` module needs to be adapted to output two probabilities like `sklearn` classifiers, and then wrapped with `skorch`.
+[CODE CELL 113 - POTENTIAL TEXT]
+        # parameters
+
+        # representation learning part
+
+        # feed forward part at the end
+
+        #representation to hidden
+
+        #hidden to output
+
+[MARKDOWN CELL 114]
+The two extra features (`CUSTOMER_ID` and `TX_DATETIME`) also need to be added to the list `input_features`.
+
+Note: the `model_selection_wrapper` function implements an sklearn pipeline that combines the classifier with a scaler. Therefore, the two extra variables will be standardized like the rest of the features. To avoid unexpected behavior, let us convert the datetimes into timestamps. Once done, the normalization of both `CUSTOMER_ID` and `TX_DATETIME_TIMESTAMP` should not change the set of unique ids of customers nor the chronological order of the transactions, and therefore lead to the same sequences and results.
+[CODE CELL 115 - POTENTIAL TEXT]
+transactions_df['TX_DATETIME_TIMESTAMP'] = transactions_df['TX_DATETIME'].apply(lambda x:datetime.datetime.timestamp(x))
+
+input_features_new = input_features + ['CUSTOMER_ID','TX_DATETIME_TIMESTAMP']
+[MARKDOWN CELL 116]
+Now that all the classes are ready, let us run the grid search with the CNN using the skorch wrapper and the same scoring and validation settings as in previous sections.
+[CODE CELL 118 - POTENTIAL TEXT]
+# Only keep columns that are needed as argument to custome scoring function
+
+# to reduce serialisation time of transaction dataset
+
+transactions_df_scorer = transactions_df[['CUSTOMER_ID', 'TX_FRAUD','TX_TIME_DAYS']]
+
+performance_metrics_list_grid = ['roc_auc', 'average_precision', 'card_precision@100']
+
+performance_metrics_list = ['AUC ROC', 'Average precision', 'Card Precision@100']
+
+scoring = {'roc_auc':'roc_auc',
+
+           'average_precision': 'average_precision',
+
+           'card_precision@100': card_precision_top_100,
+
+[CODE CELL 119 - POTENTIAL TEXT]
+    'clf__lr': [0.0001,0.0002,0.001],
+
+    'clf__batch_size': [64,128,256],
+
+    'clf__max_epochs': [10,20,40],
+
+    'clf__module__hidden_size': [500],
+
+    'clf__module__num_conv': [1,2],
+
+    'clf__module__p': [0,0.2],
+
+    'clf__module__num_features': [int(len(input_features))],
+
+    'clf__module__num_filters': [100,200],
+
+parameters_dict=dict(performances_df['Parameters'])
+
+performances_df['Parameters summary']=[str(parameters_dict[i]['clf__max_epochs'])+
+
+                                   '/'+
+
+                                   str(parameters_dict[i]['clf__module__num_conv'])+
+
+                                   '/'+
+
+                                   str(parameters_dict[i]['clf__batch_size'])+
+
+                                   '/'+    
+
+                                   str(parameters_dict[i]['clf__module__num_filters'])+
+
+                                   '/'+                                       
+
+                                   str(parameters_dict[i]['clf__module__p'])
+
+[CODE CELL 121 - POTENTIAL TEXT]
+summary_performances_cnn=get_summary_performances(performances_df_cnn, parameter_column_name="Parameters summary")
+
+[MARKDOWN CELL 122]
+The results of the CNN on the simulated data are slightly less convincing than the feed-forward network. There can be several reasons for that. In particular, with regards to the patterns annotated as frauds in the simulated data, the aggregates in `input_features` may already provide enough context to regular models, which limits the interest of contextualization with the sequence. Let us have a look at the impact of some hyperparameters to better understand our model. Let us fix the number of convolutional layers to 2, the dropout level to 0.2, and visualize the impact of batch size, number of epochs, and number of filters.
+[CODE CELL 123 - POTENTIAL TEXT]
+parameters_dict=dict(performances_df_cnn['Parameters'])
+
+performances_df_cnn['Parameters summary']=[str(parameters_dict[i]['clf__max_epochs'])+
+
+                                   '/'+
+
+                                   str(parameters_dict[i]['clf__batch_size'])+
+
+                                   '/'+    
+
+                                   str(parameters_dict[i]['clf__module__num_filters'])
+
+performances_df_cnn_subset = performances_df_cnn[performances_df_cnn['Parameters'].apply(lambda x:x['clf__lr']== 0.001 and x['clf__module__num_filters']==100 and x['clf__max_epochs']==20 and x['clf__module__num_conv']==2 and x['clf__module__p']==0.2).values]
+
+summary_performances_cnn_subset=get_summary_performances(performances_df_cnn_subset, parameter_column_name="Parameters summary")
+
+indexes_summary[0] = 'Best estimated parameters'
+
+                       performance_metrics_list=['AUC ROC', 'Average precision', 'Card Precision@100'], 
+
+                       expe_type_list=['Test','Validation'], expe_type_color_list=['#008000','#FF0000'],
+
+                       parameter_name="batch size",
+
+performances_df_cnn_subset = performances_df_cnn[performances_df_cnn['Parameters'].apply(lambda x:x['clf__lr']== 0.001 and x['clf__module__num_filters']==100 and x['clf__batch_size']==64 and x['clf__module__num_conv']==2 and x['clf__module__p']==0.2).values]
+
+summary_performances_cnn_subset=get_summary_performances(performances_df_cnn_subset, parameter_column_name="Parameters summary")
+
+indexes_summary[0] = 'Best estimated parameters'
+
+                       performance_metrics_list=['AUC ROC', 'Average precision', 'Card Precision@100'], 
+
+                       expe_type_list=['Test','Validation'], expe_type_color_list=['#008000','#FF0000'],
+
+                       parameter_name="epochs",
+
+performances_df_cnn_subset = performances_df_cnn[performances_df_cnn['Parameters'].apply(lambda x:x['clf__lr']== 0.001 and x['clf__max_epochs']==20 and x['clf__batch_size']==64 and x['clf__module__num_conv']==2 and x['clf__module__p']==0.2).values]
+
+summary_performances_cnn_subset=get_summary_performances(performances_df_cnn_subset, parameter_column_name="Parameters summary")
+
+indexes_summary[0] = 'Best estimated parameters'
+
+                       performance_metrics_list=['AUC ROC', 'Average precision', 'Card Precision@100'], 
+
+                       expe_type_list=['Test','Validation'], expe_type_color_list=['#008000','#FF0000'],
+
+                       parameter_name="num filters",
+
+parameters_dict=dict(performances_df_cnn['Parameters'])
+
+performances_df_cnn['Parameters summary']=[str(parameters_dict[i]['clf__max_epochs'])+
+
+                                   '/'+
+
+                                   str(parameters_dict[i]['clf__module__num_conv'])+
+
+                                   '/'+
+
+                                   str(parameters_dict[i]['clf__batch_size'])+
+
+                                   '/'+    
+
+                                   str(parameters_dict[i]['clf__module__num_filters'])+
+
+                                   '/'+                                       
+
+                                   str(parameters_dict[i]['clf__module__p'])
+
+[MARKDOWN CELL 124]
+Similar to the feed-forward network, the number of epochs and batch size, which are optimization parameters, have a sweet spot, which is probably connected to other parameters (model size, dropout, etc.). For the chosen optimization parameters, 100 filters seem to lead to better results than 200.
+[MARKDOWN CELL 125]
+### Grid search on the Long Short Term Memory
+
+For the LSTM, we will search the following hyperparameters:
+
+* Batch size : [64,128,256]
+
+* Initial learning rate: [0.0001, 0.0002, 0.001]
+
+* Number of epochs : [5, 10, 20]
+
+* Dropout rate : [0, 0.2, 0.4]
+
+* Dimension of the LSTM hidden states : [100,200]
+
+The LSTM takes sequences of transactions as input, so the process is the same as for the CNN, and the module also needs to be adapted to output two neurons. 
+[CODE CELL 126 - POTENTIAL TEXT]
+        # parameters
+
+        # representation learning part
+
+        #representation to hidden
+
+        #hidden to output
+
+[CODE CELL 127 - POTENTIAL TEXT]
+    'clf__lr': [0.0001,0.0002,0.001],
+
+    'clf__batch_size': [64,128,256],
+
+    'clf__max_epochs': [5,10,20],
+
+    'clf__module__hidden_size': [500],
+
+    'clf__module__p': [0,0.2,0.4],
+
+    'clf__module__num_features': [int(len(input_features))],
+
+    'clf__module__hidden_size_lstm': [100,200],
+
+#these will get normalized but it should still work
+
+input_features_new = input_features + ['CUSTOMER_ID','TX_DATETIME_TIMESTAMP']
+
+parameters_dict=dict(performances_df['Parameters'])
+
+performances_df['Parameters summary']=[str(parameters_dict[i]['clf__max_epochs'])+
+
+                                   '/'+
+
+                                    str(parameters_dict[i]['clf__batch_size'])+
+
+                                   '/'+
+
+                                   str(parameters_dict[i]['clf__module__hidden_size_lstm'])+
+
+                                   '/'+                           
+
+                                   str(parameters_dict[i]['clf__module__p'])
+
+# Rename to performances_df_lstm for model performance comparison at the end of this notebook
+
+[CODE CELL 129 - POTENTIAL TEXT]
+summary_performances_lstm=get_summary_performances(performances_df_lstm, parameter_column_name="Parameters summary")
+
+[MARKDOWN CELL 130]
+The results with the LSTM are more competitive than the CNN, and they are similar to the feed-forward network. This is still aligned with the hypothesis that the sequence does not really provide, for this dataset, a notable added value compared to only the last transaction with aggregated information. Nevertheless, the comparison with the CNN shows that, even with the same input, the choice of architecture can have an important impact on the performance. Moreover, the performed grid-search is for illustration purposes and is far from exhaustive, so the hyperparameters tuning brings an additional artifact to the results.
+
+The conclusions about the set of optimal hyperparameters are very mixed here. Let us fix the learning rate to 0.0001, the batch size to 128, the dropout level to 0.2, and visualize the impact of the number of epochs and of the size of the hidden states.
+[CODE CELL 131 - POTENTIAL TEXT]
+parameters_dict=dict(performances_df_lstm['Parameters'])
+
+performances_df_lstm['Parameters summary']=[str(parameters_dict[i]['clf__max_epochs'])+
+
+                                   '/'+
+
+                                   str(parameters_dict[i]['clf__module__hidden_size_lstm'])
+
+performances_df_lstm_subset = performances_df_lstm[performances_df_lstm['Parameters'].apply(lambda x:x['clf__lr']== 0.0001 and x['clf__batch_size']==128 and x['clf__max_epochs']==10 and x['clf__module__p']==0.2).values]
+
+summary_performances_lstm_subset=get_summary_performances(performances_df_lstm_subset, parameter_column_name="Parameters summary")
+
+indexes_summary[0] = 'Best estimated parameters'
+
+                       performance_metrics_list=['AUC ROC', 'Average precision', 'Card Precision@100'], 
+
+                       expe_type_list=['Test','Validation'], expe_type_color_list=['#008000','#FF0000'],
+
+                       parameter_name="hidden states size",
+
+performances_df_lstm_subset = performances_df_lstm[performances_df_lstm['Parameters'].apply(lambda x:x['clf__lr']== 0.0001 and x['clf__batch_size']==128 and x['clf__module__hidden_size_lstm']==100 and x['clf__module__p']==0.2).values]
+
+summary_performances_lstm_subset=get_summary_performances(performances_df_lstm_subset, parameter_column_name="Parameters summary")
+
+indexes_summary[0] = 'Best estimated parameters'
+
+                       performance_metrics_list=['AUC ROC', 'Average precision', 'Card Precision@100'], 
+
+                       expe_type_list=['Test','Validation'], expe_type_color_list=['#008000','#FF0000'],
+
+                       parameter_name="epochs",
+
+parameters_dict=dict(performances_df_lstm['Parameters'])
+
+performances_df_lstm['Parameters summary']=[str(parameters_dict[i]['clf__max_epochs'])+
+
+                                   '/'+
+
+                                    str(parameters_dict[i]['clf__batch_size'])+
+
+                                   '/'+
+
+                                   str(parameters_dict[i]['clf__module__hidden_size_lstm'])+
+
+                                   '/'+                           
+
+                                   str(parameters_dict[i]['clf__module__p'])
+
+[MARKDOWN CELL 132]
+Recall here that the grid search is not exhaustive, and from the plots, it appears that the average precision could have been further improved.
+[MARKDOWN CELL 133]
+### Grid search on the LSTM with Attention
+
+For the LSTM with Attention, we apply the exact same process as for the LSTM.
+[CODE CELL 134 - POTENTIAL TEXT]
+        # parameters
+
+        # representation learning part
+
+        # last sequence represenation
+
+        # attention layer
+
+        #representation to hidden
+
+        #hidden to output
+
+[CODE CELL 135 - POTENTIAL TEXT]
+    'clf__lr': [0.0001,0.0002,0.001],
+
+    'clf__batch_size': [64,128,256],
+
+    'clf__max_epochs': [5,10,20],
+
+    'clf__module__hidden_size': [500],
+
+    'clf__module__p': [0,0.2,0.4],
+
+    'clf__module__num_features': [int(len(input_features))],
+
+    'clf__module__hidden_size_lstm': [100,200],
+
+#these will get normalized but it should still work
+
+input_features_new = input_features + ['CUSTOMER_ID','TX_DATETIME_TIMESTAMP']
+
+parameters_dict=dict(performances_df['Parameters'])
+
+performances_df['Parameters summary']=[str(parameters_dict[i]['clf__max_epochs'])+
+
+                                   '/'+
+
+                                    str(parameters_dict[i]['clf__batch_size'])+
+
+                                   '/'+
+
+                                   str(parameters_dict[i]['clf__module__hidden_size_lstm'])+
+
+                                   '/'+                           
+
+                                   str(parameters_dict[i]['clf__module__p'])
+
+# Rename to performances_df_lstm for model performance comparison at the end of this notebook
+
+[CODE CELL 137 - POTENTIAL TEXT]
+summary_performances_lstm_attn=get_summary_performances(performances_df_lstm_attn, parameter_column_name="Parameters summary")
+
+[MARKDOWN CELL 138]
+The LSTM with Attention has a performance that is only slightly better than the regular LSTM. Although Attention is a mechanism that significantly impacts many applications such as NLP, its interest can be limited on such sequences that are rather short and on such a model that only has a single recurrent layer.
+[CODE CELL 139 - POTENTIAL TEXT]
+parameters_dict=dict(performances_df_lstm_attn['Parameters'])
+
+performances_df_lstm_attn['Parameters summary']=[str(parameters_dict[i]['clf__max_epochs'])+
+
+                                   '/'+
+
+                                   str(parameters_dict[i]['clf__module__hidden_size_lstm'])
+
+performances_df_lstm_attn_subset = performances_df_lstm_attn[performances_df_lstm_attn['Parameters'].apply(lambda x:x['clf__lr']== 0.0001 and x['clf__batch_size']==128 and x['clf__max_epochs']==10 and x['clf__module__p']==0.2).values]
+
+summary_performances_lstm_attn_subset=get_summary_performances(performances_df_lstm_attn_subset, parameter_column_name="Parameters summary")
+
+indexes_summary[0] = 'Best estimated parameters'
+
+                       performance_metrics_list=['AUC ROC', 'Average precision', 'Card Precision@100'], 
+
+                       expe_type_list=['Test','Validation'], expe_type_color_list=['#008000','#FF0000'],
+
+                       parameter_name="hidden states size",
+
+performances_df_lstm_attn_subset = performances_df_lstm_attn[performances_df_lstm_attn['Parameters'].apply(lambda x:x['clf__lr']== 0.0001 and x['clf__batch_size']==128 and x['clf__module__hidden_size_lstm']==100 and x['clf__module__p']==0.2).values]
+
+summary_performances_lstm_attn_subset=get_summary_performances(performances_df_lstm_attn_subset, parameter_column_name="Parameters summary")
+
+indexes_summary[0] = 'Best estimated parameters'
+
+                       performance_metrics_list=['AUC ROC', 'Average precision', 'Card Precision@100'], 
+
+                       expe_type_list=['Test','Validation'], expe_type_color_list=['#008000','#FF0000'],
+
+                       parameter_name="epochs",
+
+parameters_dict=dict(performances_df_lstm_attn['Parameters'])
+
+performances_df_lstm_attn['Parameters summary']=[str(parameters_dict[i]['clf__max_epochs'])+
+
+                                   '/'+
+
+                                    str(parameters_dict[i]['clf__batch_size'])+
+
+                                   '/'+
+
+                                   str(parameters_dict[i]['clf__module__hidden_size_lstm'])+
+
+                                   '/'+                           
+
+                                   str(parameters_dict[i]['clf__module__p'])
+
+[MARKDOWN CELL 140]
+For the same set of hyperparameters, the convergence w.r.t the average precision is different than LSTM without Attention.
+[MARKDOWN CELL 141]
+## Saving of results
+
+Let us save the performance results and execution times of these three models in a Python pickle format.
+[CODE CELL 142 - POTENTIAL TEXT]
+    "CNN": performances_df_cnn,    
+
+    "LSTM": performances_df_lstm,    
+
+    "LSTM_Attention": performances_df_lstm_attn,
+
+filehandler = open('performances_model_selection_seq_model.pkl', 'wb') 
+
+[MARKDOWN CELL 143]
+## Benchmark summary
+
+Let us finally retrieve the performance results obtained in
+
+* [Chapter 5](Model_Selection_Comparison_Performances) with decision tree, logistic regression, random forest and XGBoost, and
+
+* [Chapter 7, Section 2](Model_Selection_FFNN) with feed-forward neural networks
+
+and compare them with those obtained with CNN, LSTM, and LSTM with Attention. 
+
+The results can be retrieved by loading the `performances_model_selection.pkl`, `performances_model_selection_nn.pkl` and `performances_model_selection_seq_model.pkl` pickle files, and summarized with the `get_summary_performances` function.
+[CODE CELL 144 - POTENTIAL TEXT]
+# Load performance results for decision tree, logistic regression, random forest and XGBoost
+
+filehandler = open('../Chapter_5_ModelValidationAndSelection/performances_model_selection.pkl', 'rb') 
+
+# Load performance results for feed-forward neural network
+
+filehandler = open('performances_model_selection_nn.pkl', 'rb') 
+
+# Load performance results for CNN, LSTM and LSTM with Attention
+
+filehandler = open('performances_model_selection_seq_model.pkl', 'rb') 
+
+[CODE CELL 145 - POTENTIAL TEXT]
+performances_df_dt=performances_df_dictionary['Decision Tree']
+
+summary_performances_dt=get_summary_performances(performances_df_dt, parameter_column_name="Parameters summary")
+
+performances_df_lr=performances_df_dictionary['Logistic Regression']
+
+summary_performances_lr=get_summary_performances(performances_df_lr, parameter_column_name="Parameters summary")
+
+performances_df_rf=performances_df_dictionary['Random Forest']
+
+summary_performances_rf=get_summary_performances(performances_df_rf, parameter_column_name="Parameters summary")
+
+performances_df_xgboost=performances_df_dictionary['XGBoost']
+
+summary_performances_xgboost=get_summary_performances(performances_df_xgboost, parameter_column_name="Parameters summary")
+
+performances_df_nn=performances_df_dictionary_nn['Neural Network']
+
+summary_performances_nn=get_summary_performances(performances_df_nn, parameter_column_name="Parameters summary")
+
+performances_df_cnn=performances_df_dictionary_seq_model['CNN']
+
+summary_performances_cnn=get_summary_performances(performances_df_cnn, parameter_column_name="Parameters summary")
+
+performances_df_lstm=performances_df_dictionary_seq_model['LSTM']
+
+summary_performances_lstm=get_summary_performances(performances_df_lstm, parameter_column_name="Parameters summary")
+
+performances_df_lstm_attention=performances_df_dictionary_seq_model['LSTM_Attention']
+
+summary_performances_lstm_attention=get_summary_performances(performances_df_lstm_attention, parameter_column_name="Parameters summary")
+
+summary_test_performances.columns=['Decision Tree', 'Logistic Regression', 'Random Forest', 'XGBoost', 
+
+                                   'Neural Network', 'CNN', 'LSTM', 'LSTM with Attention']
+
+[MARKDOWN CELL 146]
+The results are summarized in a `summary_test_performances` table. Rows provide the average performance results on the test sets in terms of AUC ROC, Average Precision and CP@100. 
+[MARKDOWN CELL 148]
+In the end, it appears that neural-network based approaches provide results that are competitive with random forests and XGBoost, providing slightly better performances in terms of AUC ROC, and slightly worse performances in terms of Average Precision. However, it should be kept in mind that, given more computational resources, a more extensive hyperparameter tuning could be performed for neural network-based approaches that would likely lead to further improve their performances. 
+
+[MARKDOWN CELL 149]
+## Conclusion
+[MARKDOWN CELL 150]
+In this section, automatic methods to build features from contextual data were explored. To classify a transaction as fraudulent or genuine, it is generally useful to resort to the regular behavior of the cardholder in order to detect a discrepancy. A manual method to integrate this contextual information is to proceed with feature engineering and the creation of expert feature aggregations. 
+
+Automatic representation learning methods from the Deep Learning literature have been explored to create features that represent the cardholder's sequence of previous transactions in a way that optimizes the classification of the current transaction. 
+
+The key methodological components are the building of the data pipeline to automatically create the sequential data from landmark variables and the right combination of adapted neural networks such as the 1D-CNN, the LSTM, the Attention mechanism, etc. These models have been tested here, and they can provide competitive performance. In the future, other candidate architectures such as Multi-Head Self-Attention, Sequence-to-Sequence Autoencoder, or any combination of the above modules could be explored to attempt to further improve fraud detection performance. 
