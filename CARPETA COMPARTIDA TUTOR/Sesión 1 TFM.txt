@@ -1,0 +1,107 @@
+Claro, aquí tienes las minutas de la reunión basadas en la transcripción proporcionada.
+
+
+
+---
+
+
+
+### **Minutas de la Reunión: Definición de Tesis de Máster**
+
+
+
+**Fecha:** N/A
+
+**Participantes:**
+
+*  **Interlocutor A:** Sergio (Estudiante de máster)
+
+*  **Interlocutor B:** Vady Gana (Tutor de tesis)
+
+
+
+---
+
+
+
+#### **Resumen Conciso**
+
+
+
+Reunión inicial entre el estudiante de máster, Sergio, y su tutor, Vady Gana, para definir el tema de su tesis final. La conversación se centró en establecer los criterios clave para seleccionar un proyecto de tesis viable y relevante en el ámbito de la inteligencia artificial aplicada a procesos industriales. Se definieron las expectativas, la metodología de trabajo y se acordaron los próximos pasos concretos para la propuesta de temas.
+
+
+
+---
+
+
+
+#### **Puntos Clave Discutidos**
+
+
+
+1. **Contexto del Estudiante (Sergio):**
+
+  *  Formación como Ingeniero Industrial con experiencia en una consultora de mejora continua y digitalización.
+
+  *  Interés principal en la parte técnica, desarrollo de producto y soluciones digitales.
+
+  *  Actualmente trabaja en la empresa Mescbook, que desarrolla soluciones MES de control industrial, lo que representa una oportunidad para encontrar un tema de tesis aplicable.
+
+
+
+2. **Criterios para la Selección del Tema de Tesis:**
+
+  *  **Validación:** El punto más importante es que la idea o problema pueda ser validado por un experto en el dominio (por ejemplo, alguien de la empresa de Sergio).
+
+  *  **Familiaridad:** El tema debe estar en un área de negocio que Sergio ya conozca para centrarse en la aplicación de la herramienta (IA) y no en aprender un nuevo dominio desde cero.
+
+  *  **Objetivo Claro:** La tesis debe tener un propósito definido (ej: clasificar, predecir, detectar anomalías).
+
+  *  **Disponibilidad de Datos:** Es crucial contar con un conjunto de datos validado, ya sea de su empresa o de fuentes públicas como Kaggle.
+
+  *  **Sustento Científico:** La propuesta debe apoyarse en documentos científicos existentes (papers, artículos) para no empezar desde cero.
+
+  *  **Motivación:** El tema debe ser motivador para Sergio, incentivando que proponga ideas y sea proactivo.
+
+
+
+3. **Metodología de Trabajo:**
+
+  *  **Reuniones:** Se establecerán reuniones semanales de aproximadamente una hora.
+
+  *  **Dedicación:** Se espera que Sergio dedique unas 5 horas semanales de trabajo personal al proyecto.
+
+  *  **Flujo de Trabajo:** Será un proceso iterativo de investigar, presentar avances y planificar los siguientes pasos.
+
+  *  **Herramientas:** Se utilizará una carpeta compartida (Google Drive, SharePoint) para el intercambio de documentos.
+
+  *  **Uso de IA (ChatGPT):** Se permite el uso de herramientas de IA generativa, siempre que se domine el tema y su uso no sea evidente en el trabajo final.
+
+
+
+4. **Habilidades Técnicas:**
+
+  *  Sergio confirmó tener nociones de programación en Python, con experiencia previa en PyTorch y un interés activo en nuevas herramientas de IA.
+
+
+
+---
+
+
+
+#### **Acciones a Tomar**
+
+
+
+| Acción | Responsable | Plazo |
+
+| :--- | :--- | :--- |
+
+| **1. Investigar y proponer de 2 a 3 temas de tesis** que cumplan con los criterios discutidos (validables, con datos disponibles, sustentados científicamente). Se sugiere explorar problemáticas dentro de su empresa actual (Mescbook). | Sergio (Interlocutor A) | Para la próxima reunión (viernes). |
+
+| **2. Enviar correo electrónico** con las directrices de la reunión, el documento de ejemplo y enlaces de interés (roadmap de IA, Kaggle). | Vady Gana (Interlocutor B) | Inmediatamente después de la reunión. |
+
+| **3. Agendar la próxima reunión de seguimiento** para revisar las propuestas de temas. | Ambos | Viernes a las 15:00 (hora Madrid). |
+
+| **4. Crear una carpeta compartida** para subir el borrador con las propuestas de tesis y facilitar la colaboración. | Sergio (Interlocutor A) | Antes de la próxima reunión. |
