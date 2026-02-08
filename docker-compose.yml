@@ -1,0 +1,21 @@
+services:
+  fraud-detection:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fraud-detection-handbook
+    volumes:
+      # Montar el proyecto para persistir cambios
+      - .:/app
+      # Montar volumen para cache de notebooks
+      - notebook-cache:/app/.jupyter_cache
+    environment:
+      - PYTHONUNBUFFERED=1
+    # Para desarrollo interactivo con Jupyter
+    # ports:
+    #   - "8888:8888"
+    # command: jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root --NotebookApp.token=''
+    command: python execute_notebooks.py
+
+volumes:
+  notebook-cache:
