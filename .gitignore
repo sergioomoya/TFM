@@ -1,30 +1,65 @@
-# Resultados de ejecución de notebooks
-execution_results/
+# ============================================
+# Archivos generados automáticamente (NO versionar)
+# ============================================
 
-# Archivos de Python
+# Caché y bytecode de Python (se regeneran automáticamente)
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
 
-# Entornos virtuales
+# Entornos virtuales (muy grandes, se recrean con requirements.txt)
 venv/
 env/
 ENV/
+.venv/
 
-# Jupyter Notebook checkpoints
-.ipynb_checkpoints
+# Checkpoints temporales de Jupyter
+.ipynb_checkpoints/
 
-# Archivos del sistema
+# ============================================
+# Archivos del sistema operativo (NO versionar)
+# ============================================
+
+# macOS
 .DS_Store
-Thumbs.db
+.AppleDouble
+.LSOverride
 
-# Archivos de IDE
-.vscode/
-.idea/
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+
+# ============================================
+# Archivos de IDE (opcional - descomenta si no quieres versionarlos)
+# ============================================
+
+# .vscode/
+# .idea/
 *.swp
 *.swo
+*.sublime-project
+*.sublime-workspace
 
-# Logs
+# ============================================
+# Logs temporales (NO versionar)
+# ============================================
+
 *.log
+*.log.*
+
+# ============================================
+# NOTA: Los siguientes archivos SÍ se versionan:
+# - *.pkl (modelos entrenados - parte del trabajo)
+# - execution_results.json (resultados documentados)
+# - execution_results/ (si son relevantes para el TFM)
+# - Todos los notebooks, scripts, documentación, etc.
+# ============================================
