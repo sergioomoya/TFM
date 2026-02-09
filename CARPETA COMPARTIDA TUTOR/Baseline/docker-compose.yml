@@ -1,21 +1,44 @@
+# =============================================================================
+# docker-compose.yml - TFM Detección de Fraude
+# =============================================================================
+# Uso:
+#   docker compose build                    → Construir imagen
+#   docker compose run --rm experiments     → Ejecutar TODOS los experimentos
+#   docker compose run --rm jupyter         → Jupyter Lab interactivo
+#
+#   Ejecutar un solo experimento:
+#   docker compose run --rm experiments python experiments/run_experiment.py \
+#       --notebook experiments/experiment_a_baseline.ipynb
+# =============================================================================
+
 services:
-  fraud-detection:
+
+  # Servicio principal: ejecutar experimentos
+  experiments:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: fraud-detection-handbook
+    container_name: tfm-experiments
     volumes:
-      # Montar el proyecto para persistir cambios
       - .:/app
-      # Montar volumen para cache de notebooks
-      - notebook-cache:/app/.jupyter_cache
     environment:
       - PYTHONUNBUFFERED=1
-    # Para desarrollo interactivo con Jupyter
-    # ports:
-    #   - "8888:8888"
-    # command: jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root --NotebookApp.token=''
-    command: python execute_notebooks.py
+    command: python experiments/run_experiment.py --all
+    working_dir: /app
 
-volumes:
-  notebook-cache:
+  # Servicio auxiliar: Jupyter Lab interactivo
+  jupyter:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tfm-jupyter
+    volumes:
+      - .:/app
+    ports:
+      - "8888:8888"
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: >
+      jupyter lab --ip=0.0.0.0 --port=8888 --no-browser
+      --allow-root --NotebookApp.token=''
+    working_dir: /app

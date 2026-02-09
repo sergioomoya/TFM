@@ -1,11 +1,14 @@
-# Dockerfile para ejecutar los notebooks del Fraud Detection Handbook
-# Basado en Python 3.8 para compatibilidad con las versiones específicas de las dependencias
+# =============================================================================
+# Dockerfile - TFM Detección de Fraude
+# =============================================================================
+# Entorno Docker para ejecutar los experimentos y cuadernos unificados
+# del Fraud Detection Handbook.
+# =============================================================================
 
 FROM python:3.8-slim
 
-# Metadatos
-LABEL maintainer="TFM Fraud Detection Handbook"
-LABEL description="Entorno Docker para ejecutar notebooks unificados del Fraud Detection Handbook"
+LABEL maintainer="TFM Detección de Fraude - Sergio Moya"
+LABEL description="Entorno Docker para los experimentos del TFM"
 
 # Variables de entorno
 ENV PYTHONUNBUFFERED=1 \
@@ -13,7 +16,7 @@ ENV PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
 
-# Instalar dependencias del sistema
+# Dependencias del sistema
 RUN apt-get update && apt-get install -y \
     build-essential \
     curl \
@@ -21,22 +24,19 @@ RUN apt-get update && apt-get install -y \
     graphviz \
     && rm -rf /var/lib/apt/lists/*
 
-# Crear directorio de trabajo
 WORKDIR /app
 
-# Copiar requirements.txt
+# Instalar dependencias Python
 COPY requirements.txt .
-
-# Instalar dependencias de Python
 RUN pip install --upgrade pip && \
     pip install -r requirements.txt && \
-    pip install nbconvert papermill jupyter-client ipykernel lxml_html_clean
+    pip install nbconvert papermill jupyter-client ipykernel lxml_html_clean && \
+    python -m ipykernel install --user --name python3
 
-# Copiar todo el proyecto
 COPY . .
 
-# Exponer puerto para Jupyter (opcional, para desarrollo)
+# Puerto Jupyter (para desarrollo interactivo)
 EXPOSE 8888
 
-# Comando por defecto (puede ser sobrescrito)
-CMD ["python", "run_notebooks.py"]
+# Por defecto: shell interactiva (sobrescribir con docker-compose)
+CMD ["bash"]
