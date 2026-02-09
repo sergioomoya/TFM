@@ -16,6 +16,9 @@ if sys.platform == 'win32':
     sys.stderr.reconfigure(encoding='utf-8')
 
 NOTEBOOKS_TO_VALIDATE = [
+    "Chapter_3_GettingStarted/Chapter_3_Unified.ipynb",
+    "Chapter_4_PerformanceMetrics/Chapter_4_Unified.ipynb",
+    "Chapter_5_ModelValidationAndSelection/Chapter_5_Unified.ipynb",
     "Chapter_6_ImbalancedLearning/Chapter_6_Unified.ipynb",
     "Chapter_7_DeepLearning/Chapter_7_Unified.ipynb",
 ]

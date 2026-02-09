@@ -30,7 +30,7 @@ COPY requirements.txt .
 # Instalar dependencias de Python
 RUN pip install --upgrade pip && \
     pip install -r requirements.txt && \
-    pip install nbconvert papermill jupyter-client ipykernel
+    pip install nbconvert papermill jupyter-client ipykernel lxml_html_clean
 
 # Copiar todo el proyecto
 COPY . .
@@ -39,4 +39,4 @@ COPY . .
 EXPOSE 8888
 
 # Comando por defecto (puede ser sobrescrito)
-CMD ["python", "execute_notebooks.py"]
+CMD ["python", "run_notebooks.py"]

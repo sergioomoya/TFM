@@ -21,11 +21,14 @@ if sys.platform == 'win32':
 
 # Configuración
 NOTEBOOKS_TO_TEST = [
-    "Chapter_6_ImbalancedLearning/Chapter_6_Unified.ipynb",
-    "Chapter_7_DeepLearning/Chapter_7_Unified.ipynb",
+    # "Chapter_3_GettingStarted/Chapter_3_Unified.ipynb",      # OK
+    # "Chapter_4_PerformanceMetrics/Chapter_4_Unified.ipynb",   # OK
+    # "Chapter_5_ModelValidationAndSelection/Chapter_5_Unified.ipynb",  # OK
+    # "Chapter_6_ImbalancedLearning/Chapter_6_Unified.ipynb",   # OK
+    "Chapter_7_DeepLearning/Chapter_7_Unified.ipynb",           # Requiere re-ejecución con timeout mayor
 ]
 
-TIMEOUT_PER_CELL = 600  # 10 minutos por celda
+TIMEOUT_PER_CELL = 3600  # 60 minutos por celda (para entrenamientos de deep learning)
 RESULTS_DIR = Path("execution_results")
 RESULTS_DIR.mkdir(exist_ok=True)
 
