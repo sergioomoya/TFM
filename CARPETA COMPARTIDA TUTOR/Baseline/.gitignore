@@ -14,7 +14,11 @@ simulated-data-transformed/
 experiments/results/*.pkl
 experiments/results/*.csv
 experiments/results/*.json
+experiments/results/*.ipynb
 experiments/results/figures/
+
+# Archivos pickle generados por los cuadernos unificados (raíz)
+performances_*.pkl
 
 # ---------------------
 # Python

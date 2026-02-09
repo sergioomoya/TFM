@@ -30,7 +30,7 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --upgrade pip && \
     pip install -r requirements.txt && \
-    pip install nbconvert papermill jupyter-client ipykernel lxml_html_clean && \
+    pip install nbconvert papermill jupyter-client ipykernel lxml_html_clean jupyterlab && \
     python -m ipykernel install --user --name python3
 
 COPY . .

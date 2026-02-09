@@ -23,7 +23,7 @@ imbalanced-learn==0.8.1
 torch==1.10.1
 
 # --- Interpretabilidad (Experimento D) ---
-shap>=0.40.0
+shap==0.41.0
 
 # --- Paralelización ---
 pandarallel==1.5.4
