@@ -1,21 +1,85 @@
+# =============================================================================
+# docker-compose.yml - TFM Detección de Fraude
+# =============================================================================
+# Uso:
+#   docker compose build                          → Construir imagen
+#   docker compose run --rm unified-notebooks     → Ejecutar cuadernos unificados (Ch3-7)
+#   docker compose run --rm ch7-gpu               → Ejecutar Ch7 con GPU NVIDIA
+#   docker compose run --rm experiments           → Ejecutar TODOS los experimentos
+#   docker compose run --rm jupyter               → Jupyter Lab interactivo
+#
+#   Ejecutar un solo cuaderno unificado:
+#   docker compose run --rm unified-notebooks python run_unified_notebooks.py \
+#       --notebook Chapter_3_GettingStarted/Chapter_3_Unified.ipynb
+#
+#   Ejecutar un solo experimento:
+#   docker compose run --rm experiments python experiments/run_experiment.py \
+#       --notebook experiments/experiment_a_baseline.ipynb
+# =============================================================================
+
 services:
-  fraud-detection:
+
+  # Servicio: ejecutar cuadernos unificados (Chapter 3 a 7)
+  unified-notebooks:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: fraud-detection-handbook
+    container_name: tfm-unified-notebooks
     volumes:
-      # Montar el proyecto para persistir cambios
       - .:/app
-      # Montar volumen para cache de notebooks
-      - notebook-cache:/app/.jupyter_cache
     environment:
       - PYTHONUNBUFFERED=1
-    # Para desarrollo interactivo con Jupyter
-    # ports:
-    #   - "8888:8888"
-    # command: jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root --NotebookApp.token=''
-    command: python execute_notebooks.py
+    command: python run_unified_notebooks.py
+    working_dir: /app
 
-volumes:
-  notebook-cache:
+  # Servicio: ejecutar experimentos
+  experiments:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tfm-experiments
+    volumes:
+      - .:/app
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: python experiments/run_experiment.py --all
+    working_dir: /app
+
+  # Servicio: ejecutar Chapter 7 con GPU NVIDIA (Deep Learning acelerado)
+  ch7-gpu:
+    build:
+      context: .
+      dockerfile: Dockerfile.gpu
+    container_name: tfm-ch7-gpu
+    volumes:
+      - .:/app
+    environment:
+      - PYTHONUNBUFFERED=1
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    command: python run_unified_notebooks.py --notebook Chapter_7_DeepLearning/Chapter_7_Unified.ipynb --timeout 0
+    working_dir: /app
+
+  # Servicio auxiliar: Jupyter Lab interactivo
+  jupyter:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tfm-jupyter
+    volumes:
+      - .:/app
+    ports:
+      - "8888:8888"
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: >
+      jupyter lab --ip=0.0.0.0 --port=8888 --no-browser
+      --allow-root --NotebookApp.token=''
+    working_dir: /app
