@@ -57,9 +57,27 @@ $RECYCLE.BIN/
 *.log.*
 
 # ============================================
-# NOTA: Los siguientes archivos SÍ se versionan:
-# - *.pkl (modelos entrenados - parte del trabajo)
-# - execution_results.json (resultados documentados)
-# - execution_results/ (si son relevantes para el TFM)
-# - Todos los notebooks, scripts, documentación, etc.
+# Archivos multimedia y datos pesados (NO versionar)
 # ============================================
+*.mp4
+*.avi
+*.mov
+*.csv
+*.pkl
+*.zip
+*.tar.gz
+*.rar
+
+# Datos simulados generados por los cuadernos
+simulated-data-raw/
+simulated-data-transformed/
+
+# Resultados de experimentos (se regeneran al ejecutar)
+execution_results/
+execution_results.json
+experiments/results/*.pkl
+experiments/results/*.csv
+experiments/results/*.json
+experiments/results/*.ipynb
+experiments/results/figures/
+performances_*.pkl
