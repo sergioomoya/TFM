@@ -1,0 +1,12 @@
+{
+    "python.analysis.diagnosticSeverityOverrides": {
+        "reportMissingImports": "none",
+        "reportGeneralTypeIssues": "warning"
+    },
+    "python.linting.pylintArgs": [
+        "--disable=E0401"
+    ],
+    "python.linting.flake8Args": [
+        "--ignore=E402,W503"
+    ]
+}
