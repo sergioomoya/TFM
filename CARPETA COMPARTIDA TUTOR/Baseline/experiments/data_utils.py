@@ -190,6 +190,137 @@ def compute_class_ratio(y: pd.Series) -> float:
     return n_negative / n_positive
 
 
+def card_precision_top_k_day(df_day: pd.DataFrame, top_k: int) -> tuple:
+    """
+    Calcula la Card Precision@k para un solo día.
+
+    Agrupa por CUSTOMER_ID (máximo de predicción y fraude), ordena por
+    predicción descendente y toma las top-k tarjetas más sospechosas.
+
+    Args:
+        df_day: DataFrame del día con columnas 'predictions', 'CUSTOMER_ID', 'TX_FRAUD'
+        top_k: Número de tarjetas más sospechosas a evaluar
+
+    Returns:
+        Tupla (lista de tarjetas comprometidas detectadas, card_precision_top_k)
+    """
+    df_day = (
+        df_day.groupby('CUSTOMER_ID')
+        .max()
+        .sort_values(by="predictions", ascending=False)
+        .reset_index(drop=False)
+    )
+
+    df_day_top_k = df_day.head(top_k)
+    list_detected_compromised_cards = list(
+        df_day_top_k[df_day_top_k.TX_FRAUD == 1].CUSTOMER_ID
+    )
+
+    precision_top_k = len(list_detected_compromised_cards) / top_k
+
+    return list_detected_compromised_cards, precision_top_k
+
+
+def card_precision_top_k(predictions_df: pd.DataFrame, top_k: int,
+                         remove_detected_compromised_cards: bool = True) -> tuple:
+    """
+    Calcula la Card Precision@k promedio a lo largo de todos los días.
+
+    Replica el protocolo del libro (Chapter 4): para cada día se evalúan las
+    top-k tarjetas más sospechosas, eliminando las ya detectadas como
+    comprometidas en días anteriores.
+
+    Args:
+        predictions_df: DataFrame con columnas 'predictions', 'CUSTOMER_ID',
+                        'TX_FRAUD', 'TX_TIME_DAYS'
+        top_k: Número de tarjetas a evaluar por día
+        remove_detected_compromised_cards: Si True, elimina tarjetas ya detectadas
+
+    Returns:
+        Tupla (nb_compromised_cards_per_day, cp_top_k_per_day, mean_cp_top_k)
+    """
+    list_days = sorted(predictions_df['TX_TIME_DAYS'].unique())
+
+    list_detected_compromised_cards = []
+    card_precision_top_k_per_day_list = []
+    nb_compromised_cards_per_day = []
+
+    for day in list_days:
+        df_day = predictions_df[predictions_df['TX_TIME_DAYS'] == day]
+        df_day = df_day[['predictions', 'CUSTOMER_ID', 'TX_FRAUD']]
+
+        if remove_detected_compromised_cards:
+            df_day = df_day[~df_day.CUSTOMER_ID.isin(list_detected_compromised_cards)]
+
+        nb_compromised_cards_per_day.append(
+            len(df_day[df_day.TX_FRAUD == 1].CUSTOMER_ID.unique())
+        )
+
+        detected_cards, cp_top_k = card_precision_top_k_day(df_day, top_k)
+
+        card_precision_top_k_per_day_list.append(cp_top_k)
+
+        if remove_detected_compromised_cards:
+            list_detected_compromised_cards.extend(detected_cards)
+
+    mean_card_precision_top_k = np.array(card_precision_top_k_per_day_list).mean()
+
+    return (
+        nb_compromised_cards_per_day,
+        card_precision_top_k_per_day_list,
+        mean_card_precision_top_k,
+    )
+
+
+def performance_assessment(predictions_df: pd.DataFrame,
+                           output_feature: str = 'TX_FRAUD',
+                           prediction_feature: str = 'predictions',
+                           top_k_list: list = None,
+                           rounded: bool = True) -> pd.DataFrame:
+    """
+    Evaluación completa del rendimiento: AUC ROC, Average Precision y Card Precision@k.
+
+    Compatible con el protocolo del libro (Chapter 3/4).
+
+    Args:
+        predictions_df: DataFrame con columnas TX_FRAUD, predictions, CUSTOMER_ID, TX_TIME_DAYS
+        output_feature: Nombre de la columna de etiquetas
+        prediction_feature: Nombre de la columna de predicciones
+        top_k_list: Lista de valores k para Card Precision@k
+        rounded: Si True, redondea a 3 decimales
+
+    Returns:
+        DataFrame con las métricas calculadas
+    """
+    if top_k_list is None:
+        top_k_list = [100]
+
+    from sklearn import metrics as sk_metrics
+
+    auc_roc = sk_metrics.roc_auc_score(
+        predictions_df[output_feature],
+        predictions_df[prediction_feature],
+    )
+    avg_precision = sk_metrics.average_precision_score(
+        predictions_df[output_feature],
+        predictions_df[prediction_feature],
+    )
+
+    performances = pd.DataFrame(
+        [[auc_roc, avg_precision]],
+        columns=['AUC ROC', 'Average precision'],
+    )
+
+    for top_k in top_k_list:
+        _, _, mean_cp_top_k = card_precision_top_k(predictions_df, top_k)
+        performances[f'Card Precision@{top_k}'] = mean_cp_top_k
+
+    if rounded:
+        performances = performances.round(3)
+
+    return performances
+
+
 def print_dataset_summary(train_df: pd.DataFrame,
                           test_df: pd.DataFrame,
                           dataset_name: str = "Dataset") -> None:
