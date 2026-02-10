@@ -21,6 +21,14 @@ experiments/results/figures/
 performances_*.pkl
 
 # ---------------------
+# Archivos comprimidos y de descarga (irrelevantes para el repo)
+# ---------------------
+*.zip
+*.tar.gz
+*.rar
+fraud-detection-handbook-main/
+
+# ---------------------
 # Python
 # ---------------------
 __pycache__/
