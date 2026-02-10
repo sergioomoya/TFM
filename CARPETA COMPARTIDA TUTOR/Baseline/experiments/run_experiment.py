@@ -26,7 +26,6 @@ TIMEOUT_PER_CELL = 3600  # 60 min por celda (deep learning puede tardar)
 
 ALL_EXPERIMENTS = [
     "experiments/experiment_a_baseline.ipynb",
-    "experiments/experiment_b_cost_sensitive.ipynb",
     "experiments/experiment_c_leakage_test.ipynb",
     "experiments/experiment_d_interpretability.ipynb",
 ]

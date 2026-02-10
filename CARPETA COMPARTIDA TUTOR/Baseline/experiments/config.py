@@ -19,9 +19,28 @@ from pathlib import Path
 # Raíz del proyecto (Baseline/)
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
-# Directorio de datos simulados (generados por Chapter_3)
-DATA_DIR_RAW = PROJECT_ROOT / "Chapter_3_GettingStarted" / "simulated-data-raw"
-DATA_DIR_TRANSFORMED = PROJECT_ROOT / "Chapter_3_GettingStarted" / "simulated-data-transformed"
+# Directorio de datos simulados (generados por Chapter_3, clonados en Chapter_4+)
+# Los datos transformados están dentro de un subdirectorio 'data/' del repo clonado
+DATA_DIR_RAW = PROJECT_ROOT / "Chapter_3_GettingStarted" / "simulated-data-raw" / "data"
+
+# Buscar datos transformados en orden de prioridad
+_POSSIBLE_TRANSFORMED_DIRS = [
+    PROJECT_ROOT / "Chapter_3_GettingStarted" / "simulated-data-transformed" / "data",
+    PROJECT_ROOT / "Chapter_3_GettingStarted" / "simulated-data-transformed",
+    PROJECT_ROOT / "Chapter_4_PerformanceMetrics" / "simulated-data-transformed" / "data",
+    PROJECT_ROOT / "Chapter_5_ModelValidationAndSelection" / "simulated-data-transformed" / "data",
+    PROJECT_ROOT / "Chapter_6_ImbalancedLearning" / "simulated-data-transformed" / "data",
+]
+
+DATA_DIR_TRANSFORMED = None
+for _dir in _POSSIBLE_TRANSFORMED_DIRS:
+    if _dir.exists():
+        DATA_DIR_TRANSFORMED = _dir
+        break
+
+if DATA_DIR_TRANSFORMED is None:
+    # Fallback: usar la ruta estándar (se generará al ejecutar Chapter 3)
+    DATA_DIR_TRANSFORMED = PROJECT_ROOT / "Chapter_3_GettingStarted" / "simulated-data-transformed"
 
 # Directorio de resultados de los experimentos
 RESULTS_DIR = Path(__file__).resolve().parent / "results"
