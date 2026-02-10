@@ -2,9 +2,15 @@
 # docker-compose.yml - TFM Detección de Fraude
 # =============================================================================
 # Uso:
-#   docker compose build                    → Construir imagen
-#   docker compose run --rm experiments     → Ejecutar TODOS los experimentos
-#   docker compose run --rm jupyter         → Jupyter Lab interactivo
+#   docker compose build                          → Construir imagen
+#   docker compose run --rm unified-notebooks     → Ejecutar cuadernos unificados (Ch3-7)
+#   docker compose run --rm ch7-gpu               → Ejecutar Ch7 con GPU NVIDIA
+#   docker compose run --rm experiments           → Ejecutar TODOS los experimentos
+#   docker compose run --rm jupyter               → Jupyter Lab interactivo
+#
+#   Ejecutar un solo cuaderno unificado:
+#   docker compose run --rm unified-notebooks python run_unified_notebooks.py \
+#       --notebook Chapter_3_GettingStarted/Chapter_3_Unified.ipynb
 #
 #   Ejecutar un solo experimento:
 #   docker compose run --rm experiments python experiments/run_experiment.py \
@@ -13,7 +19,20 @@
 
 services:
 
-  # Servicio principal: ejecutar experimentos
+  # Servicio: ejecutar cuadernos unificados (Chapter 3 a 7)
+  unified-notebooks:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tfm-unified-notebooks
+    volumes:
+      - .:/app
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: python run_unified_notebooks.py
+    working_dir: /app
+
+  # Servicio: ejecutar experimentos
   experiments:
     build:
       context: .
@@ -24,6 +43,28 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
     command: python experiments/run_experiment.py --all
+    working_dir: /app
+
+  # Servicio: ejecutar Chapter 7 con GPU NVIDIA (Deep Learning acelerado)
+  ch7-gpu:
+    build:
+      context: .
+      dockerfile: Dockerfile.gpu
+    container_name: tfm-ch7-gpu
+    volumes:
+      - .:/app
+    environment:
+      - PYTHONUNBUFFERED=1
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    command: python run_unified_notebooks.py --notebook Chapter_7_DeepLearning/Chapter_7_Unified.ipynb --timeout 0
     working_dir: /app
 
   # Servicio auxiliar: Jupyter Lab interactivo
