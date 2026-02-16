@@ -1,7 +1,7 @@
 # Informe Detallado de Resultados — Experimentos Tentativos
 
 **Proyecto:** TFM — Detección de Fraude en Transacciones con Tarjeta de Crédito  
-**Fecha de ejecución:** 10 de febrero de 2026  
+**Fecha de ejecución:** 16 de febrero de 2026  
 **Entorno:** Docker (Python 3.11, scikit-learn, XGBoost, SHAP, imbalanced-learn)  
 **Datos:** Simulación temporal de transacciones (Capítulo 3 del libro *Fraud Detection Handbook*)
 
@@ -201,7 +201,8 @@ Analizar qué variables impulsan las predicciones del modelo de detección de fr
    - Esta discrepancia es una observación metodológica valiosa: **no existe una única respuesta a "qué variable es más importante"**, depende del enfoque de medición.
 
 5. **Force Plots (análisis local):**
-   - Los force plots de SHAP para transacciones individuales (fraudulentas y normales) fueron generados pero no se renderizaron correctamente en el entorno headless de Docker (formato JavaScript). Estos pueden visualizarse ejecutando el notebook en JupyterLab (`docker compose up jupyter`).
+   - Se han generado exitosamente los force plots para transacciones individuales (fraudulenta y normal) como imágenes estáticas (`experiment_d_shap_force_fraud.png`, `experiment_d_shap_force_normal.png`).
+   - Estos gráficos muestran cómo cada característica empuja la predicción desde el valor base (base value) hacia la puntuación final del modelo. Las barras rojas indican características que aumentan el riesgo de fraude, mientras que las azules lo disminuyen.
 
 ---
 
@@ -268,6 +269,8 @@ Analizar qué variables impulsan las predicciones del modelo de detección de fr
 | `experiment_c_leakage_comparison.png` | Impacto del data leakage en métricas |
 | `experiment_d_feature_importance.png` | Top-10 variables por ganancia (XGBoost) |
 | `experiment_d_shap_beeswarm.png` | Distribución de valores SHAP por variable |
+| `experiment_d_shap_force_fraud.png` | Force plot de una transacción fraudulenta |
+| `experiment_d_shap_force_normal.png` | Force plot de una transacción normal |
 
 ### 7.3 Reproducibilidad
 
