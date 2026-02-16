@@ -41,7 +41,6 @@ import random
 #import sklearn
 import sklearn
 from sklearn import *
-from sklearn import metrics
 
 get_ipython().run_line_magic('matplotlib', 'inline')
 
