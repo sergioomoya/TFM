@@ -181,7 +181,18 @@ COST_SENSITIVE_PARAMS = {
 # MÉTRICAS
 # =============================================================================
 
-# Métricas principales del TFM
+# =============================================================================
+# SMOTE (Experimento C)
+# =============================================================================
+SMOTE_PARAMS = {
+    'k_neighbors': 5,           # Vecinos para interpolación (imblearn default)
+    'sampling_strategy': 'auto',  # 'auto' = balancear a la clase minoritaria
+    'random_state': SEED,
+}
+
+# =============================================================================
+# MÉTRICAS
+# =============================================================================
 PERFORMANCE_METRICS_LIST = ['AUC ROC', 'Average precision', 'Card Precision@100']
 PERFORMANCE_METRICS_GRID = ['roc_auc', 'average_precision']
 TOP_K_LIST = [100]

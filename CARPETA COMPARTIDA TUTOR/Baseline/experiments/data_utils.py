@@ -12,6 +12,10 @@ import datetime
 import pickle
 import numpy as np
 import pandas as pd
+import sklearn
+import sklearn.pipeline
+import sklearn.preprocessing
+import sklearn.model_selection
 from pathlib import Path
 
 from experiments.config import (
@@ -270,6 +274,219 @@ def card_precision_top_k(predictions_df: pd.DataFrame, top_k: int,
         card_precision_top_k_per_day_list,
         mean_card_precision_top_k,
     )
+
+
+def card_precision_top_k_custom(y_true: pd.Series, y_pred: np.ndarray,
+                                 top_k: int, transactions_df: pd.DataFrame) -> float:
+    """
+    Scorer personalizado para GridSearchCV que computa Card Precision@k.
+
+    Compatible con la interfaz de sklearn: recibe y_true (índices del fold)
+    y y_pred (probabilidades). Usa transactions_df para construir predictions_df
+    con CUSTOMER_ID, TX_TIME_DAYS necesarios para CP@k.
+
+    Args:
+        y_true: Etiquetas del fold (index = índices de transacciones)
+        y_pred: Probabilidades predichas de la clase positiva
+        top_k: Número de tarjetas top a evaluar
+        transactions_df: DataFrame completo con CUSTOMER_ID, TX_TIME_DAYS
+
+    Returns:
+        Media de Card Precision@k a lo largo de los días del fold
+    """
+    predictions_df = transactions_df.loc[y_true.index].copy()
+    predictions_df['predictions'] = y_pred
+    _, _, mean_cp = card_precision_top_k(predictions_df, top_k)
+    return mean_cp
+
+
+def prequentialSplit(transactions_df: pd.DataFrame,
+                     start_date_training: datetime.datetime,
+                     n_folds: int = 4,
+                     delta_train: int = None,
+                     delta_delay: int = None,
+                     delta_assessment: int = None) -> list:
+    """
+    Genera índices para validación prequential (Capítulo 5).
+
+    Para cada fold, desplaza la fecha de inicio hacia atrás y obtiene
+    train/test con división temporal. Devuelve lista de (train_idx, test_idx).
+
+    Args:
+        transactions_df: DataFrame de transacciones
+        start_date_training: Fecha de inicio del entrenamiento (fold 0)
+        n_folds: Número de folds prequential
+        delta_train: Días de entrenamiento (usa DELTA_TRAIN si None)
+        delta_delay: Días de delay (usa DELTA_DELAY si None)
+        delta_assessment: Días de test por fold (usa DELTA_TEST si None)
+
+    Returns:
+        Lista de tuplas (índices train, índices test)
+    """
+    if delta_train is None:
+        delta_train = DELTA_TRAIN
+    if delta_delay is None:
+        delta_delay = DELTA_DELAY
+    if delta_assessment is None:
+        delta_assessment = DELTA_TEST
+
+    prequential_split_indices = []
+
+    for fold in range(n_folds):
+        start_date_fold = start_date_training - datetime.timedelta(
+            days=fold * delta_assessment
+        )
+        train_df, test_df = get_train_test_set(
+            transactions_df,
+            start_date_training=start_date_fold,
+            delta_train=delta_train,
+            delta_delay=delta_delay,
+            delta_test=delta_assessment,
+        )
+        prequential_split_indices.append(
+            (list(train_df.index), list(test_df.index)))
+    return prequential_split_indices
+
+
+def prequential_grid_search(transactions_df: pd.DataFrame,
+                            classifier,
+                            input_features: list,
+                            output_feature: str,
+                            parameters: dict,
+                            scoring: dict,
+                            start_date_training: datetime.datetime,
+                            n_folds: int = 4,
+                            expe_type: str = 'Test',
+                            delta_train: int = None,
+                            delta_delay: int = None,
+                            delta_assessment: int = None,
+                            performance_metrics_list_grid: list = None,
+                            performance_metrics_list: list = None,
+                            n_jobs: int = -1) -> pd.DataFrame:
+    """
+    GridSearchCV con validación prequential (metodología Capítulo 5).
+
+    Args:
+        transactions_df: DataFrame de transacciones
+        classifier: Clasificador sklearn
+        input_features: Lista de features de entrada
+        output_feature: Nombre de la variable objetivo
+        parameters: Parámetros para GridSearch (dict con clf__*)
+        scoring: Dict de scorers (ej. {'roc_auc':'roc_auc', 'card_precision@100': scorer})
+        start_date_training: Fecha de inicio para el split
+        n_folds: Número de folds prequential
+        expe_type: 'Validation' o 'Test' (solo para nombres de columnas)
+        delta_train, delta_delay, delta_assessment: Parámetros temporales
+        performance_metrics_list_grid: Nombres internos de métricas (ej. ['roc_auc', 'card_precision@100'])
+        performance_metrics_list: Nombres para columnas (ej. ['AUC ROC', 'Card Precision@100'])
+        n_jobs: Paralelismo
+
+    Returns:
+        DataFrame con mean±std por métrica y parámetros
+    """
+    if performance_metrics_list_grid is None:
+        performance_metrics_list_grid = ['roc_auc']
+    if performance_metrics_list is None:
+        performance_metrics_list = ['AUC ROC']
+
+    pipe = sklearn.pipeline.Pipeline([
+        ('scaler', sklearn.preprocessing.StandardScaler()),
+        ('clf', classifier),
+    ])
+
+    prequential_split_indices = prequentialSplit(
+        transactions_df,
+        start_date_training=start_date_training,
+        n_folds=n_folds,
+        delta_train=delta_train,
+        delta_delay=delta_delay,
+        delta_assessment=delta_assessment,
+    )
+
+    grid_search = sklearn.model_selection.GridSearchCV(
+        pipe, parameters, scoring=scoring, cv=prequential_split_indices,
+        refit=False, n_jobs=n_jobs
+    )
+
+    X = transactions_df[input_features]
+    y = transactions_df[output_feature]
+    grid_search.fit(X, y)
+
+    performances_df = pd.DataFrame()
+    for i, metric in enumerate(performance_metrics_list_grid):
+        col_mean = f'mean_test_{metric}'
+        col_std = f'std_test_{metric}'
+        if col_mean in grid_search.cv_results_:
+            performances_df[performance_metrics_list[i] + ' ' + expe_type] = \
+                grid_search.cv_results_[col_mean]
+            performances_df[performance_metrics_list[i] + ' ' + expe_type + ' Std'] = \
+                grid_search.cv_results_[col_std]
+
+    performances_df['Parameters'] = grid_search.cv_results_['params']
+    performances_df['Execution time'] = grid_search.cv_results_['mean_fit_time']
+
+    return performances_df
+
+
+def model_selection_wrapper(transactions_df: pd.DataFrame,
+                            classifier,
+                            input_features: list,
+                            output_feature: str,
+                            parameters: dict,
+                            scoring: dict,
+                            start_date_training_for_valid: datetime.datetime,
+                            start_date_training_for_test: datetime.datetime,
+                            n_folds: int = 4,
+                            delta_train: int = None,
+                            delta_delay: int = None,
+                            delta_assessment: int = None,
+                            performance_metrics_list_grid: list = None,
+                            performance_metrics_list: list = None,
+                            n_jobs: int = -1) -> pd.DataFrame:
+    """
+    Ejecuta prequential_grid_search en validación y en test (Capítulo 5).
+
+    Combina resultados de ambas evaluaciones en un único DataFrame.
+    """
+    if performance_metrics_list_grid is None:
+        performance_metrics_list_grid = ['roc_auc']
+    if performance_metrics_list is None:
+        performance_metrics_list = ['AUC ROC']
+
+    perf_valid = prequential_grid_search(
+        transactions_df, classifier, input_features, output_feature,
+        parameters, scoring,
+        start_date_training=start_date_training_for_valid,
+        n_folds=n_folds,
+        expe_type='Validation',
+        delta_train=delta_train,
+        delta_delay=delta_delay,
+        delta_assessment=delta_assessment,
+        performance_metrics_list_grid=performance_metrics_list_grid,
+        performance_metrics_list=performance_metrics_list,
+        n_jobs=n_jobs,
+    )
+
+    perf_test = prequential_grid_search(
+        transactions_df, classifier, input_features, output_feature,
+        parameters, scoring,
+        start_date_training=start_date_training_for_test,
+        n_folds=n_folds,
+        expe_type='Test',
+        delta_train=delta_train,
+        delta_delay=delta_delay,
+        delta_assessment=delta_assessment,
+        performance_metrics_list_grid=performance_metrics_list_grid,
+        performance_metrics_list=performance_metrics_list,
+        n_jobs=n_jobs,
+    )
+
+    perf_valid = perf_valid.drop(
+        columns=[c for c in ['Parameters', 'Execution time'] if c in perf_valid.columns],
+        errors='ignore'
+    )
+    performances_df = pd.concat([perf_test, perf_valid], axis=1)
+    return performances_df
 
 
 def performance_assessment(predictions_df: pd.DataFrame,

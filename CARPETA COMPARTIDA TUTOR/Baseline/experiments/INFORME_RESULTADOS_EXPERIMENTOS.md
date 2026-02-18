@@ -44,41 +44,43 @@ Se ejecutaron con éxito los **tres experimentos tentativos** planificados para 
 
 ### 2.1 Objetivo
 
-Establecer métricas de referencia para tres modelos clásicos de Machine Learning aplicados a la detección de fraude, utilizando la metodología correcta del libro (división temporal, sin data leakage).
+Establecer métricas de referencia para tres modelos clásicos de Machine Learning aplicados a la detección de fraude, utilizando la **metodología del Capítulo 5** (validación prequential, búsqueda de hiperparámetros, división temporal sin data leakage).
 
 ### 2.2 Modelos evaluados
 
-- **Logistic Regression** (con `max_iter=1000`)
-- **Random Forest** (100 estimadores)
-- **XGBoost** (100 estimadores, `eval_metric='logloss'`)
+- **Logistic Regression** (Grid sobre `C` ∈ {0.1, 1, 10, 100})
+- **Random Forest** (Grid sobre `max_depth`, `n_estimators`)
+- **XGBoost** (Grid sobre `max_depth`, `n_estimators`, `learning_rate`)
 
 ### 2.3 Protocolo experimental
 
-- **División temporal:** días 0–40 para entrenamiento, días 41–50 para test (ventana de retraso de 7 días incluida)
-- **Features:** 17 variables derivadas de ingeniería de características del Capítulo 3
+- **Validación prequential:** 4 folds temporales
+- **GridSearchCV** con selección por AUPRC en validación
+- **Features:** 15 variables (ingeniería de características del Capítulo 3)
 - **Sin resampling ni ponderación de clases** (baseline puro)
+- **Reporte:** media ± desviación estándar para AUC ROC, AUPRC, CP@100
 
 ### 2.4 Resultados
 
-| Modelo | AUC ROC | AUPRC | CP@100 | Accuracy | Recall (Fraude) | Precision | F1-Score |
-|---|---|---|---|---|---|---|---|
-| **Logistic Regression** | 0.8705 | 0.6057 | 0.2914 | 0.9962 | 0.4675 | 0.9045 | 0.6164 |
-| **Random Forest** | 0.8643 | **0.6634** | **0.2900** | 0.9966 | 0.5065 | **0.9653** | 0.6644 |
-| **XGBoost** | 0.8618 | 0.6389 | 0.2729 | **0.9968** | **0.5403** | 0.9455 | **0.6876** |
+*Media ± desviación estándar sobre 4 folds prequential (grid completo).*
+
+| Modelo | AUC ROC | AUPRC | CP@100 |
+|---|---|---|---|
+| **Logistic Regression** | 0.8688 ± 0.016 | 0.6350 ± 0.016 | 0.2929 ± 0.014 |
+| **Random Forest** | **0.8729 ± 0.011** | 0.6846 ± 0.010 | **0.2971 ± 0.014** |
+| **XGBoost** | 0.8692 ± 0.009 | **0.6904 ± 0.008** | 0.2961 ± 0.014 |
 
 ### 2.5 Visualización
 
-![Resultados Experimento A](../figuras_experimentos/experiment_a_baseline_results.png)
+![Resultados Experimento A](results/figures/experiment_a_baseline_results.png)
 
-**Figura 1.** Panel izquierdo: Curva Precision-Recall (Random Forest con AP=0.663 es superior). Panel central: Curvas ROC (todas similares ~0.86-0.87). Panel derecho: Paradoja del desbalance — Accuracy >99.6% pero Recall del fraude <55%.
+**Figura 1.** Barras con media ± desviación estándar para AUC ROC, AUPRC y Card Precision@100 (metodología Capítulo 5).
 
 ### 2.6 Análisis
 
-- **AUC ROC:** Los tres modelos muestran rendimiento muy similar (~0.86), lo que sugiere que la capacidad de discriminación global es comparable. Logistic Regression tiene una ligera ventaja (0.8705).
-- **AUPRC (métrica prioritaria en desbalance):** Random Forest destaca con 0.6634, un 9.5% superior a Logistic Regression. Esta métrica es más informativa que AUC ROC para problemas con desbalance severo.
-- **Card Precision@100 (CP@100):** Las tres métricas son cercanas (~0.27-0.29), indicando que de las 100 tarjetas más sospechosas cada día, aproximadamente 29 están realmente comprometidas.
-- **Paradoja del desbalance:** A pesar de Accuracy >99.6%, el Recall para la clase de fraude es bajo (46.7%-54.0%), lo que demuestra que la Accuracy es una métrica engañosa en este contexto.
-- **XGBoost** ofrece el mejor compromiso F1-Score (0.6876) y el mayor Recall (54.0%), lo que lo hace preferible si se busca detectar la mayor cantidad de fraudes posible.
+- **Rigor estadístico:** La validación prequential y el reporte de desviación estándar permiten cuantificar la incertidumbre de las estimaciones.
+- **Búsqueda de hiperparámetros:** La selección por AUPRC en validación mejora la robustez de las comparaciones entre modelos.
+- **Métricas priorizadas:** AUC ROC, AUPRC y CP@100 son las métricas apropiadas para problemas desbalanceados; la Accuracy queda relegada por su carácter engañoso.
 
 ---
 
@@ -86,59 +88,64 @@ Establecer métricas de referencia para tres modelos clásicos de Machine Learni
 
 ### 3.1 Objetivo
 
-Demostrar cuantitativamente el impacto devastador del **data leakage** en las métricas de evaluación, comparando una pipeline metodológicamente correcta con una incorrecta. Este experimento tiene un valor pedagógico fundamental para el TFM.
+Demostrar cuantitativamente el impacto del **data leakage** y **desglosar el efecto de cada fuente** (split aleatorio, escalado global, SMOTE global), replicando el análisis con **LR, RF y XGBoost**.
 
-### 3.2 Diseño experimental
+### 3.2 Diseño experimental (refactorizado)
 
-Se comparan dos ramas con **Logistic Regression** como modelo base:
+**Modelos:** Logistic Regression, Random Forest, XGBoost  
 
-| Aspecto | Rama Correcta | Rama Incorrecta |
-|---|---|---|
-| **División de datos** | Temporal (días 0-40 train, 41-50 test) | Aleatoria (`train_test_split`) |
-| **Escalado** | `StandardScaler` ajustado solo en train | `StandardScaler` ajustado en TODOS los datos |
-| **Resampling** | SMOTE aplicado solo a train | SMOTE aplicado ANTES de dividir |
-| **Fuentes de leakage** | 0 | 3 |
+**Cinco ramas:**
+
+| Rama | Split | Escalado | SMOTE | Fuentes |
+|------|-------|----------|-------|---------|
+| Correcta | Temporal | Solo train | Solo train | 0 |
+| Leak_split | Aleatorio | Solo train | Solo train | 1 |
+| Leak_scaler | Temporal | Global | Solo train | 1 |
+| Leak_smote | Temporal | Solo train | Global | 1 |
+| Leak_todas | Aleatorio | Global | Global | 3 |
+
+**SMOTE:** `k_neighbors=5`, `sampling_strategy='auto'` (config.py)
 
 ### 3.3 Resultados
 
-| Pipeline | AUC ROC | AUPRC | CP@100 |
-|---|---|---|---|
-| **C-Correcta** (temporal + SMOTE en train) | 0.8658 | 0.6115 | 0.29 |
-| **C-Incorrecta** (SMOTE global + split aleatorio) | **0.9999** ⚠️ | **0.9999** ⚠️ | N/A |
+| Modelo | C-Correcta AUC | C-Correcta AUPRC | C-Correcta CP@100 | C-Leak_todas AUC | C-Leak_todas AUPRC |
+|--------|---------------|------------------|-------------------|------------------|--------------------|
+| Logistic Regression | 0.8692 | 0.5830 | 0.2886 | 0.8979 | **0.9287** ⚠️ |
+| Random Forest | 0.8658 | 0.6115 | 0.2900 | **0.9999** ⚠️ | **0.9999** ⚠️ |
+| XGBoost | 0.8601 | 0.6163 | 0.2743 | **0.9992** ⚠️ | **0.9995** ⚠️ |
 
-### 3.4 Visualización
+### 3.4 Desglose por fuente de leakage (AUPRC)
 
-![Comparación Leakage](../figuras_experimentos/experiment_c_leakage_comparison.png)
+| Fuente | LR | RF | XGB |
+|--------|--------|--------|--------|
+| Correcta | 0.5830 | 0.6115 | 0.6163 |
+| Leak_split | 0.6150 | 0.6768 | 0.6910 |
+| Leak_scaler | 0.5820 | 0.6070 | 0.6149 |
+| Leak_smote | 0.5900 | 0.9038 | 0.7461 |
+| Leak_todas | **0.9287** | **0.9999** | **0.9995** |
 
-**Figura 2.** Panel izquierdo: Comparativa de AUPRC y AUC ROC — la pipeline incorrecta muestra métricas "perfectas" (≈1.0) que son completamente artificiales. Panel central: Curva PR de la rama correcta (AP=0.611). Panel derecho: Curva PR de la rama incorrecta (AP=1.000) con advertencia de *Data Leakage*.
+*El split aleatorio infla moderadamente (+0.03–0.08). El escalado global apenas afecta. El SMOTE global infla mucho en RF (+0.29) y algo en XGBoost (+0.13). Las tres fuentes juntas provocan AUPRC ≈1.0.*
 
 ### 3.5 Comparación con Experimento A
 
 | Experimento | AUC ROC | AUPRC | CP@100 |
 |---|---|---|---|
-| A — Logistic Regression (baseline) | 0.8705 | 0.6057 | 0.2914 |
-| A — Random Forest (baseline) | 0.8643 | 0.6634 | 0.2900 |
-| A — XGBoost (baseline) | 0.8618 | 0.6389 | 0.2729 |
-| **C-Correcta** (LR + SMOTE en train) | 0.8658 | 0.6115 | 0.2900 |
-| **C-Incorrecta** (con Leakage) ⚠️ | 0.9999 | 0.9999 | N/A |
+| A — Logistic Regression (baseline) | 0.8688 ± 0.016 | 0.6350 ± 0.016 | 0.293 ± 0.014 |
+| A — Random Forest (baseline) | 0.8729 ± 0.011 | 0.6846 ± 0.010 | 0.297 ± 0.014 |
+| A — XGBoost (baseline) | 0.8692 ± 0.009 | 0.6904 ± 0.008 | 0.296 ± 0.014 |
+| C-Correcta — Logistic Regression | 0.8692 | 0.5830 | 0.2886 |
+| C-Correcta — Random Forest | 0.8658 | 0.6115 | 0.2900 |
+| C-Correcta — XGBoost | 0.8601 | 0.6163 | 0.2743 |
+| C-Leak_todas — LR ⚠️ | 0.8979 | **0.9287** | N/A |
+| C-Leak_todas — RF ⚠️ | **0.9999** | **0.9999** | N/A |
+| C-Leak_todas — XGBoost ⚠️ | **0.9992** | **0.9995** | N/A |
 
 ### 3.6 Análisis
 
-1. **Evidencia irrefutable de data leakage:**
-   - La pipeline incorrecta obtiene AUPRC = **0.9999** frente a 0.6115 de la correcta. Esto representa una **inflación del 63.5%** que es completamente artificial.
-   - AUC ROC pasa de 0.8658 a 0.9999, una diferencia de **+15.5 puntos porcentuales**.
-
-2. **Tres fuentes de contaminación identificadas:**
-   - **Escalado global:** `StandardScaler` ajustado con datos de test filtra información de la distribución futura al modelo.
-   - **SMOTE global:** Generar muestras sintéticas antes de la división crea puntos de test derivados directamente de los de entrenamiento, causando que el modelo "memorice" el test.
-   - **Split aleatorio vs. temporal:** Romper el orden temporal permite al modelo aprender de eventos futuros, algo imposible en producción.
-
-3. **Consistencia con el Baseline (Exp. A):**
-   - La rama correcta del Experimento C (LR con SMOTE, AUC ROC=0.866, AUPRC=0.611) es consistente con el baseline de Logistic Regression sin SMOTE (AUC ROC=0.871, AUPRC=0.606). La adición de SMOTE proporciona una mejora marginal en AUPRC (+0.9%) sin degradar significativamente el AUC ROC.
-
-4. **Valor para el TFM:**
-   - Este experimento constituye una **evidencia empírica robusta** de por qué la integridad metodológica es esencial en la investigación de detección de fraude.
-   - Cualquier trabajo que reporte métricas cercanas a 1.0 en este tipo de problema debe ser examinado críticamente en busca de data leakage.
+1. **Evidencia del data leakage:** La rama Leak_todas obtiene AUPRC ≈1.0 (artificial) frente a valores realistas (~0.6–0.7) en la rama correcta.
+2. **Desglose por fuente:** Permite cuantificar el impacto incremental de cada práctica incorrecta.
+3. **Generalización:** LR, RF y XGBoost muestran el mismo patrón de inflación.
+4. **Valor para el TFM:** Evidencia empírica robusta de la importancia de la integridad metodológica.
 
 ---
 
@@ -210,11 +217,15 @@ Analizar qué variables impulsan las predicciones del modelo de detección de fr
 
 | Experimento | Modelo | AUC ROC | AUPRC | CP@100 | Observación |
 |---|---|---|---|---|---|
-| A — Baseline | Logistic Regression | 0.8705 | 0.6057 | 0.2914 | Mejor AUC ROC del baseline |
-| A — Baseline | Random Forest | 0.8643 | **0.6634** | 0.2900 | **Mejor AUPRC del baseline** |
-| A — Baseline | XGBoost | 0.8618 | 0.6389 | 0.2729 | Mejor F1 y Recall |
-| C — Correcta | LR + SMOTE (train) | 0.8658 | 0.6115 | 0.2900 | Consistente con Exp. A |
-| C — Incorrecta ⚠️ | LR + SMOTE (global) | 0.9999 | 0.9999 | N/A | **Data leakage catastrófico** |
+| A — Baseline | Logistic Regression | 0.8688 ± 0.016 | 0.6350 ± 0.016 | 0.293 ± 0.014 | Prequential + GridSearch |
+| A — Baseline | Random Forest | **0.8729 ± 0.011** | 0.6846 ± 0.010 | **0.297 ± 0.014** | Prequential + GridSearch |
+| A — Baseline | XGBoost | 0.8692 ± 0.009 | **0.6904 ± 0.008** | 0.296 ± 0.014 | Prequential + GridSearch |
+| C — Correcta | Logistic Regression | 0.8692 | 0.5830 | 0.2886 | SMOTE solo en train |
+| C — Correcta | Random Forest | 0.8658 | 0.6115 | 0.2900 | SMOTE solo en train |
+| C — Correcta | XGBoost | 0.8601 | 0.6163 | 0.2743 | SMOTE solo en train |
+| C — Leak_todas ⚠️ | Logistic Regression | 0.8979 | **0.9287** | N/A | Data leakage |
+| C — Leak_todas ⚠️ | Random Forest | **0.9999** | **0.9999** | N/A | **Data leakage catastrófico** |
+| C — Leak_todas ⚠️ | XGBoost | **0.9992** | **0.9995** | N/A | **Data leakage catastrófico** |
 | D — XAI | XGBoost cost-sensitive | 0.8320 | 0.5988 | 0.2557 | Modelo para interpretabilidad |
 
 ---
@@ -223,8 +234,8 @@ Analizar qué variables impulsan las predicciones del modelo de detección de fr
 
 ### 6.1 Respecto al rendimiento del baseline
 
-- Los tres modelos del baseline muestran un rendimiento **razonable pero no excepcional** (AUPRC entre 0.61-0.66), lo cual es esperado para datos simulados y modelos sin hiperparámetro tunning avanzado.
-- **Random Forest** es el modelo baseline más sólido según AUPRC, mientras que **XGBoost** tiene el mejor balance F1.
+- Los tres modelos del baseline muestran un rendimiento **razonable** (AUPRC entre 0.64–0.70) con validación prequential y búsqueda de hiperparámetros.
+- **XGBoost** obtiene la mejor AUPRC (0.690 ± 0.008); **Random Forest** la mejor AUC ROC (0.873 ± 0.011) y CP@100 (0.297 ± 0.014).
 - La **Card Precision@100** (~0.29) indica que se podrían priorizar correctamente unas 29 de cada 100 tarjetas sospechosas por día, una cifra operacionalmente útil como punto de partida.
 
 ### 6.2 Respecto a la integridad metodológica
@@ -239,9 +250,9 @@ Analizar qué variables impulsan las predicciones del modelo de detección de fr
 
 ### 6.4 Próximos pasos sugeridos
 
-1. **Hyperparameter tuning** de los modelos baseline para mejorar las métricas de referencia.
+1. ~~**Hyperparameter tuning** de los modelos baseline~~ — ✅ Implementado en Experimento A (metodología Cap. 5).
 2. **Experimento B (Cost-Sensitive Learning):** Evaluar el impacto de la ponderación de clases de forma sistemática en todos los modelos.
-3. **Validación cruzada temporal** para obtener estimaciones más robustas de las métricas.
+3. ~~**Validación cruzada temporal**~~ — ✅ Experimento A usa validación prequential (4 folds).
 4. **Ampliar el análisis SHAP** con ejecución en JupyterLab para visualizar correctamente los force plots y dependence plots.
 
 ---
@@ -254,9 +265,10 @@ Analizar qué variables impulsan las predicciones del modelo de detección de fr
 |---|---|
 | `experiments/results/experiment_a_results.csv` | Tabla de métricas del Exp. A |
 | `experiments/results/experiment_a_predictions.pkl` | Predicciones y probabilidades de todos los modelos |
-| `experiments/results/experiment_c_comparison.csv` | Comparación correcta vs. incorrecta |
+| `experiments/results/experiment_c_comparison.csv` | Comparación C-Correcta vs. C-Leak_todas por modelo |
+| `experiments/results/experiment_c_all_ramas.csv` | Métricas de las 5 ramas (Correcta, Leak_split, Leak_scaler, Leak_smote, Leak_todas) |
+| `experiments/results/experiment_c_desglose_leakage.csv` | Desglose por fuente de leakage (AUPRC por rama y modelo) |
 | `experiments/results/experiment_c_vs_a_comparison.csv` | Comparación Exp. C vs. Exp. A |
-| `experiments/results/experiment_c_results.pkl` | Resultados completos con metadatos |
 | `experiments/results/experiment_d_feature_importance.csv` | Ranking de importancia de variables |
 | `experiments/results/experiment_d_results.pkl` | Valores SHAP, métricas y metadatos |
 | `experiments/results/execution_report.json` | Reporte de ejecución (tiempos, estado) |
@@ -265,7 +277,7 @@ Analizar qué variables impulsan las predicciones del modelo de detección de fr
 
 | Figura | Descripción |
 |---|---|
-| `experiment_a_baseline_results.png` | Curvas PR, ROC y paradoja del desbalance |
+| `experiment_a_baseline_results.png` | Barras AUC ROC, AUPRC, CP@100 (media ± desv.) |
 | `experiment_c_leakage_comparison.png` | Impacto del data leakage en métricas |
 | `experiment_d_feature_importance.png` | Top-10 variables por ganancia (XGBoost) |
 | `experiment_d_shap_beeswarm.png` | Distribución de valores SHAP por variable |

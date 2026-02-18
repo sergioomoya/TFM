@@ -2,8 +2,11 @@
 
 **Estado:** Implementado, ejecutado y documentado  
 **Ubicación:** `experiments/experiment_a_baseline.ipynb`  
-**Fecha de ejecución:** 18 de febrero de 2026  
-**Tiempo de ejecución:** 16.1 s (8/8 celdas)
+**Metodología:** Capítulo 5 (validación prequential + GridSearchCV)  
+**Ejecución:**  
+- Notebook: `experiments/experiment_a_baseline.ipynb`  
+- Script standalone: `python experiments/run_experiment_a_standalone.py` (modo completo ~15–30 min; modo rápido con `QUICK=True` ~3–5 min)  
+- Docker: `docker compose run --rm experiments python experiments/run_experiment_a_standalone.py`
 
 ---
 
@@ -15,62 +18,94 @@ El objetivo del Experimento A es establecer una **línea base de rendimiento** u
 
 ## 2. Metodología
 
-### 2.1. Datos
+### 2.1. Validación Prequential (Capítulo 5)
 
-- **Dataset:** Transacciones simuladas transformadas (Capítulo 3 del *Fraud Detection Handbook*).
-- **Features:** 15 variables de ingeniería de características: `TX_AMOUNT`, `TX_DURING_WEEKEND`, `TX_DURING_NIGHT`, ventanas de 1/7/30 días para cliente y terminal.
-- **Split temporal estricto** para evitar data leakage:
-  - **Entrenamiento:** 7 días (configuración prequential).
-  - **Test:** 7 días posteriores (con ventana de delay de 7 días).
-  - Fechas según protocolo: `START_DATE_TRAINING`, `DELTA_TRAIN=7`, `DELTA_DELAY=7`, `DELTA_TEST=7`.
+Se sigue el protocolo del **Capítulo 5** del *Fraud Detection Handbook*:
 
-### 2.2. Modelos
+- **4 folds prequential** con desplazamiento temporal
+- **GridSearchCV** con búsqueda de hiperparámetros por modelo
+- **Split validation/test:** fechas diferenciadas (`START_DATE_TRAINING_FOR_VALID`, `START_DATE_TRAINING_FOR_TEST`)
+- **Reporte:** media ± desviación estándar para AUC ROC, AUPRC y Card Precision@100
 
-Se entrenan tres clasificadores con **configuración por defecto** (sin ajustes de desbalance):
+### 2.2. Datos
 
-1. **Regresión Logística:** `max_iter=1000`, sin `class_weight`.
-2. **Random Forest:** 100 estimadores, `max_depth=None`, sin `class_weight`.
-3. **XGBoost:** 100 estimadores, `eval_metric='logloss'`, sin `scale_pos_weight`.
+- **Dataset:** Transacciones simuladas transformadas (Capítulo 3).
+- **Features:** 15 variables (ver `INPUT_FEATURES` en `config.py`): `TX_AMOUNT`, `TX_DURING_WEEKEND`, `TX_DURING_NIGHT`, ventanas de 1/7/30 días para cliente y terminal.
+- **Parámetros temporales:** `DELTA_TRAIN=7`, `DELTA_DELAY=7`, `DELTA_TEST=7` días.
 
-Todos usan un pipeline `StandardScaler` + clasificador, con división temporal estricta.
+### 2.3. Modos de Ejecución
 
-### 2.3. Métricas
+- **Modo completo** (`QUICK=False`): 4 folds, grid completo. Tiempo estimado: ~15–30 min.
+- **Modo rápido** (`QUICK=True` en `run_experiment_a_standalone.py`): 2 folds, grid reducido. Tiempo estimado: ~3–5 min.
 
-- **AUC ROC:** Capacidad de discriminación global.
-- **Average Precision (AUPRC):** Métrica prioritaria para clases desbalanceadas.
-- **Card Precision@100 (CP@100):** Precisión en el top 100 transacciones más sospechosas por día (protocolo del libro).
-- **Accuracy, Recall, Precision, F1-Score:** Para evidenciar la paradoja del desbalance.
+### 2.4. Modelos y Grids de Hiperparámetros
+
+Se entrenan tres clasificadores con **búsqueda de hiperparámetros** (sin `class_weight`/`scale_pos_weight`):
+
+1. **Regresión Logística:** Grid sobre `C` ∈ {0.1, 1, 10, 100}
+2. **Random Forest:** Grid sobre `max_depth` ∈ {10, 20, 50}, `n_estimators` ∈ {50, 100}
+3. **XGBoost:** Grid sobre `max_depth` ∈ {3, 6, 9}, `n_estimators` ∈ {50, 100}, `learning_rate` = 0.3
+
+Pipeline: `StandardScaler` + clasificador. Selección del mejor modelo por AUPRC en validación.
+
+### 2.5. Métricas
+
+- **AUC ROC, AUPRC, Card Precision@100:** reportadas como media ± desv. estándar sobre los 4 folds prequential.
 
 ---
 
 ## 3. Resultados Obtenidos
 
-| Modelo | AUC ROC | AUPRC | CP@100 | Accuracy | Recall (Fraude) | Precision | F1-Score |
-|--------|---------|-------|--------|----------|-----------------|------------|----------|
-| **Logistic Regression** | **0.8705** | 0.6057 | **0.2914** | 0.9962 | 0.4675 | 0.9045 | 0.6164 |
-| **Random Forest** | 0.8643 | **0.6634** | **0.2900** | 0.9966 | 0.5065 | **0.9653** | 0.6644 |
-| **XGBoost** | 0.8618 | 0.6389 | 0.2729 | **0.9968** | **0.5403** | 0.9455 | **0.6876** |
+Los resultados se obtienen con **validación prequential** y se reportan como **media ± desviación estándar** sobre los folds.
+
+| Modelo | AUC ROC | AUPRC | CP@100 |
+|--------|---------|-------|--------|
+| **Logistic Regression** | 0.8688 ± 0.0158 | 0.6350 ± 0.0163 | 0.2929 ± 0.0141 |
+| **Random Forest** | **0.8729 ± 0.0108** | 0.6846 ± 0.0103 | **0.2971 ± 0.0144** |
+| **XGBoost** | 0.8692 ± 0.0091 | **0.6904 ± 0.0084** | 0.2961 ± 0.0139 |
+
+*Resultados con validación prequential completa: 4 folds, grid completo de hiperparámetros.*
 
 ### 3.1. Visualización
 
-![Resultados Experimento A](../figuras_experimentos/experiment_a_baseline_results.png)
+![Resultados Experimento A](results/figures/experiment_a_baseline_results.png)
 
-**Figura 1.** Panel izquierdo: Curva Precision-Recall (Random Forest con AP=0.663 es superior). Panel central: Curvas ROC (similares ~0.86-0.87). Panel derecho: Paradoja del desbalance — Accuracy >99.6% pero Recall del fraude &lt;55%.
+**Figura 1.** Barras con media ± desviación estándar para AUC ROC, AUPRC y Card Precision@100 (4 folds prequential).  
+*Se genera en `experiments/results/figures/` al ejecutar el experimento.*
 
 ---
 
 ## 4. Análisis
 
-1. **AUC ROC:** Los tres modelos muestran rendimiento muy similar (~0.86). Logistic Regression tiene ligera ventaja (0.8705).
-2. **AUPRC (métrica prioritaria):** Random Forest destaca con **0.6634** (9.5% superior a Logistic Regression).
-3. **CP@100:** Valores cercanos (~0.27–0.29). De cada 100 tarjetas más sospechosas por día, ~29 están realmente comprometidas.
-4. **Paradoja del desbalance:** A pesar de Accuracy &gt;99.6%, el Recall para fraude es bajo (46.7%–54.0%). La Accuracy es engañosa en este contexto.
-5. **XGBoost** ofrece el mejor F1-Score (0.6876) y el mayor Recall (54.0%).
+1. **AUC ROC:** Random Forest obtiene el mejor valor (**0.8729 ± 0.0108**), seguido de XGBoost (0.8692) y Logistic Regression (0.8688).
+2. **AUPRC (métrica prioritaria):** XGBoost destaca con **0.6904 ± 0.0084**, seguido de Random Forest (0.6846) y Logistic Regression (0.6350).
+3. **CP@100:** Valores en el rango 0.29–0.30. Random Forest alcanza 0.2971 ± 0.0144.
+4. **Ventaja de la metodología prequential:** El reporte de media ± desv. estándar permite evaluar la robustez; las desviaciones (~0.009–0.016) reflejan la variabilidad entre los 4 folds temporales.
+5. **Tiempo de ejecución:** LR ~10 s, RF ~55 s, XGBoost ~30–40 min (modo completo con 4 folds).
 
 ---
 
-## 5. Conclusiones
+## 5. Archivos Generados
+
+| Archivo | Descripción |
+|---------|-------------|
+| `experiments/results/experiment_a_results.csv` | Métricas (AUC ROC, AUPRC, CP@100) con media y desv. estándar |
+| `experiments/results/experiment_a_predictions.pkl` | Predicciones, probabilidades y metadatos de cada modelo |
+| `experiments/results/figures/experiment_a_baseline_results.png` | Gráfico de barras con media ± desv. estándar |
+
+---
+
+## 6. Reproducibilidad
+
+- **Semilla:** `SEED=42` (config.py)
+- **Fechas:** `START_DATE_TRAINING_FOR_VALID=2018-08-01`, `START_DATE_TRAINING_FOR_TEST=2018-08-22`
+- **Splits temporales:** `DELTA_TRAIN=7`, `DELTA_DELAY=7`, `DELTA_TEST=7` días
+- **Datos:** `simulated-data-transformed` (Capítulo 3, 2018-04-01 a 2018-09-30)
+
+---
+
+## 7. Conclusiones
 
 - Los modelos basados en árboles (XGBoost, RF) ofrecen mejor AUPRC y balance general que la Regresión Logística.
-- **Random Forest** es el modelo baseline más sólido según AUPRC.
+- **XGBoost** obtiene la mejor AUPRC (0.6904); **Random Forest** la mejor AUC ROC y CP@100.
 - La metodología temporal y el pipeline sin leakage garantizan resultados honestos para comparación con experimentos posteriores.

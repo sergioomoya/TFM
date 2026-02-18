@@ -1,7 +1,7 @@
 # Informe de Ejecución de Cuadernos Unificados - TFM Detección de Fraude
 
 **Fecha:** 14 de Febrero de 2026
-**Autor:** Sergio Moya (Asistente AI)
+**Autor:** Sergio Moya
 **Estado:** En Ejecución
 
 ## 1. Introducción

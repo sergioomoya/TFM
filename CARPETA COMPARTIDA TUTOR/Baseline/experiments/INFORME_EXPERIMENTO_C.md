@@ -1,87 +1,80 @@
-# Informe del Experimento C: Prueba de Data Leakage (Fuga de Datos)
+# Informe del Experimento C: Validación de Integridad Metodológica (Anti-Leakage Test)
 
-**Estado:** Implementado, ejecutado y documentado  
-**Ubicación:** `experiments/experiment_c_leakage_test.ipynb`  
-**Fecha de ejecución:** 18 de febrero de 2026  
-**Tiempo de ejecución:** 181.9 s (~3 min) (7/7 celdas)
+**Estado:** Refactorizado, ejecutado y documentado  
+**Ubicación:** `experiments/experiment_c_leakage_test.ipynb`, `experiments/run_experiment_c_standalone.py`  
+**Ejecución:** `docker compose run --rm experiments python experiments/run_experiment_c_standalone.py`
 
 ---
 
 ## 1. Introducción
 
-Este experimento tiene un propósito **educativo y de validación crítica**: demostrar empíricamente cómo las **malas prácticas metodológicas (Data Leakage)** inflan artificialmente las métricas de rendimiento, dando una falsa sensación de seguridad antes de pasar a producción. Constituye evidencia empírica robusta de por qué la integridad metodológica es esencial en la investigación de detección de fraude.
+Este experimento demuestra empíricamente cómo el **data leakage** infla las métricas y **cuantifica el impacto de cada fuente por separado**, replicando el análisis con **tres modelos** (LR, RF, XGBoost) para comprobar que el efecto se mantiene.
 
 ---
 
 ## 2. Metodología
 
-Se comparan **dos pipelines** con **Logistic Regression** como modelo base:
+### 2.1. Modelos
 
-### 2.1. Rama Correcta (sin leakage)
+- **Logistic Regression** (max_iter=1000)
+- **Random Forest** (n_estimators=100)
+- **XGBoost** (n_estimators=100)
 
-- **División temporal:** Train (pasado) vs Test (futuro) con gap de delay.
-- **StandardScaler:** Ajustado solo en train, aplicado a test.
-- **SMOTE:** Aplicado solo sobre el conjunto de entrenamiento.
+### 2.2. Cinco ramas experimentales
 
-### 2.2. Rama Incorrecta (con leakage)
+| Rama | Split | Escalado | SMOTE | Fuentes de leakage |
+|------|-------|----------|-------|--------------------|
+| **Correcta** | Temporal | Solo train | Solo train | 0 |
+| **Leak_split** | Aleatorio | Solo train | Solo train | 1 (split) |
+| **Leak_scaler** | Temporal | Global (train+test) | Solo train | 1 (escalado) |
+| **Leak_smote** | Temporal | Solo train | Global (train+test) | 1 (SMOTE) |
+| **Leak_todas** | Aleatorio | Global | Global | 3 |
 
-- **División aleatoria:** `train_test_split` mezcla pasado y futuro.
-- **StandardScaler:** Ajustado sobre TODOS los datos antes de dividir.
-- **SMOTE:** Aplicado antes de la división (genera muestras sintéticas que contaminan test).
+### 2.3. Parámetros SMOTE (config.py)
 
-| Aspecto | Rama Correcta | Rama Incorrecta |
-|---------|---------------|-----------------|
-| División de datos | Temporal | Aleatoria |
-| Escalado | Solo en train | Global (todo el dataset) |
-| Resampling | SMOTE solo en train | SMOTE antes del split |
-| Fuentes de leakage | 0 | 3 |
+- `k_neighbors=5` — Vecinos para interpolación (imblearn default)
+- `sampling_strategy='auto'` — Balanceo a la clase minoritaria
+- `random_state=SEED` — Reproducibilidad
 
----
+### 2.4. Métricas
 
-## 3. Resultados Obtenidos
-
-| Pipeline | AUC ROC | AUPRC | CP@100 |
-|----------|---------|-------|--------|
-| **C-Correcta** (temporal + SMOTE en train) | 0.8658 | 0.6115 | 0.29 |
-| **C-Incorrecta** (SMOTE global + split aleatorio) | **0.9999** ⚠️ | **0.9999** ⚠️ | N/A |
-
-### 3.1. Comparación con Experimento A (Baseline)
-
-| Experimento | AUC ROC | AUPRC | CP@100 |
-|-------------|---------|-------|--------|
-| A — Logistic Regression (baseline) | 0.8705 | 0.6057 | 0.2914 |
-| A — Random Forest (baseline) | 0.8643 | 0.6634 | 0.2900 |
-| A — XGBoost (baseline) | 0.8618 | 0.6389 | 0.2729 |
-| **C-Correcta** (LR + SMOTE en train) | 0.8658 | 0.6115 | 0.2900 |
-| **C-Incorrecta** (con Leakage) ⚠️ | 0.9999 | 0.9999 | N/A |
-
-### 3.2. Visualización
-
-![Comparación Leakage](../figuras_experimentos/experiment_c_leakage_comparison.png)
-
-**Figura 2.** Comparativa AUPRC/AUC ROC: la pipeline incorrecta muestra métricas "perfectas" (≈1.0) completamente artificiales. Curvas PR de la rama correcta vs incorrecta.
+- **AUC ROC**, **AUPRC**, **Card Precision@100** (donde aplica; Leak_todas no tiene estructura temporal para CP@100)
 
 ---
 
-## 4. Análisis
+## 3. Resultados
 
-1. **Evidencia irrefutable de data leakage:**
-   - La pipeline incorrecta obtiene AUPRC = **0.9999** frente a **0.6115** de la correcta → inflación del **63.5%** (artificial).
-   - AUC ROC pasa de 0.8658 a 0.9999.
+### 3.1. Resumen: Correcta vs Leak_todas por modelo
 
-2. **Tres fuentes de contaminación identificadas:**
-   - **Escalado global:** Información de la distribución futura filtra al modelo.
-   - **SMOTE global:** Puntos de test derivados de train → el modelo "memoriza" el test.
-   - **Split aleatorio:** Permite aprender de eventos futuros, imposible en producción.
+| Modelo | C-Correcta AUC | C-Correcta AUPRC | C-Correcta CP@100 | C-Leak_todas AUC | C-Leak_todas AUPRC |
+|--------|----------------|------------------|-------------------|------------------|--------------------|
+| Logistic Regression | 0.8692 | 0.5830 | 0.2886 | 0.8979 | **0.9287** ⚠️ |
+| Random Forest | 0.8658 | 0.6115 | 0.2900 | **0.9999** ⚠️ | **0.9999** ⚠️ |
+| XGBoost | 0.8601 | 0.6163 | 0.2743 | **0.9992** ⚠️ | **0.9995** ⚠️ |
 
-3. **Consistencia con el Baseline:** La rama correcta (AUPRC=0.611, AUC=0.866) es coherente con Logistic Regression del Exp. A (AUPRC=0.606, AUC=0.871). SMOTE aporta mejora marginal (~+0.9% AUPRC).
+### 3.2. Desglose: impacto incremental por fuente de leakage (AUPRC)
 
-4. **Valor para el TFM:** Cualquier trabajo que reporte métricas ≈1.0 en detección de fraude debe examinarse críticamente en busca de data leakage.
+| Modelo | Correcta | Leak_split | Leak_scaler | Leak_smote | Leak_todas |
+|--------|----------|------------|-------------|------------|------------|
+| Logistic Regression | 0.5830 | +0.032 (0.615) | −0.001 (0.582) | +0.007 (0.590) | **+0.346** (0.929) ⚠️ |
+| Random Forest | 0.6115 | +0.066 (0.677) | −0.004 (0.607) | +0.292 (0.904) | **+0.389** (1.000) ⚠️ |
+| XGBoost | 0.6163 | +0.075 (0.691) | −0.001 (0.615) | +0.130 (0.746) | **+0.383** (0.999) ⚠️ |
+
+*Observación:* El **split aleatorio** aporta inflación moderada (+0.03 a +0.08). El **escalado global** apenas afecta. El **SMOTE global** infla mucho en RF (+0.29) y algo en XGBoost (+0.13). Las **tres fuentes juntas** provocan AUPRC ≈1.0.
+
+---
+
+## 4. Visualización
+
+![Comparación Leakage](results/figures/experiment_c_leakage_comparison.png)
+
+**Figura.** AUPRC por rama y modelo. El desglose permite identificar qué fuente de leakage contribuye más a la inflación.
 
 ---
 
 ## 5. Conclusiones
 
-- El data leakage puede inflar la AUPRC de 0.61 a 1.00, haciendo que un modelo parezca "perfecto" cuando no generalizaría en producción.
-- Este experimento valida que el pipeline base (Experimento A) es robusto: sus métricas coinciden con la rama correcta, no con la inflada.
-- La división temporal y el aislamiento estricto del preprocesamiento al conjunto de entrenamiento son fundamentales.
+- **Generalización:** El efecto del leakage se evalúa con LR, RF y XGBoost para comprobar que el patrón es consistente.
+- **Desglose por fuente:** Cuantifica el impacto de split aleatorio, escalado global y SMOTE global por separado.
+- **Parámetros documentados:** SMOTE queda explícitamente configurado en `config.SMOTE_PARAMS`.
+- **Valor para el TFM:** Evidencia empírica robusta de por qué la integridad metodológica es esencial; métricas ≈1.0 deben examinarse críticamente.

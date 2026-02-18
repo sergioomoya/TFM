@@ -51,13 +51,11 @@ Se han diseñado ramas y notebooks específicos para validar escenarios concreto
 1.  **Experimento A (Baseline):**
     - Establecimiento de una línea base "pura" sin técnicas de balanceo.
     - **Aportación:** Integración de la métrica de negocio `Card Precision@100` (CP@100) en el flujo de evaluación estándar.
+    - **Metodología Capítulo 5:** Validación prequential (4 folds), GridSearchCV con búsqueda de hiperparámetros, reporte de media ± desviación estándar.
 
 2.  **Experimento C (Test de Data Leakage):**
     - **Aportación:** Demostración empírica del peligro del filtrado de información.
-    - Se implementaron dos pipelines paralelos en el mismo notebook:
-        - *Incorrecto:* Transformaciones globales antes del split (AUC ROC ~1.00, irreal).
-        - *Correcto:* Transformaciones ajustadas solo en train (AUPRC ~0.61, realista).
-    - Esto valida la robustez de la metodología temporal empleada en el TFM.
+    - **Refactorizado:** Cinco ramas (Correcta, Leak_split, Leak_scaler, Leak_smote, Leak_todas) para desglosar el impacto por fuente. Tres modelos (LR, RF, XGBoost). Parámetros SMOTE en `config.SMOTE_PARAMS`.
 
 3.  **Experimento D (Interpretabilidad):**
     - **Aportación:** Uso de **SHAP** (SHapley Additive exPlanations) sobre el modelo XGBoost.
