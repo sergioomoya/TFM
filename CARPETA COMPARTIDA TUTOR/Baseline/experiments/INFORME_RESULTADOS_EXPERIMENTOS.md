@@ -1,7 +1,7 @@
 # Informe Detallado de Resultados — Experimentos Tentativos
 
 **Proyecto:** TFM — Detección de Fraude en Transacciones con Tarjeta de Crédito  
-**Fecha de ejecución:** 16 de febrero de 2026  
+**Fecha de ejecución:** 18 de febrero de 2026  
 **Entorno:** Docker (Python 3.11, scikit-learn, XGBoost, SHAP, imbalanced-learn)  
 **Datos:** Simulación temporal de transacciones (Capítulo 3 del libro *Fraud Detection Handbook*)
 
@@ -25,11 +25,11 @@ Se ejecutaron con éxito los **tres experimentos tentativos** planificados para 
 
 | Experimento | Estado | Tiempo de ejecución | Celdas |
 |---|---|---|---|
-| **A — Baseline Puro** | ✅ Éxito | 15.15 s | 8/8 |
-| **C — Test Anti-Leakage** | ✅ Éxito | 204.27 s (~3.4 min) | 7/7 |
-| **D — Interpretabilidad (XAI)** | ✅ Éxito | 12.65 s | 7/7 |
+| **A — Baseline Puro** | ✅ Éxito | 16.1 s | 8/8 |
+| **C — Test Anti-Leakage** | ✅ Éxito | 181.9 s (~3.0 min) | 7/7 |
+| **D — Interpretabilidad (XAI)** | ✅ Éxito | 13.7 s | 7/7 |
 
-**Tiempo total de ejecución:** ~232 segundos (~3.9 minutos)
+**Tiempo total de ejecución:** ~212 segundos (~3.5 minutos)
 
 ### Hallazgos clave
 
@@ -68,7 +68,7 @@ Establecer métricas de referencia para tres modelos clásicos de Machine Learni
 
 ### 2.5 Visualización
 
-![Resultados Experimento A](results/figures/experiment_a_baseline_results.png)
+![Resultados Experimento A](../figuras_experimentos/experiment_a_baseline_results.png)
 
 **Figura 1.** Panel izquierdo: Curva Precision-Recall (Random Forest con AP=0.663 es superior). Panel central: Curvas ROC (todas similares ~0.86-0.87). Panel derecho: Paradoja del desbalance — Accuracy >99.6% pero Recall del fraude <55%.
 
@@ -108,7 +108,7 @@ Se comparan dos ramas con **Logistic Regression** como modelo base:
 
 ### 3.4 Visualización
 
-![Comparación Leakage](results/figures/experiment_c_leakage_comparison.png)
+![Comparación Leakage](../figuras_experimentos/experiment_c_leakage_comparison.png)
 
 **Figura 2.** Panel izquierdo: Comparativa de AUPRC y AUC ROC — la pipeline incorrecta muestra métricas "perfectas" (≈1.0) que son completamente artificiales. Panel central: Curva PR de la rama correcta (AP=0.611). Panel derecho: Curva PR de la rama incorrecta (AP=1.000) con advertencia de *Data Leakage*.
 
@@ -174,13 +174,13 @@ Analizar qué variables impulsan las predicciones del modelo de detección de fr
 
 #### Feature Importance
 
-![Feature Importance](results/figures/experiment_d_feature_importance.png)
+![Feature Importance](../figuras_experimentos/experiment_d_feature_importance.png)
 
 **Figura 3.** Las 10 variables más importantes según la ganancia (Gain) de XGBoost. `TERMINAL_ID_RISK_7DAY_WINDOW` domina con el 41.9% de la ganancia total, más del triple que la segunda variable.
 
 #### SHAP Beeswarm Plot
 
-![SHAP Beeswarm](results/figures/experiment_d_shap_beeswarm.png)
+![SHAP Beeswarm](../figuras_experimentos/experiment_d_shap_beeswarm.png)
 
 **Figura 4.** Gráfico Beeswarm de SHAP (500 muestras del test). Los puntos rojos representan valores altos de la variable, los azules valores bajos. Se observa claramente cómo los valores altos de las variables de riesgo del terminal empujan las predicciones hacia fraude (SHAP > 0).
 
