@@ -60,6 +60,7 @@ Se han diseñado ramas y notebooks específicos para validar escenarios concreto
 3.  **Experimento D (Interpretabilidad):**
     - **Aportación:** Uso de **SHAP** (SHapley Additive exPlanations) sobre el modelo XGBoost.
     - Permite explicar no solo qué transacciones son fraude, sino *por qué* lo son, aportando valor al analista de fraude.
+    - **Mejoras (CRITICA_MEJORA_EXPERIMENTOS):** Modelo XGBoost baseline (mejor AUPRC); Feature Importance Gain/weight/cover; tabla mean \|SHAP\|; Force plots con contexto; Beeswarm 1000 muestras; Dependence plots.
 
 ---
 

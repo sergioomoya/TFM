@@ -71,25 +71,19 @@ Los tres experimentos (Baseline, Data Leakage, Interpretabilidad) cumplen su pro
 | Interpretación | ✅ | Coherente con el dominio |
 | Comparabilidad | ⚠️ | Modelo distinto al baseline (cost-sensitive) |
 
-**Debilidades:**
+**Debilidades (resueltas):**
 
-1. **Modelo distinto al mejor baseline:** Se usa XGBoost cost-sensitive (AUPRC 0.60) en lugar del mejor baseline (Random Forest, AUPRC 0.66). La importancia de variables puede variar entre modelos. Sería más sólido analizar el **modelo con mejor rendimiento** o comparar importancias entre varios modelos.
+1. ~~**Modelo distinto al mejor baseline**~~ — ✅ **Resuelto.** Se usa XGBoost baseline (mejor AUPRC del Exp. A) en lugar de cost-sensitive.
 
-2. **Feature Importance limitada:** Se usa solo Gain; XGBoost permite también `weight` y `cover`. Una breve comparación entre métricas aportaría matices sobre la importancia de las variables.
+2. ~~**Feature Importance limitada**~~ — ✅ **Resuelto.** Se incluyen Gain, weight y cover; se guarda `experiment_d_feature_importance_all_types.csv`.
 
-3. **Muestra SHAP reducida:** El beeswarm se calcula sobre 500 muestras. Con más muestras (o varias semillas) el orden de variables podría cambiar ligeramente. No se evalúa la estabilidad de los rankings.
+3. ~~**Muestra SHAP reducida**~~ — ✅ **Resuelto.** Beeswarm sobre **1000** muestras (antes 500).
 
-4. **Falta de análisis cuantitativo SHAP:** No se reportan valores numéricos (p. ej. mean |SHAP| por variable), solo visuales. Sería útil incluir una tabla de impacto medio absoluto por feature.
+4. ~~**Falta de análisis cuantitativo SHAP**~~ — ✅ **Resuelto.** Tabla `mean |SHAP|` por variable en `experiment_d_shap_mean_impact.csv`.
 
-5. **Force plots sin contexto:** Las transacciones elegidas para los force plots no se describen (monto, terminal, etc.). Añadir un breve resumen facilitaría la interpretación.
+5. ~~**Force plots sin contexto**~~ — ✅ **Resuelto.** Cada force plot incluye descripción de la transacción (TX_AMOUNT, TERMINAL_ID, CUSTOMER_ID, riesgo de terminal).
 
-**Propuestas de mejora:**
-
-- Repetir el análisis de interpretabilidad con el mejor modelo del baseline (Random Forest) y comparar rankings.
-- Incluir tabla con `mean |SHAP|` por variable para complementar el beeswarm.
-- Probar distintas métricas de Feature Importance (Gain, weight, cover) y comentar diferencias.
-- Documentar las características de las transacciones seleccionadas para los force plots.
-- Valorar Dependence plots para analizar interacciones (p. ej. `TX_AMOUNT` vs `TERMINAL_ID_RISK`).
+6. ~~**Sin Dependence plots**~~ — ✅ **Resuelto.** Dependence plots para TX_AMOUNT y TERMINAL_ID_RISK_7DAY_WINDOW.
 
 ---
 
@@ -140,10 +134,10 @@ Aunque existe `config.py` y semilla fijada, faltan:
 | ~~**Alta**~~ | ~~Validación prequential y reporte de varianza~~ | — | ✅ Implementado (Exp. A) |
 | ~~**Media**~~ | ~~Hiperparámetro tuning del baseline~~ | — | ✅ Implementado (Exp. A) |
 | **Media** | Desglose del Exp. C por fuente de leakage | Medio | Alto (didáctico) |
-| **Media** | Interpretabilidad del mejor modelo (RF) | Bajo | Medio (comparabilidad) |
+| ~~**Media**~~ | ~~Interpretabilidad del mejor modelo~~ | — | ✅ XGBoost baseline (Exp. D) |
 | **Baja** | Añadir LightGBM al baseline | Bajo | Medio (enriquecer comparación) |
-| **Baja** | Tabla numérica de mean \|SHAP\| | Bajo | Bajo (complementar gráficos) |
-| **Baja** | Documentar parámetros SMOTE y force plots | Bajo | Bajo (transparencia) |
+| ~~**Baja**~~ | ~~Tabla numérica mean \|SHAP\|~~ | — | ✅ Implementado (Exp. D) |
+| ~~**Baja**~~ | ~~Documentar force plots~~ | — | ✅ Contexto en force plots (Exp. D) |
 
 ---
 

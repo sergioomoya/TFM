@@ -1,8 +1,8 @@
 # Informe Detallado de Resultados — Experimentos Tentativos
 
 **Proyecto:** TFM — Detección de Fraude en Transacciones con Tarjeta de Crédito  
-**Fecha de ejecución:** 18 de febrero de 2026  
-**Entorno:** Docker (Python 3.11, scikit-learn, XGBoost, SHAP, imbalanced-learn)  
+**Fecha de ejecución:** 19 de febrero de 2026  
+**Entorno:** Docker (Python 3.8, scikit-learn, XGBoost, SHAP, imbalanced-learn)  
 **Datos:** Simulación temporal de transacciones (Capítulo 3 del libro *Fraud Detection Handbook*)
 
 ---
@@ -27,7 +27,7 @@ Se ejecutaron con éxito los **tres experimentos tentativos** planificados para 
 |---|---|---|---|
 | **A — Baseline Puro** | ✅ Éxito | 16.1 s | 8/8 |
 | **C — Test Anti-Leakage** | ✅ Éxito | 181.9 s (~3.0 min) | 7/7 |
-| **D — Interpretabilidad (XAI)** | ✅ Éxito | 13.7 s | 7/7 |
+| **D — Interpretabilidad (XAI)** | ✅ Éxito | 17.0 s | 8/8 |
 
 **Tiempo total de ejecución:** ~212 segundos (~3.5 minutos)
 
@@ -35,7 +35,7 @@ Se ejecutaron con éxito los **tres experimentos tentativos** planificados para 
 
 1. **Random Forest** obtiene la mejor AUPRC (0.6634) del baseline, seguido de XGBoost (0.6389) y Logistic Regression (0.6057).
 2. **El data leakage infla las métricas de forma catastrófica**: una pipeline incorrecta con SMOTE global y split aleatorio muestra AUPRC ≈ 1.000 vs. 0.611 con la metodología correcta, una diferencia del **63.5%**.
-3. **`TERMINAL_ID_RISK_7DAY_WINDOW`** es, con diferencia, la variable más importante para la detección de fraude (41.9% de la ganancia en XGBoost), seguida de `TX_AMOUNT` (12.9%).
+3. **`TERMINAL_ID_RISK_7DAY_WINDOW`** es, con diferencia, la variable más importante para la detección de fraude (38.8% de la ganancia en XGBoost baseline), seguida de `TX_AMOUNT` (12.9%).
 4. La **paradoja del desbalance** queda evidenciada: todos los modelos superan 99.6% de Accuracy, pero su Recall para fraude oscila entre 46.7% y 54.0%.
 
 ---
@@ -157,25 +157,25 @@ Analizar qué variables impulsan las predicciones del modelo de detección de fr
 
 ### 4.2 Modelo utilizado
 
-- **XGBoost cost-sensitive** (`scale_pos_weight` = ratio de desbalance ≈ 111.4)
-- Métricas del modelo: AUC ROC = 0.8320, AUPRC = 0.5988, CP@100 = 0.2557
+- **XGBoost baseline** (mejor AUPRC del Experimento A), en lugar de cost-sensitive
+- Métricas del modelo: AUC ROC = 0.8618, AUPRC = 0.6389, CP@100 = 0.2729
 
-> **Nota:** Las métricas del XGBoost cost-sensitive son ligeramente inferiores a las del baseline (Exp. A) porque la ponderación agresiva de la clase minoritaria cambia el punto de operación del modelo hacia mayor Recall a costa de Precision.
+> **Mejora (CRITICA_MEJORA_EXPERIMENTOS):** Se usa el modelo con mejor rendimiento del baseline para que la interpretabilidad refleje el modelo desplegado. Incluye Gain/weight/cover, mean \|SHAP\|, force plots con contexto y dependence plots.
 
-### 4.3 Feature Importance (Ganancia)
+### 4.3 Feature Importance (Gain, weight, cover)
 
-| Ranking | Variable | Importancia (Gain) |
-|---|---|---|
-| 1 | `TERMINAL_ID_RISK_7DAY_WINDOW` | **0.4186** |
-| 2 | `TX_AMOUNT` | **0.1294** |
-| 3 | `CUSTOMER_ID_AVG_AMOUNT_7DAY_WINDOW` | 0.0552 |
-| 4 | `CUSTOMER_ID_AVG_AMOUNT_30DAY_WINDOW` | 0.0549 |
-| 5 | `CUSTOMER_ID_AVG_AMOUNT_1DAY_WINDOW` | 0.0428 |
-| 6 | `TERMINAL_ID_RISK_30DAY_WINDOW` | 0.0375 |
-| 7 | `TERMINAL_ID_NB_TX_1DAY_WINDOW` | 0.0362 |
-| 8 | `TERMINAL_ID_RISK_1DAY_WINDOW` | 0.0330 |
-| 9 | `CUSTOMER_ID_NB_TX_30DAY_WINDOW` | 0.0306 |
-| 10 | `CUSTOMER_ID_NB_TX_7DAY_WINDOW` | 0.0290 |
+| Ranking | Variable | Gain | weight | cover |
+|---|---|---|---|---|
+| 1 | `TERMINAL_ID_RISK_7DAY_WINDOW` | **0.388** | 76 | 2009 |
+| 2 | `TX_AMOUNT` | **0.129** | 330 | 521 |
+| 3 | `TERMINAL_ID_RISK_30DAY_WINDOW` | 0.101 | 157 | 34 |
+| 4 | `CUSTOMER_ID_AVG_AMOUNT_30DAY_WINDOW` | 0.056 | 324 | 74 |
+| 5 | `TERMINAL_ID_RISK_1DAY_WINDOW` | 0.041 | 21 | 3858 |
+| 6 | `CUSTOMER_ID_AVG_AMOUNT_7DAY_WINDOW` | 0.038 | 254 | 380 |
+| 7 | `TERMINAL_ID_NB_TX_1DAY_WINDOW` | 0.038 | 48 | 55 |
+| 8 | `CUSTOMER_ID_AVG_AMOUNT_1DAY_WINDOW` | 0.030 | 251 | 68 |
+| 9 | `CUSTOMER_ID_NB_TX_7DAY_WINDOW` | 0.028 | 125 | 40 |
+| 10 | `CUSTOMER_ID_NB_TX_30DAY_WINDOW` | 0.027 | 215 | 44 |
 
 ### 4.4 Visualizaciones
 
@@ -183,19 +183,23 @@ Analizar qué variables impulsan las predicciones del modelo de detección de fr
 
 ![Feature Importance](../figuras_experimentos/experiment_d_feature_importance.png)
 
-**Figura 3.** Las 10 variables más importantes según la ganancia (Gain) de XGBoost. `TERMINAL_ID_RISK_7DAY_WINDOW` domina con el 41.9% de la ganancia total, más del triple que la segunda variable.
+**Figura 3.** Las 10 variables más importantes según la ganancia (Gain) de XGBoost baseline. `TERMINAL_ID_RISK_7DAY_WINDOW` domina con el 38.8% de la ganancia total, más del triple que la segunda variable.
 
 #### SHAP Beeswarm Plot
 
 ![SHAP Beeswarm](../figuras_experimentos/experiment_d_shap_beeswarm.png)
 
-**Figura 4.** Gráfico Beeswarm de SHAP (500 muestras del test). Los puntos rojos representan valores altos de la variable, los azules valores bajos. Se observa claramente cómo los valores altos de las variables de riesgo del terminal empujan las predicciones hacia fraude (SHAP > 0).
+**Figura 4.** Gráfico Beeswarm de SHAP (1000 muestras del test). Los puntos rojos representan valores altos de la variable, los azules valores bajos.
+
+**Tabla mean \|SHAP\|:** `experiment_d_shap_mean_impact.csv` — Top 5: CUSTOMER_ID_AVG_AMOUNT_30DAY_WINDOW, TX_AMOUNT, CUSTOMER_ID_AVG_AMOUNT_1DAY_WINDOW, CUSTOMER_ID_AVG_AMOUNT_7DAY_WINDOW, TERMINAL_ID_NB_TX_30DAY_WINDOW.
+
+**Dependence plots:** TX_AMOUNT y TERMINAL_ID_RISK_7DAY_WINDOW para analizar interacciones.
 
 ### 4.5 Análisis
 
 1. **Dominio del riesgo del terminal:**
-   - `TERMINAL_ID_RISK_7DAY_WINDOW` concentra el **41.9%** de toda la ganancia, lo cual tiene sentido dominio: un terminal que ha procesado muchas transacciones fraudulentas en los últimos 7 días es altamente indicativo de fraude.
-   - Las tres ventanas temporales de riesgo del terminal (1, 7 y 30 días) suman el **48.9%** de la ganancia total.
+   - `TERMINAL_ID_RISK_7DAY_WINDOW` concentra el **38.8%** de toda la ganancia, lo cual tiene sentido dominio: un terminal que ha procesado muchas transacciones fraudulentas en los últimos 7 días es altamente indicativo de fraude.
+   - Las tres ventanas temporales de riesgo del terminal (1, 7 y 30 días) suman el **~53%** de la ganancia total.
 
 2. **Importancia del monto de transacción:**
    - `TX_AMOUNT` es la segunda variable más importante (12.9%). En el gráfico SHAP se observa que **montos altos (puntos rojos) empujan la predicción hacia fraude**, lo que es coherente con el escenario de fraude simulado.
@@ -207,9 +211,9 @@ Analizar qué variables impulsan las predicciones del modelo de detección de fr
    - Aunque `TERMINAL_ID_RISK_7DAY_WINDOW` domina la Feature Importance, en el gráfico SHAP la variable que más dispersión muestra (mayor impacto medio absoluto) es `CUSTOMER_ID_AVG_AMOUNT_30DAY_WINDOW`. Esto se debe a que la Feature Importance mide la ganancia total en los árboles, mientras que SHAP mide el impacto marginal en cada predicción individual.
    - Esta discrepancia es una observación metodológica valiosa: **no existe una única respuesta a "qué variable es más importante"**, depende del enfoque de medición.
 
-5. **Force Plots (análisis local):**
-   - Se han generado exitosamente los force plots para transacciones individuales (fraudulenta y normal) como imágenes estáticas (`experiment_d_shap_force_fraud.png`, `experiment_d_shap_force_normal.png`).
-   - Estos gráficos muestran cómo cada característica empuja la predicción desde el valor base (base value) hacia la puntuación final del modelo. Las barras rojas indican características que aumentan el riesgo de fraude, mientras que las azules lo disminuyen.
+5. **Force Plots (análisis local) con contexto:**
+   - Se han generado force plots para transacciones individuales (fraudulenta y normal) con **descripción de la transacción** (TX_AMOUNT, TERMINAL_ID, CUSTOMER_ID, riesgo del terminal).
+   - Las barras rojas indican características que aumentan el riesgo de fraude, las azules lo disminuyen.
 
 ---
 
@@ -226,7 +230,7 @@ Analizar qué variables impulsan las predicciones del modelo de detección de fr
 | C — Leak_todas ⚠️ | Logistic Regression | 0.8979 | **0.9287** | N/A | Data leakage |
 | C — Leak_todas ⚠️ | Random Forest | **0.9999** | **0.9999** | N/A | **Data leakage catastrófico** |
 | C — Leak_todas ⚠️ | XGBoost | **0.9992** | **0.9995** | N/A | **Data leakage catastrófico** |
-| D — XAI | XGBoost cost-sensitive | 0.8320 | 0.5988 | 0.2557 | Modelo para interpretabilidad |
+| D — XAI | XGBoost baseline | **0.8618** | **0.6389** | **0.2729** | Interpretabilidad del mejor modelo |
 
 ---
 
@@ -253,7 +257,7 @@ Analizar qué variables impulsan las predicciones del modelo de detección de fr
 1. ~~**Hyperparameter tuning** de los modelos baseline~~ — ✅ Implementado en Experimento A (metodología Cap. 5).
 2. **Experimento B (Cost-Sensitive Learning):** Evaluar el impacto de la ponderación de clases de forma sistemática en todos los modelos.
 3. ~~**Validación cruzada temporal**~~ — ✅ Experimento A usa validación prequential (4 folds).
-4. **Ampliar el análisis SHAP** con ejecución en JupyterLab para visualizar correctamente los force plots y dependence plots.
+4. ~~**Ampliar el análisis SHAP** con dependence plots~~ — ✅ Implementado en Experimento D (mejoras CRITICA).
 
 ---
 
@@ -269,7 +273,9 @@ Analizar qué variables impulsan las predicciones del modelo de detección de fr
 | `experiments/results/experiment_c_all_ramas.csv` | Métricas de las 5 ramas (Correcta, Leak_split, Leak_scaler, Leak_smote, Leak_todas) |
 | `experiments/results/experiment_c_desglose_leakage.csv` | Desglose por fuente de leakage (AUPRC por rama y modelo) |
 | `experiments/results/experiment_c_vs_a_comparison.csv` | Comparación Exp. C vs. Exp. A |
-| `experiments/results/experiment_d_feature_importance.csv` | Ranking de importancia de variables |
+| `experiments/results/experiment_d_feature_importance.csv` | Ranking Gain/weight/cover |
+| `experiments/results/experiment_d_feature_importance_all_types.csv` | Feature importance con tipos |
+| `experiments/results/experiment_d_shap_mean_impact.csv` | mean \|SHAP\| por variable |
 | `experiments/results/experiment_d_results.pkl` | Valores SHAP, métricas y metadatos |
 | `experiments/results/execution_report.json` | Reporte de ejecución (tiempos, estado) |
 
@@ -279,10 +285,12 @@ Analizar qué variables impulsan las predicciones del modelo de detección de fr
 |---|---|
 | `experiment_a_baseline_results.png` | Barras AUC ROC, AUPRC, CP@100 (media ± desv.) |
 | `experiment_c_leakage_comparison.png` | Impacto del data leakage en métricas |
-| `experiment_d_feature_importance.png` | Top-10 variables por ganancia (XGBoost) |
-| `experiment_d_shap_beeswarm.png` | Distribución de valores SHAP por variable |
-| `experiment_d_shap_force_fraud.png` | Force plot de una transacción fraudulenta |
-| `experiment_d_shap_force_normal.png` | Force plot de una transacción normal |
+| `experiment_d_feature_importance.png` | Top-10 variables por Gain (XGBoost baseline) |
+| `experiment_d_shap_beeswarm.png` | Beeswarm SHAP (1000 muestras) |
+| `experiment_d_shap_force_fraud.png` | Force plot fraude con contexto |
+| `experiment_d_shap_force_normal.png` | Force plot transacción normal con contexto |
+| `experiment_d_shap_dependence_tx_amount.png` | Dependence plot TX_AMOUNT |
+| `experiment_d_shap_dependence_terminal_id_risk_7day_window.png` | Dependence plot riesgo terminal |
 
 ### 7.3 Reproducibilidad
 
@@ -297,4 +305,4 @@ docker compose run --rm experiments python experiments/run_experiment.py --all
 ```
 
 **Semilla aleatoria:** 42 (fijada en todos los modelos y operaciones de splitting)  
-**Versión de Python:** 3.11 (contenedor Docker)
+**Versión de Python:** 3.8 (contenedor Docker)
