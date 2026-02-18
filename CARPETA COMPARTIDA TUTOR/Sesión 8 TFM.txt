@@ -1,0 +1,168 @@
+Sesión 8 TFM
+
+0:00 - Orador no identificado Vale. 0:00 - BADY PATRICIO GANA CASTILLO Recibí tu
+correo.
+Digamos que lo encontré un poco ambicioso, ¿ya? ¿Cómo está el formato?
+Principalmente porque más o al menos lo que más me preocupa es la parte del
+análisis, o las discusiones.
+Porque quedaron como un poco afuera, ¿ya? Porque
+si bien la semana 4 habla de reacción intensiva, generación de gráfico y la
+maquetación, falta ese aspecto de análisis, ya sea exploratorio, cuantitativo,
+algo que permita darle no solamente contexto, sino que dirección a la tesis.
+Porque una cosa es generar estos métodos, implementarlos, compararlos, pero
+luego al final hay que decir qué fue lo valioso de realizar este tipo de
+experimentos.
+Ahora porque te comentaba de que lo encontraba ambicioso ya eso
+principalmente por la semana 1 la semana 1 lo que busca en parte es ya finalizar
+el script que en parte está la gran mayoría sin tunear pero la parte de entrenar
+y comparar no sé si realmente va a dar el tiempo en la primera semana ya ahora
+si es que tuviese dedicación a tiempo completo yo te diría si alcanzas no hay
+problema Sí, eso sí.
+1:25 - Sergio Moya Marín Entonces, te lo digo ya que tenía pensado dedicar
+bastante de, o sea, todas las tardes porque, digamos, ya la asignatura que todo
+el mundo tiene y yo la tengo convalidada, así que a partir del jueves ya se me
+liberan las tardes y el fin de semana lo voy a dedicar a esto, así que en
+principio es el objetivo que tengo.
+1:51 - BADY PATRICIO GANA CASTILLO Y bueno,
+Idealmente que esa semana 4 tenga la mayor cantidad de holgura posible.
+1:57 -
+Sergio Moya Marín ¿Por qué te lo comento?
+1:59 - BADY PATRICIO GANA CASTILLO Porque en caso de que aparezca cualquier
+eventualidad, idealmente a final de cada semana, bienvenido sea un correo
+reporte o bien en el mismo drive, generar una carpeta de reporte semanal.
+Eso me
+va a servir mucho para cuando tenga un ratito libre ahí en Japón, poder revisar
+cómo va el avance.
+Uno, me dejas tranquilo. Y dos, también tú estás tranquilo y
+quisiste el avance. Sí. Sí, sí. Perfecto.
+Por lo demás, es básicamente lo que
+hablamos. O sea, no hay mucha variación.
+La idea es terminar sellando con la
+explicabilidad un poquito. Lo anterior es comparar las métricas para tener un
+análisis como se llama, comparativo.
+Lo único que más hace ruido, sí, es el
+hecho de que sigue manteniendo dentro de las planificaciones smooth, ya cuando
+dijimos que lo mejor era recortarlo para que no causara problemas.
+2:59 - Sergio Moya Marín Ya bueno, vale, tenía planeado intentar implementarlo
+de forma superficial para, digamos, hacer la comparativa de, digamos, sé que
+eso, digamos, podría tener la entidad de un proyecto en sí o, digamos, o un
+experimento en sí de lo que sería este proyecto, pero quería valorar la
+posibilidad de implementarlo.
+Lo que te recomiendo es que eso lo dejes al final
+de las tareas de prioridad.
+Vale, pues mira, de las de esta semana me las pongo
+al final, por ordenarme por prioridad también.
+3:45 - BADY PATRICIO GANA CASTILLO Claro, porque si no es vital para el
+framework prioricemos las cosas que sí son vitales para llevarla a la redacción.
+Otra cosa que te voy a recomendar es que tú la semana 4 podrías hacer un
+blending con las otras tres semanas.
+¿Qué voy con eso? Que por ejemplo tú
+terminas el script del baseline y inmediatamente vas al informe a decir lo que
+hiciste en el script.
+Exacto. Porque de esa manera no van a pasar tres semanas
+en donde vas a tener que volver a visitar el código y volver a entender qué fue
+lo que pasó.
+Por lo tanto, que aquí te recomiendo es que, por ejemplo, partes de
+la tarea de la semana 1 se vayan a la semana 2, de la semana 2 a la semana 3 y
+de la semana 3 a la 4, pero que la redacción esté inmersa en cada una de las 3
+semanas, que ahora se van a convertir en 4, ¿bien?
+Yo creo que ese va a ser como
+el retoque que te permitir tener un avance súper ordenado, asociado a tareas, y
+que te va a permitir también avanzar en el insumo principal que es el informe.
+Entonces, informe o código con informe, resultado, pones las tablas
+comparativas, al tiro. Y así no tienes que trabajar dos veces.
+ALFREDO M.
+BELLANO. Vale, sí.
+4:58 - Sergio Moya Marín Al final, bueno, sí que es verdad que lo he puesto así,
+pero lo tenía planeado como comentado.
+Aunque sea una pequeña, digamos, una
+redacción esquemática o sintetizada de todo lo que se ha hecho y luego sí que
+buscaba el esplayarme un poco más en esa semana 4. A ver, también he puesto la
+semana 4 solamente redacción sabiendo que, a ver, creo que me va a costar menos
+con una semana redactar esta parte, teniendo más holgura para poder absorber
+tareas que hayan podido quedarse.
+5:39 - BADY PATRICIO GANA CASTILLO Claro, totalmente de acuerdo, o sea, si tú
+puedes eliminar la semana, perdón, tú puedes transformar la semana 4 a que quede
+dentro de 1, 2, 3, bienvenido sea, porque ahí vas a tener la holgura en caso que
+identificamos algún problema o bien cualquier otra cosa, pero al menos esa
+mierda recomendación si es que lo quieres dejar limitado acá como a prueba de de
+cómo decirlo de eventualidades la idea sería como expandirlo un poquito más y ir
+paso a paso pero como te digo este plazo es súper realista ya es honesto y así
+que yo creo que 
+se puede realizar en el tiempo en el plazo posible que está
+definido.
+Déjame revisar mis notas que mis notas yo puse algo asociado No, de
+hecho estaba bien.
+Quizás en la parte de la redacción, ya para que quede un
+poquito más independiente, yo por acá tenía anotado el hecho de que anotara
+sobre las limitaciones y el trabajo futuro ya que eso no está no está abordado
+plenamente aquí y que eso es como la última etapa de decir mira vamos a ser
+súper honesto no trabajamos con x cosa o dejamos fuera esto porque y finalmente
+eventualmente se va a trabajar en una futura iteración perfecto Eso sería como
+algo que añadiría así como 4.1 y la idea es que eso quepa dentro de la semana de
+la 1 a la 4. Dejamos 
+claro eso también de que lo ideal es este reporte semanal,
+dejarlo en el drive y con eso vamos súper bien.
+Y si puedes trabajar en paralelo
+cada una de estas semanas o cada uno de estos hitos asociados al manuscrito,
+mejor todavía yo creo que ese es el escenario ideal.
+7:54 - Sergio Moya Marín Sí, sí, desde luego, perfecto.
+7:57 - BADY PATRICIO
+GANA CASTILLO Bien, eso sería como grandes rasgos. Vale, genial.
+Ya no sé si
+tienes dudas, consultas... 8:05 - Sergio Moya Marín No, a ver, me estoy peleando
+ahora con el baseline porque estaba haciendo y deshaciendo cosas, al final hay
+veces que es más fácil deshacerlo, hecho y volver a empezar que hay que
+intentar... 8:23 - BADY PATRICIO GANA CASTILLO Muchas, muchas veces, de hecho te
+diría que el 90% de las veces es mejor partir desde cero.
+8:31 - Sergio Moya Marín Sí, entonces nada, he estado ahí enredando con el
+baseline porque, bueno, digamos en la generación de los documentos que
+aglutinan, digamos, todo el script, con todas las dependencias dentro de un
+cuaderno, ejecutar de Jupyter y traduciéndolo al español, añadiendole
+comentarios en el código para entenderlo mejor y modularizarlo un poquito más y
+saber dónde tocar.
+Vale, entonces nada, en principio estoy todavía con eso. Es
+lo que te decía, a partir del jueves ya se me liberan las tardes y el fin de
+semana voy a tener tiempo de sobra para dedicarla a esto.
+9:21 - BADY PATRICIO GANA CASTILLO En cualquier caso lo que sí te voy a pedir es
+la versión 2 de este planning de las próximas semanas y ya con eso estamos al
+otro lado.
+9:33 - Sergio Moya Marín Sí, eso lo estaba justo. Si quieres, bueno,
+te lo paso directamente ya por correo.
+Es que lo estaba redactando. 9:42 - BADY
+PATRICIO GANA CASTILLO Sí, sí, hazlo con calma, no hay apuro.
+9:47 - Sergio Moya
+Marín He añadido ya todo lo que me has comentado y así si me faltara algo me
+dices directo.
+En enviados te lo vuelvo a enviar. A ver...
+10:05 - BADY PATRICIO GANA CASTILLO Algo que sí quiero dejar bien Claro, Sergio,
+te he relacionado al objetivo.
+Es decir, el objetivo de tu tesis, ¿cómo lo
+resumirías actualmente con lo que tienes?
+10:27 - Sergio Moya Marín El objetivo
+de mi tesis es, digamos, aportar a un estudio común de de la detección de
+anomalías, digamos, utilizando una metodología común y auditable y explicar los
+diferentes resultados que se pueden llegar a obtener con diferentes tipos de
+algoritmos.
+11:05 - BADY PATRICIO GANA CASTILLO
+Sí, por ahí está. Hay que darle un poquito más de forma, ¿ya? Sí.
+11:11 - Sergio
+Moya Marín Ha sido un poco improvisado, pero sí. La idea la tengo.
+Sí, verdad
+que, bueno, igual lo tengo que plasmar más. 11:20 - BADY PATRICIO GANA CASTILLO
+La palabra clave que utilizaste fue auditable, ¿ya?
+Que por ahí está todo lo que
+es el explainable. Así que eso, no tengo mucho más que comentarte.
+Y estaríamos
+en contacto, Sergio. Perfecto. Yo voy a continuar por aquí. 11:36 - Sergio Moya
+Marín Nada, muy buen viaje. Disfruta.
+Muchas gracias. Y te voy comentando
+conforme, no te molestaré mucho, te lo voy a ir pasando, pero tampoco quiero que
+estorbarte demasiado en el viaje.
+No, tranquilo.
+11:49 - BADY PATRICIO GANA CASTILLO Tú envía nomás y ahí ya me hago el tiempo
+cuando pueda. Bien.
+11:54 - Orador no identificado Perfecto. 11:54 - Sergio Moya
+Marín Super. 11:55 - BADY PATRICIO GANA CASTILLO Cuídate mucho.
+Un abrazo.
+Cuídate. 11:57 - Orador no identificado Chao. Chao, chao.

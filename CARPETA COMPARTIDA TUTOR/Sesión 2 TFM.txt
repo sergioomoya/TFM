@@ -1,0 +1,342 @@
+Sesión 2 TFM
+
+2:02 - SergioMoya Hola, BADY, ¿qué tal? Hola, hola, ¿qué tal, Sergio? 2:09 -
+Orador no identificado Bien.
+2:09 - SergioMoya Ya terminando de trabajar, por
+fin. Genial, perfecto. 2:15 - BADY GANA Bien, nada, te quería adelantar.
+2:19 -
+SergioMoya Primero, eso, bueno, no sé si viste los correos que me estaba
+cruzando con Mari.
+Internamente, pues la gente que me tiene que validar los
+temas pasa arriba de carga de trabajo y no vuelve conmigo la semana que viene.
+De hecho, tienen una feria y va a ser complicado que me lo puedan validar.
+Igualmente, por mi parte, he hecho algunas propuestas de TCM, cruzando pues,
+digamos, conocimiento que he ido recopilando de manuales o información de la
+propia herramienta que implantamos nosotros y que desarrollamos nosotros y cómo
+aplicar una capa de automatización o de inteligencia artificial a alguna de las
+funciones aprovechando digamos en todos los datos que recopila la herramienta.
+No sé si dado tiempo a mirar algo de lo que se compartió.
+3:32 - BADY GANA En cualquier caso no te preocupes tanto por la validación, a mí
+lo que me interesa es que sepas con quién puedes llegar a validar, no
+necesariamente que lo hagas de aquí hasta la entrega, por así decirlo, del
+título.
+Bien, dentro de todo estuve viendo las propuestas, en general están
+bien, entonces aquí más que nada queda porque qué es lo que pasa que no son
+iguales tampoco son parecidas son bien diferentes entre sí sí entonces en este
+caso lo ideal sería que por último yo te recomiendo una que es la que tiene
+menor complejidad y en base a esa vamos trabajando vale primera instancia es muy
+importante que divisimos cuál es el conjunto de datos en concreto y si está
+disponible o no sí porque en el momento en el que digamos mira el el título es
+modelo proyectivo de eh a ver, 
+¿cuál tienes acá? Restricciones de o sea, eh,
+predicción de o identificación de poca jokes.
+4:36 - Orador no identificado Uh-huh. 4:37 - BADY GANA ¿Qué pasa si no tenemos
+acceso a esa base de datos?
+Claro. Mandamos el título y nos damos cuenta de que
+no se puede no se puede ejecutar.
+4:50 - Orador no identificado Entonces. 4:50 -
+BADY GANA Uh-huh.
+La idea acá es ¿Cuál de estos datos se encuentran disponible o
+no?
+4:56 - SergioMoya Claro, porque digamos, la disponibilidad de algunos de los
+datos depende, en algún caso, que no lo tengo confirmado, de algún tipo de
+desarrollo, ¿vale?
+Entonces, a lo mejor es algo que a día de hoy no se tiene o
+que se podría tener y no se sabe si se tiene, entonces hay un poco de
+incógnitas.
+Exactamente.
+5:14 - BADY GANA Entonces, aquí voy con eso, de que si no se puede acceder a
+esos datos, porque esos datos van a tener acuerdo de confidencialidad y todo lo
+que supone, es encontrar ese mismo conjunto de datos sistematizado en Kaggle.
+¿Recuerdas la plataforma Kaggle, cierto? 5:33 - SergioMoya Sí, me lo
+comentaste, que ahí había un montón de datasets que podíamos aprovechar para
+hacer la investigación y para hacer los entrenamientos que tuviéramos que hacer.
+5:46 - BADY GANA Claro, como estamos un poco cortos de tiempo, lo ideal sería
+que en estos 15-20 minutos pudiésemos encontrar este dataset, ya sea detección
+de fraude, a ver, no sé, predicción de stock, market, eso es otra cosa que
+estuvimos viendo también en otras tesis de final de máster.
+Igualmente, el tema
+de los datasets, mi empresa, digamos, tiene acceso a los datos ahora.
+6:15 - SergioMoya No sé, los acuerdos de confidencialización, de
+confidencialidad que comentabas y si hay algo que pueda restringirnos el uso
+para investigación o para el desarrollo de soluciones en base a los datos que
+tengamos.
+Pero acceso a los datos tengo. Lo que me faltaría es la validación de
+si puedo utilizarlos o no para hacer este tipo de funciones.
+Exactamente. 6:41 -
+BADY GANA Entonces, ¿qué es lo que busco con esto?
+De que hubiese sido ideal que
+nos juntáramos antes para que pudieses tener esas validaciones, pero a este
+punto lo ideal es revisar si es que dentro de Kaggle existe un dataset en el
+cual tú puedas aplicar una de las diferentes propuestas.
+Por tanto, si es que tú
+no llegases a tener acceso a los datos por confidencialidad o lo que quiera la
+empresa, de todas maneras podemos seguir trabajando y nos ese título y todo lo
+que corresponde.
+Ahora, a lo que corresponde a lo que viene siendo los títulos o
+a las temáticas tópicos, lo que viene siendo este de acá es el que considero que
+es el menos tedioso, por así decirlo.
+Es el que ocupa también las técnicas más
+clásicas. Todo lo que viene siendo Random Forest, XGBoost, Super Vector
+Machines, son básicamente ya están bien estandarizados, pero lo que no está
+estandarizado es esto de acá.
+Este conjunto de datos, MESBOOK, yo al menos no lo
+conozco y no sé si es que es público o no.
+7:57 - SergioMoya No, es la aplicación, digamos el sistema MES que nosotros
+implementamos.
+8:01 - BADY GANA Por lo mismo, la idea es que acá tú busques algo
+que, o un conjunto de datos en el cual tengas todos cierre de apertura, cierre,
+abertura, consumo FIFO, etcétera, etcétera.
+Ahora, si es que tú quisieses
+trabajar en otro de las propuestas, ahí es donde buscaría el conjunto de datos
+asociado también a lo mismo.
+Pero antes de darle el vamos, es decir, antes de
+que yo llene acá y firme, lo que me interesa es que tú identifiques un conjunto
+de datos en el cual tú puedes aplicar cualquiera de las seis propuestas que
+mandaste.
+8:38 - SergioMoya Y la que es más viable y que es algo que me han solicitado y
+que es algo en lo que voy a tener que trabajar, pues es la que corresponde,
+digamos, de herramientas de detección de buenas prácticas o de seguimiento de
+buenas prácticas.
+Y eso está relacionado con el 1.6, ¿vale? En detección de
+patrones, lo que haces es copiar escenas, ¿vale?
+Pues hacer una correlación,
+bueno primero detectar la detección de si estamos consumiendo correctamente,
+porque nosotros tenemos aquí estado una orden de trabajo, la fabricación de un
+producto, la lista de materiales que consume, probabilidad producida y entonces
+en base a los consumos que se hacen reales versus los teóricos, podría hacer ese
+sistema de alarmas o esos informes de buenas prácticas a la hora de hacer los
+consumos.
+Lo mismo con la asignación de personas a órdenes de trabajo o a líneas
+de producción para intentar detectar anomalías, si tenemos más fichada en las eh
+eh órdenes de trabajo o si hay un momento en específico donde se refiere a a más
+personas fichadas en la en la línea y por qué razón.
+10:15 - BADY GANA Ya, mira, en este caso, es bien importante que tomemos en
+consideración lo siguiente, de que tú vas a tener eh cuando hablamos de
+detección de anomalías.
+Mhm. Implícitamente estamos hablando de que el modelo
+debe conocer y estandarizar la normalidad. 10:30 - BADY GANA#+#SergioMoya Sí,
+sí.
+10:31 - SergioMoya ¿Cierto? 10:31 - BADY GANA Entonces, que todo esto datos
+sean normales nosotros en el momento en el que encontramos ese ese elemento ese
+dato que escapa de esta normalidad ahí es cuando salta la alarma la alarma una
+detección o la clasificación por tanto la dificultad de trabajar con este tipo
+de datos es que no estamos intentando modelar esa normalidad sino que estamos
+viendo lo que no pertenece a esa normalidad por tanto lo que significa es que
+vamos necesitar muchos datos.
+Cuando se habla de detección de anomalías, los
+dataset tienen que ser un poco más grandes que los que utilizamos en otro tipo
+de aprendizaje.
+Por tanto, lo ideal en esta oportunidad sería revisar algún
+conjunto de datos en el cual nos permitiese trabajar en este caso con con estas
+categorías, columnas, las cuales tú estás mencionando.
+O sea, todo lo que sea
+consumo y que el foco, en este caso, sea detección de anomalías.
+Entonces,
+obviamente aquí hay ciertas técnicas que podemos ocupar y después ir
+conversando, como Isolation Forest, One Class S Super Vector Machine, para poder
+identificar estos elementos layers.
+Pero en esencia, bien, te parece y esto
+también hace sinergia con lo que estás haciendo dentro de tu trabajo yo creo que
+el resto como que no nos sirve tanto a nivel a nivel largo plazo entonces lo que
+sí nos sirve es que aquí en Kaggle tú encuentres algún tipo de anomaly detection
+pero con los datos que tú tienes ya porque hay muchos que lo utilizan en
+términos de imágenes pero en tu caso en este sería a ver a lo más parecido
+podría ser algo del estilo de anomalías en transacciones de tarjeta de crédito
+ya porque aquí se supone que una persona 
+tiene ciertas compras estándar pero qué
+pasa si en algún momento tú gastas tres mil dólares en vez de los 100 que gastas
+todo lo toda la semana entonces en ese caso es cuando nosotros podemos utilizar
+estos tipos de métricas de hecho te voy a compartir igual este porque está bien
+interesante.
+Pero insisto, ya tenemos claro de que tú quieres trabajar en ese
+tópico, ¿bien? Bueno, sí. Eso es lo primero.
+13:02 - SergioMoya Anomaly detection es la problemática que nosotros estamos
+identificando.
+13:06 - BADY GANA El negocio, eso es lo que hay que confirmar a
+la hora de asignar el título.
+Porque imagínate, no encontramos la gestión de
+mano de obra como un dataset. 13:21 - SergioMoya Ahí significa que hay que
+armarlo.
+13:23 - BADY GANA Por tanto, ahí ya no se vuelve opcional pedir los
+datos de tu empresa.
+Se vuelve obligatorio y habrá que firmar acuerdos de
+confidencialidad y todo lo que supone.
+Insisto, la idea es poder realizarlo,
+pero habiendo tenido un baseline o un conjunto de datos públicos en el cual
+podemos trabajar luego uno trabaja con datos privados porque después qué es lo
+que pasa que la comisión la cual te va a evaluar al final en tu defensa de grado
+te van a preguntar y cuál es el punto de comparación porque quizás tus datos no
+están cerrados entonces tiene que haber alguna similaridad con algo que se
+encuentra en el estado del arte te fijas entonces por qué doy tanto énfasis en
+esto si al final lo ideal sería llegar y mandar un título porque 
+el título tiene
+que ser lo suficientemente específico para entender la problemática pero lo
+suficientemente general para no tener que casarse con ciertos métodos ciertos
+conjuntos de datos que después no vamos a obtener entonces en este caso quizás
+podríamos hacer algún recorte de en vez de detección de sinergias porque ahí tú
+ya tienes que definir una sinergia ya es una sinergia te fija entonces detección
+de anomalía se va simplificando un poco entre que la gestión de mano de obra la
+pregunta es esto existe lo tenemos a disposición está a la mano sí sí ya y la
+adherencia a procesos logísticos que se define como 
+los procesos logísticos eso
+es lo que tenemos que pensar un poquito más cómo hacemos que este título
+represente lo que queda queremos hacer, porque en este caso tú tienes
+aprendizaje no supervisado.
+Por tanto, ya estás descartando varias técnicas.
+Porque quizás decir aquí mediante machine learning es mucho más genérico y más
+abierto.
+Exactamente. Y de hecho te permite compararte con otras técnicas.
+Te
+fijas, entonces va a pasar un mes y nos dimos cuenta de que quizás aprendizaje
+no reforzado o aprendizaje no supervisado era un error porque en el estado del
+arte dicen de que no es viable.
+Imagínate, llegamos a estamparnos contra la
+pared. Por tanto, decimos mediante Machine Learning dejamos mucho más abierto
+esa categoría.
+Pero como te digo, no soy experto en tu negocio.
+Lo que me
+interesa es que tú definas claramente esto de acá. Es decir, el conjunto de
+datos.
+Yo te puedo decir, detección de anomalías, check. En Machine Learning,
+check. Pero este conjunto de datos, ¿tú lo puedes obtener?
+Eso es lo que
+realmente me interesa porque de aquí en adelante trabajamos con ese conjunto de
+datos, iteramos nuevamente la propuesta y buscamos este respaldo científico.
+Que
+este respaldo científico, a ver, el punto 6, justamente el que no tiene.
+16:26 - SergioMoya A ver, Texion. No, no, pero digamos, son puntos que son
+comunes a varios.
+De hecho, no sé si está puesta abajo. 16:35 - BADY GANA Ya
+pero me imagino que ya de detección de anomalía, control de proceso estadístico,
+ya te fijas, por ejemplo esto también podría ser parte de, no sé si es que esto
+engloba esas dos categorías que tú planteas, pero quizás sí, entonces por eso yo
+lo dejo a tu criterio y lo que me interesa de aquí a unas dos horas más o unas
+tres horas más es que me mandes ese título final en donde puedas definir
+correctamente qué es esto de acá y si lo puedes obtener o no, ya sea en 
+Kaggle.
+17:08 - SergioMoya Ya, no sé si podríamos trabajarlo directamente ya porque la
+verdad que no sé si dispongo de todo el tiempo, porque ahora mismo, digamos,
+ahora todo el mundo en mi empresa ha dejado de trabajar, entonces yo no voy a
+obtener confirmación por su parte.
+17:27 - BADY GANA#+#SergioMoya Por eso te
+digo, lo que nos interesa acá es que busques un conjunto de datos en el cual se
+pueda aplicar lo mismo.
+Ese es todo. 17:36 - BADY GANA Entonces tú vas a venir a
+Kaggle, vas a buscar estas palabras clave, vamos a ver si es que existe o no,
+obviamente esto en inglés, no sé si es que se ocupará la misma sigla, pero lo
+que me interesa es que al menos tú puedas encontrar uno de estos dos uno de
+estos dos tópicos como un conjunto de datos que pueda satisfacer lo que tú
+quieras hacer en tu propuesta.
+Ya porque con eso yo quedo claro y también puedo
+dejar en claro en base al compromiso que uno firma de que esto es lograble y se
+puede hacer.
+Entonces lo único que me interesa de aquí a un rato más o a la
+noche en este caso te aquí son las 11 de la mañana entonces yo te podría recibir
+el correo hasta las 8 de la noche para poder tramitarlo y mandárselo de vuelta a
+Mari diciendo de que completamos la fase 1 pero como te digo solamente es la
+confirmación de que hay un conjunto de datos que satisface lo que tú quieras
+hacer acá y si no lo cambias, lo alteras, detección de anomalías en otro tipo de
+conjunto de datos pero me interesa que ese conjunto de datos exista y 
+podamos
+acceder a él. Eso es todo. Pero esto de acá requiere una iteración para que me
+confirme.
+Ahora imagínate que en el mejor de los casos nos dicen o la próxima
+semana tu empresa te dice mira no hay ningún problema con que ocupen este
+conjunto de datos.
+Yo te dije que en detección de anomalías necesitamos muchos
+datos entonces no sé cuántos por eso prefiero que nos casemos mucho mejor con un
+conjunto de datos de Kaggle, porque ahí tú vas a tener la certeza de que son una
+tanta cantidad de datos que ya va a estar estandarizado y que hay otra gente que
+también trabajó con él, porque no sé si te hice la mención de que cuando la
+gente utiliza estos conjuntos de datos también muestran el código, entonces no
+es necesario del todo de que sea programando, sino que puedas hacer una especie
+de collage o unión entre los diferentes 
+códigos que se encuentran acá. Por
+tanto, eso te aligera un montón el trabajo y no tienes que estar programando
+desde cero en PyTorch, peleando con la librería de TensorFlow, Keras, etcétera,
+etcétera.
+Vale, no sé si tienes alguna duda o consulta, pero eso sería como la
+idea.
+Iterar una vez más en lo que viene siendo el título, de modo que exista un
+dataset que satisfaga el título.
+20:19 - SergioMoya Si lo vemos más flexible podemos tirar por alguna de tus
+propuestas, porque a lo mejor si no encuentro algo que se adapte un poquito más
+a un dataset en el que pueda aplicar alguna de mis propuestas estas podríamos
+tirar a por alguna de las tuyas.
+No sé si las tenemos por ahí disponibles, las
+traigo yo aquí. 20:49 - BADY GANA A ver dame un segundo.
+Sí. 20:51 - SergioMoya
+Le digo por curarme de precavido. Sí, sí, no hay problema, pero ahí estaríamos
+trabajando con datos médicos.
+21:00 - BADY GANA
+Entonces eso es como un poco, a ver, tendría que explicarte muy detalle lo que
+viene siendo el negocio y toda la cosa.
+Insisto, lo ideal es trabajar en algo
+que a ti se te haga familiar y cómodo. Esa es la primera idea.
+Ahora, no
+significa que este título va a ser permanente, obviamente va a cambiar, pero a
+mí lo que me interesa es que cumplamos y que sea lo más fiel posible al título
+que estamos planteando.
+No sé si en algún momento te ¿Trabajaste con algún tipo
+de detección de anomalías? 21:39 - SergioMoya
+A ver, sí. En un momento en el que hice el TCG, que lo hice con un modelo de
+visión artificial para clasificación de la calidad de ortofruto en categorías
+entonces en función de imágenes en rgb y infrarrojos para ver si en diferentes
+aspectos se podría ver ciertas anomalías en ese caso.
+22:15 - BADY GANA Entonces
+ya tienes una noción de las métricas, sabes que tenemos la precisión, el fscore,
+etc. Eso me aligera mucho mucho el tema de te que explicarlo a fondo, pero ya
+sabes lo que viene siendo la matriz de confusión, los falsos positivos, falsos
+negativos, etcétera, etcétera.
+22:36 - BADY GANA#+#SergioMoya Muy, muy, muy positivo. 22:38 - BADY GANA
+Entonces sí, aquí nos vamos a manejar con las mismas métricas, entonces me quedo
+con lo que vendría siendo detección de anomalías porque se nos va a hacer
+cómodo, vamos a estar hablando el mismo idioma y no va a tener que leer tú un
+libro gigante para entenderlo de vuelta.
+Entonces eso, al menos de momento para
+para hacer más corta la Reunión.
+Te dejo como tarea simplemente encontrar un
+conjunto de datos que se adapte a esto de acá. Ahora, ¿qué puedes hacer?
+Opción
+B, que no sea esto de acá y que encuentres un conjunto de datos que te llame la
+atención en el cual se aplique esto mismo.
+Detección de un válido.
+23:19 - SergioMoya Directamente. 23:20 - BADY GANA Directamente, pero insisto,
+lo ideal en algo que tú conozcas.
+23:24 - SergioMoya A ver. Podríamos, a ver si
+lo hacemos genérico y abierto, podríamos entregar este título teniendo en cuenta
+que lo podemos hacer o con un dataset de Kaggle o si tengo la confirmación por
+parte de mi empresa con esos datos de mi empresa, de mi porque estamos
+implantando.
+23:53 - BADY GANA Claro mi punto solamente para consolidarlo ese es
+mi punto porque quizás esto no lo vas a encontrar en Kaggle y tampoco quiero que
+te pases ocho horas buscando conjuntos de datos en Kaggle para encontrar uno que
+medios adapte y que más encima hay que preprocesarlo entonces lo que estoy
+planteando es que busques este conjunto de datos lo suficientemente bueno que
+que te parezca y que en base a eso le cambiamos el nombre al título y decir mira
+detección de anomalías en y aquí en este en pueden ir un montón de cosas más
+producción de naranja puede ser producción 
+de estafa o sea de detección de
+estafa etcétera etcétera por eso te digo acá lo que me interesa es encontrar el
+conjunto de datos ¿En base a qué?
+Este conjunto de datos. El conjunto de datos
+mediante Machine Learning. Eso es todo, ¿ya? Pero ese es mi punto.
+El momento en
+el que tú me dices, mira BADY, este es el conjunto de datos que vamos a
+utilizar, yo lo miro, veo las columnas, las filas, etcétera, etcétera, y digo,
+ah, ya, perfecto.
+Sí, lo podemos utilizar.
+25:09 - SergioMoya Entonces ahí yo digo, ya. 25:11 - BADY GANA Es con este
+título actualizado, que va a ser este detección de anomalías en conjunto de
+datos, es lo que yo voy a poner acá y ya estamos listos.
+25:22 - BADY
+GANA#+#SergioMoya ¿Te fijas? Sí, perfecto. Eso de momento.
+25:24 - BADY GANA
+Solamente busca en particular el conjunto de datos que te interesa, me envías un
+correo rápido en el cual me dices, va, y este es el título final, y ahí con ese
+título nos ponemos a trabajar.
+25:38 - SergioMoya
+Vale. Vale, pues nada, me pongo a trabajar en ello. Muchas gracias.
+25:42 - BADY
+GANA Bien, que te vaya bien, Sergio. Igualmente, chao.

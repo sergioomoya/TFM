@@ -1,0 +1,478 @@
+Sesión 6 TFM
+
+0:23 - BADY PATRICIO GANA CASTILLO Hola, hola, hola. Ahora sí te escucho. Ay,
+disculpa.
+0:28 - Sergio Moya Marín Parece que tenía una fuente de audio
+diferente. Claro. No te preocupes.
+Pasa cuando uno generalmente conecta los
+audífonos. Sí, sí, sí. El problema. 0:42 - BADY PATRICIO GANA CASTILLO ¿Cómo
+estás?
+Pues... Feliz año nuevo primero, sí. 0:47 - Sergio Moya Marín Pues bueno,
+ahora mismo un poco obvia porque viene todo, o sea, hemos terminado ahora los
+trabajos, vienen los exámenes, también hay que dedicarle tiempo a esto,
+entonces, nada, un poco pues con la vuelta al trabajo también, he tenido además
+dos semanitas de vacaciones que he pensado para estudiar básicamente, pero aún
+así, pues eso, cuando vuelves, vuelta a la realidad, un poco.
+1:19 - BADY PATRICIO GANA CASTILLO Exacto. ¿Tienes toda la palabra? Sí. 1:23 -
+Orador no identificado Bien.
+1:24 - Sergio Moya Marín
+¿Quieres compartir? Exacto. Sí. Bien. ¿Qué es lo que estuve haciendo? Me estoy
+apoyando mucho.
+No sé si me ves la pantalla. Sí. Vale. Me he estado apoyando
+mucho en Notebook Lm y en toda la suite, digamos, de aplicaciones de IA, de
+Gemini, que la verdad es que generaba contenido que está bastante bien.
+He
+generado varias búsquedas, incluso solicitándole al propio Gemini que me ayudara
+a generar ese prompt.
+Y, bueno, he sacado bastante información al respecto del
+explainable. Hay.
+Un poquito del contexto en el que nos encontramos de que la tendencia de ir
+hacia los modelos más o con mayor precisión, aunque en este caso no hablemos de
+precisión literalmente, sea digamos la tendencia a quizás sacrificar un
+porcentaje de ese esa precisión entre comillas para que los modelos no solamente
+te digan qué transacciones pueden llegar a ser potencialmente fraudulentas o la
+detección no será bueno por el contexto del DFM en general para la detección de
+anomalías que sea explicable el resultado y digamos poder actuar en consecuencia
+y no algo que no nos esté dando ninguna información como el concepto de redes
+neuronales, 
+caja negra que había hace unos años. De hecho hay regulaciones
+actuales a nivel de Europa y no sé si, sobre todo Europa que creo que es el
+continente que más serio se ha puesto con la regulación de la inteligencia
+artificial.
+Tenemos el GPDR que yo, por ejemplo, en el trabajo lo he sufrido
+también.
+Tener todo un sistema auditable y que se asegure la seguridad de los datos.
+Y
+nuevas leyes que están saliendo para la reclutación de la IA.
+En cuanto a
+herramientas que se están utilizando para la auditoría de estos modelos, sí,
+para la auditoría del modelos, uno de ellos es el S-Shape, que se ha convertido
+un poquito en lo que es el estándar de cómo de la forma de cómo auditamos un
+modelo.
+Esto lo que hace es, se basa, bueno, lo pone más adelante.
+Bueno, esto
+es lo que comentaba, desde la caja negra con máxima precisión hasta, y
+comparándolo con la caja de cristal, que eran los árboles de decisión, los de
+regresión lógica, que tienes muy bien trazado cuál ha sido el camino, la ruta
+por la que ha ido la decisión, pero pierden en la decisión.
+Tenemos sobre todo
+aquí, más allá, empezábamos aquí a hablar del SAP, ¿vale?
+Basado en la teoría de
+juegos cooperativos, es decir, las características de un dataset como variables
+independientes.
+Y lo que hace es medir, digamos, la contribución de cada una de las variables al
+resultado, a la predicción que hace sobre una transacción, en este caso.
+Básicamente, aquí lo que, La ayuda no solamente es, digamos, ayudarnos a
+encontrar lo que es la clave o las... ¿Cómo lo diríamos?
+Sí. Disculpa.
+Características, Clay, que son las features. Sí. Sí, digamos, exacto.
+En cuanto
+a las features, o sea, los propios campos de una transacción, pues, la fecha, la
+hora en la que se ha hecho, el tipo de comercio, el importe, ¿vale?
+Todo eso son
+características que identifican a una transacción. Pues, cada una de ellas las
+hace entre comillas, Bueno, en este caso no.
+O sea, SHAP las considera variables
+independientes, jugadores, digamos, que contribuyen al resultado de una partida,
+que es la predicción.
+En este caso, pues, por ejemplo, nos sirve no solamente para decirnos el por qué
+una transacción o un, sí, el por qué una transacción, se ha considerado anómala
+o fraudulenta, sino que es capaz de decirnos o auditarnos si un modelo está
+siendo legal.
+Es decir, esto es lo que estábamos viendo anteriormente en algunas
+de las o de las sesiones, que uno de los problemas que a día de hoy estamos
+encontrando en el entrenamiento de este tipo de algoritmos es el data leakage.
+Es decir, que el modelo se está nutriendo de información que no debería conocer.
+Es decir, A través de Shard, por ejemplo, se podría vislumbrar que un modelo
+está siendo superpreciso a la hora de detectar fraudes debido a que hay una
+variable, como hemos dicho antes, hay una feature que se modifica de tal forma
+cuando esa cuenta ya ha sido o se ha detectado ya una primera anomalía o una con
+anterioridad.
+Es decir, se está anunciando de que a futuro ya sabes que esa
+cuenta ha sido digamos liqueada o No sé cómo explicarlo.
+Aquí también más adelante hablamos de Lime, que también es otra de las
+herramientas que se usan actualmente.
+Aquí también estábamos hablando en otras,
+En nuestras sesiones de la herramienta del smooth, estábamos hablando de que
+este es uno de los retos de la detección de fraude en transacciones.
+Que el
+fraude en comparación con el monto total de transacciones es muy pequeño.
+Y,
+digamos, el utilizar el smooth con como una herramienta de aumentar esa
+proporción de datos anómalos, podría ser peligroso.
+Porque al final estamos
+entrenando y juzgando un modelo con datos que son completamente sintéticos, que
+pueden llegar a ser incoherentes.
+Por ejemplo, que se den compras en
+supermercados de 3,000 dólares o de 3,000 euros.
+Entonces, claro, está generando
+datos que en la realidad muchas veces pueden ser imposibles.
+Por eso aquí habla
+siempre de no solamente buscar la explicación a través del modelo entrado con
+este dataset, sino utilizar datos de prueba no modificados.
+O sea, el testing del modelo o de la explicación del modelo debería hacerse con
+datos originales y no con datos sintéticos.
+11:42 - Sergio Moya Marín Bien, en cuanto al XAI, se habla de críticas contra
+SAP, ¿vale?
+Por uno de estos problemas que se, o digamos, de puntos flacos que
+puede llegar a tener SAP es lo que llaman la falacia de la independencia.
+Es un
+poco lo que comentaba anteriormente, que el monto y el tipo de comercio, por la
+naturaleza que tiene la herramienta de SAP, los considera independientes, pero
+en realidad no son datos independientes.
+Es decir, en una joyería en Estados
+Unidos, por ejemplo, será mucho más barato que en un supermercado, entonces en
+realidad no son variables tan independientes ¿de acuerdo?
+12:45 - BADY PATRICIO GANA CASTILLO en ese sentido Sergio hay que tener ojo ya
+porque kernel-chap en este caso vendría siendo una de las diferentes variaciones
+o configuraciones de chap por lo tanto lo que aquí se hace es asumir que se va a
+utilizar S y que la limitación que tiene es la independencia entre variables.
+Si
+es que las variables si son dependientes entonces quizás no se ocupa Kernel
+Chat, se ocupa otra técnica.
+Es para entender bien de que si existe esa
+limitación significa que hay una oportunidad en otra herramienta, otra técnica
+u otro método.
+Es para no descartar Estarlo inmediatamente, ya, o sea,
+básicamente está bien porque estás diciendo que por qué no lo ocuparías, por
+así decirlo, porque sí existe una correlación entre las variables, pero ojo,
+esa correlación hay que justificarla, que si dos variables están
+correlacionadas, pero una no es causalidad de la otra, entonces sí existe
+independencia, pero también existe alta correlación.
+Dicho esto, es para que lo
+tengamos en el foco de que son conceptos independientes.
+Ya no puede aplicarse
+como no puede aplicarse, pero eso va a depender de la matriz de correlación.
+Ahí
+es cuando uno empieza a tomar esos takes.
+14:25 - Sergio Moya Marín Vale. Genial. Vale, pues sí, lo tengo en cuenta. Bien.
+También hablando de la unificación serios temporales, que Shard tradicional no
+maneja bien la estructura secuencial de las transacciones.
+Esto no he andado
+demasiado en este punto. Lo haré más a futuro.
+Entonces, para complementar
+quizás estas explicaciones que nos está dando Shard, lo que tenemos que hacer
+es generar ciertas métricas de de la calidad de las respuestas que nos está
+dando o de las explicaciones que nos está dando Sharp, ¿vale?
+Basadas en la
+fidelidad, ¿vale? Esto básicamente es si un dato o digamos una característica
+realmente es importante o tiene un gran peso en la predicción del si modificamos
+esa característica deberá afectar en gran medida a la respuesta que nos da el
+modelo.
+La estabilidad, la aplicación... Bueno perdón, esta... A ver si me he
+liado y era estabilidad la que estaba A ver.
+Ah, no, no, exacto. Sí, sí, sí,
+exacto. Si no es que lo he leído, me he liado yo.
+Esta, claro, o sea,
+fidelidades en cuanto a eliminación de características y estabilidades en cuanto
+a variación de esa característica.
+Es decir, que en el momento, o sea, cuánto
+cambia la respuesta del modelo, respecto a la variación de cierta característica
+en cuanto a la eliminación.
+Y luego hay otros que aquí no he recogido, que sí
+que he recogido en el informe, que podemos sacar luego.
+Luego giro hacia la
+recorribilidad, porque fue rechazado. Vale, sí. Esto es el, ¿cómo lo he llamado?
+Exacto, la explicación contrafactual.
+No solamente quedarse en esta transacción
+ha sido cancelada o esta cuenta ha sido bloqueada, sino que haya una explicación
+hacia el usuario del por qué esa esa, digamos, acción automática se ha llevado a
+cabo.
+Esto también casa con la normativa reciente de la Unión Europea, que si
+hay una, digamos, una acción automática que afecta a un usuario final, este
+tiene que tener una explicación clara de por qué ha pasado.
+Y esto va incluso
+más allá, sino va a no por qué, o sea, el por qué, pero diciéndole, por
+ejemplo, si esta transacción la hubieras hecho desde tu dispositivo habitual, no
+se habría cancelado.
+O si no se hubiera... O sea, digamos que haya una
+explicación o digamos cierta... Sí, perdona.
+Cierta condición, porque en este
+caso...
+18:30 - BADY PATRICIO GANA CASTILLO Igual lo veo complejo, sí, porque la
+pregunta de aquí es de dónde sacan los criterios.
+¿Quién define la opción A
+¿Quién define la opción B? Ya, porque el modelo... El algoritmo lo que hace es
+elegir entre las diferentes opciones.
+¿Pero quién define las opciones? 18:54 -
+Sergio Moya Marín Bueno, al final están basados, si no me equivoco, en... ¿Cómo
+se llaman?
+En las reglas. En las reglas directamente, entonces... Mi punto es...
+¿Qué es lo que tú vas a ocupar o quieres ocupar?
+19:15 - BADY PATRICIO GANA CASTILLO Porque cómo, esa es mi pregunta, ¿cómo tú
+añadirías la explicación contrafactual en tu tfm?
+¿Cómo lo haría? 19:27 -
+Sergio Moya Marín Simplemente lo haría a través de experimentación y jugando con
+los, digamos, con las características o con las métricas que hemos hablado
+antes.
+En cuanto a ir variando el dataset, ¿vale? Dándole diferentes valores y
+jugar con estas métricas de calidad del... Es que, claro, estas explican el
+modelo.
+Sí. 20:02 - BADY PATRICIO GANA CASTILLO
+No el fraude, que es diferente. Exacto. Entonces, cuando tú ves la en términos
+de contrafactualidad, a ti lo que te interesa es la respuesta que te dio el
+modelo, no el modelo, ya que aquí lo que tú mides es el modelo, pero por otra
+parte es cómo tú quieres evaluar esa respuesta.
+20:31 - Sergio Moya Marín Bueno,
+en realidad aquí lo que estamos viendo son métricas de la calidad con la que una
+herramienta como Shab está evaluando al modelo, es decir, la propia herramienta
+de Shab nos está diciendo el porqué de esa transacción, o sea, el porqué de
+esa... De ese resultado que nos está dando la red neuronal.
+20:58 - BADY PATRICIO GANA CASTILLO Creo que es diferente, porque el propósito
+de Shab, lo dijiste hace un rato, era el saber la importancia de las
+características qué tan importante terminan siendo pero insisto que qué tan
+importante es un valor de entrada no significa que el valor de salida es bueno o
+malo que es lo que busca la contrafactualidad es refutar el valor de salida tú
+acá estás evaluando el modelo y lo que entra al modelo Eso es explicabilidad en
+cierto sentido, pero la contrafactualidad va por otra parte.
+Por ejemplo, yo me
+da exactamente lo mismo lo que yo utilizo como modelo.
+A mí lo que me interesa
+saber es si el chat GPT me dio una buena respuesta.
+¿Cómo yo sé que esa
+respuesta es buena o mala?
+21:59 - Sergio Moya Marín Claro. ¿O el mismo Notebook LM?
+22:03 - BADY PATRICIO
+GANA CASTILLO ¿cuál es la contrafactualidad de si esta presentación está buena o
+mala? ¿Cómo podemos evaluar eso?
+22:12 - Sergio Moya Marín Sí, o sea, es un reto
+que es difícil de abordar.
+22:18 - BADY PATRICIO GANA CASTILLO Por ejemplo, los
+criterios. Digamos, un criterio podría ser, tú le pediste ya, por ejemplo, que
+manejara documentos relacionados a explicabilidad, etcétera, etcétera.
+Etcétera.
+Te procesó Chat, te procesó también Smoke para poder trabajar, pero no te
+procesó Lime. ¿Cierto? J.M.L.: Sí, sí.
+22:39 - Sergio Moya Marín No, Lime sí que lo, a ver, por ejemplo, en la
+presentación no, pero en el, sí.
+Lime lo ha comentado, sí que lo tengo, digamos,
+en lo que es el informe.
+Pero aquí, por ejemplo, en la presentación sí que se lo
+he saltado. C.R.F.: Claro. Entonces. J.M.L.: Sí, yo tengo, sí.
+22:59 - BADY
+PATRICIO GANA CASTILLO que te comento que se considera como uno de los criterios
+o los escenarios alternativos en donde si realmente lo hubiese hecho bien ahí ya
+tenemos la contrafactualidad porque no contempló algo de lo que estaba en la
+ruta a ver si puedes avanzar un poquito más rápido para es más que nada para ver
+por dónde anda esto porque sigue siendo estado del arte pero es una presentación
+que aún no nos da la seguridad de cómo se complementa con tu informe ya porque
+aquí puede haber mucha información y está la información pero por ejemplo me
+interesa saber qué documentos 
+le pasaste para que obtuvieras información para
+obtener este digamos yo lo que he hecho es me he basado
+23:55 - Sergio Moya Marín Exacto. 23:56 - BADY PATRICIO GANA CASTILLO Esto es lo
+que me interesa, es cómo tú llegaste a esa información.
+24:04 - Sergio Moya
+Marín Lo que he hecho, primero, he generado este prompt con IA, ya pasándole
+anteriormente toda la información del TCM.
+Es decir, disculpa, a ver, esto...
+24:21 - BADY PATRICIO GANA CASTILLO
+con los documentos que están en el notebook LM empezaste con la investigación
+para que buscara toda la información, luego esa información debiese tener al
+final referencias, estas son las referencias ¿Qué tomo?
+Lo que es Archive, MDPI,
+Research Gate, bien, check. Todas son Journal, todas son Papers, Compare Review,
+bueno, no todas, pero algunos sí.
+Pero me interesa que la información que no es
+científicamente correcta o que no es institucional de ministerios de la ONU, de
+cualquier otra entidad que sea oficial, verifica que la información que es de
+blogs o de cosas que no son verificables, que lo quites.
+Entonces cuando quites
+esa información te van a quedar solo documentos oficiales y ahí tú puedes ir
+iterando, pedirle a notebook.m que te arme una presentación porque vas a tener
+una seguridad completa de que todo es legítimo.
+Puedes alucinar, eso va a
+depender de cómo se realice el prompt Pero lo que sí me interesa es que todas
+estas fuentes sí tengan un carácter científico.
+Si no, ahí empezamos a tener
+problemas porque te puede entrar colado cualquier página web que no tenga
+información real, que sea... Sí, que puede ser, por ejemplo, este GitHub, no sé
+si... Depende, mira, control click quizás es un github de una publicación y ahí
+sí tiene peso más al final, al final de abajo debes decir ahí está un poquito
+más arriba, más arriba, ahí eso es un paper entonces tú debes hacer eso con
+casi todas las fuentes ¿para qué?
+Para poder certificar de que la información
+que obtuviste es real eso es lo primero es la contrafactualidad propia que vamos
+a usar de aquí en adelante.
+Lo que sí me agradó es que con esto ya matamos un
+paso bien importante que era el contexto del problema.
+Sé que con eso ya de
+alguna manera tenemos mejor idea, se pueden armar por ejemplo secciones como el
+estado del arte.
+Lo importante es que se generen estas citas o que lo pueda
+reflejar en el informe, más que en una presentación, a mí me interesa el
+informe, el informe final, el definitivo.
+Por ejemplo, tú armas tu informe, le
+pones una sección, ya solamente las cabeceras, sección de estado del arte y
+desde el estado del arte te pones a escribir hacia abajo, mira, yo ocupo como
+datos esto de acá, ¿cómo conseguiste los datos?
+O ¿cómo se consiguen los datos?
+O ¿qué es lo que se hace en la identificación o de fraude de crédito.
+Das el
+contexto completo, etcétera, etcétera. Dices cuáles son las técnicas, el chat,
+el IME, etcétera, etcétera.
+Todo lo que me estabas diciendo ahora era parte del
+estado del arte. Sí.
+Entonces esa información es la que hay que traducir para
+llevarla al informe y esa es la información que sí me sirve, ¿bien?
+Vale. Luego
+cuando termines ese estado del arte va a aparecer una nueva sección que la
+sección de metodología, la de metodología es que toma del estado del arte para
+armar tu propuesta, porque ahora tú me estabas planteando muchas opciones pero
+no estabas eligiendo ninguna, entonces mi punto con esto es que ya teóricamente
+tenemos el código pero cómo haces hablar el código que ya tiene con este
+contexto donde se unen ambos mundos porque ahora mismo me estabas presentando
+dos informaciones completamente separadas por una parte tenemos lo que encontró
+del estado del arte que eso te digo está bien está súper bien siempre y cuando
+tú 
+hagas ese proceso de filtrar los que son documentos científicos check yo eso
+no lo valido completamente de hecho te digo tómalo que sacó el deep research
+llévalo al informe Te diría, trabaja al tiro con las referencias, es decir,
+cuando vayas poniendo sección por sección del estado del arte, al tiro pon la
+referencia abajo y la cita.
+Y ahí ya te ahorras un montón de trabajo después.
+Eso es lo que te recomendaría hacer como en el corto plazo.
+29:22 - Sergio Moya Marín Lo voy a poner de hecho en el documento.
+29:26 - BADY
+PATRICIO GANA CASTILLO Te recomiendo que desde ahí trabajes. Perfecto. Ahí es
+donde estamos validando las tareas.
+Eso por un lado. Estado del arte yo creo que
+es algo que se puede trabajar, lo tienes, pero no está en el informe.
+A mí me
+interesa que esté en el informe. ¿Qué otras cosas habían quedado pendientes?
+Teníamos por una parte el diagrama, teníamos la toma de decisiones.
+Es decir,
+¿qué es lo que no pretende resolver el porque ahora tú me mostraste mucha
+información pero la pregunta es ¿qué tomas de toda esa información y por qué no
+tomaste lo otro?
+¿por qué vas a utilizar solo chat o por qué tomas chat y lime y
+no smote?
+Son preguntas que te van a llegar sí o sí en la comisión por lo tanto
+te recomiendo mucho que trabajes bajo esa premisa ¿qué es lo que haces?
+¿por qué
+lo haces? Y ¿por qué elegiste otras cosas. Con eso tú vas a armar mucho mejor o
+mucho más sólido o vas a blindar tu propuesta porque tú tomaste la decisión, es
+tu experimento.
+Y ahí no te pueden decir, oye, ¿por qué no elegiste el LIME?
+Ah,
+porque tú ya pusiste que solo por simplicidad experimental iba a utilizar chat.
+Ahí tú dejas súper claro de que fue una decisión y esas se llaman decisiones
+metodológicas bien entonces insisto enfócate en el documento que tenemos de
+seguimiento de tareas ya porque de momento estamos en muchos puntos naranjos y
+eso es tarea acumulada que es estrictamente necesaria ya por eso nosotros
+estamos priorizando tareas ¿Bien?
+31:17 - Sergio Moya Marín ¿Qué otra cosa dice acá?
+31:19 - BADY PATRICIO GANA
+CASTILLO Baseline oficial con el código, las métricas, gráficos de resultados,
+la lista de riesgos y limitaciones del enfoque.
+Si toda esta información tú, por
+ejemplo, se lo hubieras pasado a Notebook LM, yo creo que te hubiese dado ya un
+cuerpo mucho mejor.
+Por eso te digo, intenta siempre fijarte, te voy a compartir
+de nuevo el documento por acá para que lo tengas a mano?
+Si, lo tengo aquí.
+31:46 - Sergio Moya Marín Me cuesta, tengo muchas carpetas y llamadas igual de
+TCM.
+Ya la tengo, ya está.
+31:52 - BADY PATRICIO GANA CASTILLO Ese es nuestra biblia ya, esta es como
+nuestra bitácora, entonces cuando tú vas avanzando acá yo quedo tranquilo porque
+sé que se abordó lo más importante, porque como te digo lo que me mostraste
+ahora está súper bien pero es un punto todos los puntos que tenemos pendientes
+entonces ahí tú tienes que empezar a decir bien yo puedo invertir dos horas en
+el contexto del problema pero luego tengo que invertir otra hora en el baseline
+otra hora en lo que no se quiere resolver en cosas que voy descartando ya muchos
+de estos son filosofía de lo que 
+vamos a plantear dentro de este tfm pero el
+punto es abordarlos desde el inicio porque si no los aborda en el inicio van a
+haber agujeros argumentales y esos agujeros argumentales se van a acumular y va
+a ser una bola de nieve en donde tú llegas al final presentas el primer borrador
+y no tiene nada de sentido lo del principio con lo del final.
+Por eso lo que te
+pido acá es mucho más relevante porque te va cuerpo de tu investigación.
+Dicho
+esto, no sé si tienes algo más que puedas mostrar.
+33:17 - Sergio Moya Marín Podemos echarle un vistazo si quieres a lo que es el
+informe.
+Lo que te decía se había saltado en algunas partes. 33:34 - BADY
+PATRICIO GANA CASTILLO ¿Abajo estaba el email?
+Sí, el email lo teníamos aquí.
+33:42 - Sergio Moya Marín Lo que he leído aquí en el informe es que no busca la
+auditoría del modelo entero, sino en explicar una transacción o digamos un
+contexto mucho más reducido que se utiliza para eso, para la auditoría de las
+transacciones pero no para las auditorías de los modelos porque al carecer de
+todo el contexto tiene ciertas inestabilidades.
+Entonces yo te pregunto, ¿qué
+harías?
+34:25 - BADY PATRICIO GANA CASTILLO ¿Aplicas la técnica de LIME y CHAP? YesMode
+o te eliges por alguna de ellas?
+34:34 - Sergio Moya Marín Pues a día de hoy no
+te sabría decir al 100% pero sí que me gustaría explorar la posibilidad de
+utilizar tanto Shap como online ya que por ejemplo para generar esto que
+estábamos hablando, aunque se me van la explicación contrafactual sería útil
+para generar esas reglas absolutas, experimentar con LINE.
+Es decir, para
+generar esas reglas a través de las aplicaciones que me dé LINE.
+Claro, lo veo
+bien, pero hay que considerar los tiempos.
+35:25 - BADY PATRICIO GANA CASTILLO una es un recurso muy preciado especialmente
+tú que tienes carga en el trabajo carga académica te lo digo aquí siempre es
+mejor algo que sea menos ambicioso pero bien hecho a que sea mucho pero que
+abarque poco ya prioricemos yo creo que el el lema de lo que de lo que buscamos
+porque si tomamos en cuenta que llegamos desde noviembre y aún nos falta la
+propuesta.
+Así que te digo, estamos casi en el punto límite de donde empieza el
+contrarreloj.
+Por eso lo que te digo es, intenta abordar estos puntos que están
+acá porque esto es, te diría, el 60% de la investigación.
+Si es que no más. Solo
+lo que está en la lista tan amarillo es más del 60% de la investigación.
+¿Bien?
+Sí. Entonces, pregunta, ¿cuándo nos podríamos juntar? Pues... Creo que habíamos
+quedado en el 16 de enero.
+36:38 - Orador no identificado 16... 36:38 - Sergio Moya Marín No, aquí el 16 te
+comenté que teníamos examen y yo los hago por la tarde.
+Y es a las 8 de hora
+española, entonces no me gustaría empalmar la sesión del tfm con esto, con el
+examen.
+Si pudiera ser lunes 19 y si a lo mejor esta semana intentar vernos dos
+veces porque ya no tendré la carga de los exámenes, por ejemplo el día 19 y 23,
+Y le meto caña esta semana.
+Porque aquí básicamente, si te soy sincero, podré
+avanzar el día 17 y 18, porque ahora prácticamente me voy a centrar en lo que
+son los exámenes.
+Y estos 3 días por la tarde también tendré bastante
+disponibilidad para sacar tiempo.
+Y llegar al 23 que nos habíamos marcado para
+tener ya todo bastante encaminado.
+37:51 - BADY PATRICIO GANA CASTILLO Mira, te recomendaría que nos juntáramos el
+día 21. ¿Por qué el 21?
+Porque el día 23 necesitamos un hito. Es decir, saber
+cómo se cierra la fase 2. Es que eso lo vamos a hacer desde aquí hasta el
+primer borrador.
+Por lo tanto, el 21 es correcto. Porque hasta el 21 yo te puedo
+dar feedback, puedo leer lo que hiciste, puedo ver todo lo que se hizo y el 23
+podríamos hacer una segunda reunión en la cual se define qué es lo que se va a
+hacer de ahí en adelante.
+Esto aquí implica que el día 21 tienen que estar
+cerrados la mayoría de los de lo que tenemos acá, ya en naranjo.
+Esa es la el
+real punto bien entonces nos vamos a juntar el día 21 déjame revisar bien la
+hora podríamos juntarnos a las 19.30 para darte un poquito más de plazo y eso
+quedó pendiente también a cualquier duda o consulta que tengas si por ejemplo
+puedes trabajar de aquí al 12 te recomiendo trabajar de aquí al 12 por si tenés
+alguna pregunta me la envías por correo y yo te puedo ayudar.
+Al final ese es el
+trabajo del director, darte una guía, decirte más o menos por dónde va,
+motivarte a seguir trabajando.
+Son cosas que debemos hacer y trabajar en
+conjunto. Lo importante es mantener a flote el barco e intentar llegar a la
+orilla.
+Bien? Sí. Eso sería serio. Cualquier cosa tú me avisas. Insisto, esta es
+la Biblia.
+Documentos donde tienes que ver, y aquí me falta, y vas en orden
+hacia abajo. Perfecto.
+Muy bien, pues nada, muchas gracias por todo, como
+siempre.
+39:46 - Sergio Moya Marín Que te vaya muy bien. 39:47 - BADY PATRICIO GANA
+CASTILLO Estamos en contacto. Igualmente.
+39:49 - Orador no identificado Chao.

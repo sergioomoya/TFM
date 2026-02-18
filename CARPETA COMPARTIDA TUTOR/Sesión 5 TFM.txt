@@ -1,0 +1,326 @@
+Sesión 5 TFM
+
+0:44 - BADY PATRICIO GANA CASTILLO ¿Qué tal, Sergio? ¿Cómo estás? Bien, bien,
+bien.
+0:55 - Sergio Moya Marín A ver si tenemos punto común en esto. Vamos
+avanzando. Cuéntame, ¿cómo has podido avanzar?
+Bien, a ver, no te he escrito en
+este periodo, pero bueno, sí que bastante ocupado y haciendo algunos avances.
+Voy a ir compartiendo y hablamos sobre... Teníamos estas tareas pendientes para
+el el jueves 20 teníamos esto.
+Vamos a ir punto por punto si quieres. Sí,
+adelante. Vale, en cuanto al contexto del problema, al final el contexto actual
+es la desaparición del efectivo, por lo tanto, el aumento exponencial de las
+transacciones de tarjetas de crédito vale o sea al final es lo que digamos en la
+situación actual vale y en cuanto al problema bueno no el problema del fraude
+sino digamos al contexto en el que estamos haciendo el estudio lo que sí que he
+podido ver es pues al algunos de los estudios que estuve buscando para la
+realización de la propuesta, que hablaban que no era tanto un tema 
+de
+algoritmos, de detección y de anomalías, tanto como una buena práctica o un
+flujo correcto de cómo tratar los datos de o del tratamiento de los datos en
+general.
+Aquí lo que, bueno, en este proyecto, perdón, en este estudio, lo que
+hablaba de que se aplicaban técnicas de sobremuestreo antes de dividir los datos
+de entrenamiento y datos de test, ¿vale?
+Por lo tanto, se conseguía esa
+contaminación de los conjuntos de pruebas y adicionalmente también el uso de
+datos de test durante el entrenamiento.
+Es decir, se está validando sobre
+aquellos datos con los que se están entrenando los modelos.
+Eso es uno de los
+estudios que te encontré y...
+4:18 - BADY PATRICIO GANA CASTILLO Pero ojo, lo que dice ahí es que se aplicó la
+técnica de SMOTE, al aplicar SMOTE ellos reportan de que se inflaron los
+resultados, es decir que los resultados se generaron de una manera que no fue
+satisfactoria, por tanto lo que hizo fue contaminar el conjunto de prueba.
+4:42
+- Sergio Moya Marín Exacto, no se mantiene tampoco. 4:45 - BADY PATRICIO GANA
+CASTILLO Justificar la decisión de por qué dejamos Smoke afuera.
+4:51 - Sergio
+Moya Marín Exacto, porque no mantenemos a veces ni siquiera la proporción de
+transacciones.
+4:59 - BADY PATRICIO GANA CASTILLO Lo que sí te recomiendo Sergio es que de
+todas maneras se lo que significa smooth, qué es lo que hace la técnica, si es
+que hace una interpolación, si es que hace un fill forward, pero al momento de
+la defensa lo tienes que tener claro, porque probablemente yo te lo pregunto, te
+lo va a preguntar alguien de la comisión.
+5:35 - Sergio Moya Marín Vale, estaba
+apuntando. Bien. Y también el, bueno, al tratarse de operaciones bancarias,
+¿vale?
+O sea, al final las entidades bancarias son entidades que son muy
+aguditadas, que son, digamos, que la seguridad es algo prioritario, ¿vale?
+Entonces, uno de los objetivos del proyecto sería conseguir un modelo, un
+sistema de detección de anomalías que sea auditable.
+Bueno, evitando así las
+cajas negras. De hecho, al principio de los, cuando empezaron a salir las redes
+neuronales, siempre se decía eso de que al final es una caja negra, que tú,
+digamos, hay una serie de parámetros por dentro que se van multiplicando unos
+por otros, ¿vale?
+Pero no sabes bien o no sabes realmente a dónde está mirando
+el modelo.
+Hay algunas estrategias, bueno, estrategias no, sistemas de control
+para saber hacia dónde, digamos, esas particularidades que está detectando el
+modelo y que hace que ciertas transacciones se alejen de la normalidad que he
+aprendido.
+¿Vale? Y nada, esto en cuanto al contexto actual de tanto del
+problema o de cómo se está tratando este problema o cómo se está investigando.
+Te voy a dar una recomendación de todas formas.
+7:41 - BADY PATRICIO GANA CASTILLO Sí, sí, dime. Te recomiendo de que esto mismo
+lo llegue y que ese Deep Research lo que haga sea buscar solamente fuentes que
+sean journals y papers de conferencia y también le puedes poner comma archive ya
+que es otra plataforma en donde puedes encontrar buenos papers entonces, lo que
+va a hacer ese Deep Research bajo este mismo contexto actual que tú ya le estás
+designando los últimos cinco años, estás diciendo que no va a utilizar ciertas
+técnicas como SMOTE, papers del estilo avances recientes en detección de fraude
+de tarjeta y crédito Ahí tú vas a armar 
+un prompt que sea bien consistente y que
+englobe bien toda la información que tú vas a querer presentar De modo que tú
+puedas integrarlo en el informe te diría que eso es lo más sólido que podrías
+hacer de momento y que ese informe en, no sé, dos sesiones más, me lo puedas
+explicar.
+De acuerdo. Porque ahora mismo ya yo tengo el contexto de esos dos
+estudios, uno que no va a SMODE y uno que busca interpretabilidad o
+explicabilidad.
+Exacto. Pero, por ejemplo, yo no sé qué está pasando con las
+bases de datos, no sé qué está pasando con los resultados, no sé si 20% de
+acierto es bueno, no sé si 90% de acierto es bueno.
+El contexto actual viene
+siendo el state of the art, es decir, todo el contexto que está sucediendo ahora
+mismo en la academia o la investigación.
+Por tanto, ¿qué vamos a buscar a partir
+de eso? Que Gemini o ChatGPT te vomite mucha información, y cuando tú lo vayas
+leyendo, vas filtrando la información que realmente se aplica a tu contexto.
+Yo
+creo que eso es el cuento corto, por así decirlo, para tener un contexto del
+problema y que no te haga iterar muchas veces sobre lo mismo.
+Esa va a ser la
+salida más simple. Otra cosa que no se identifica acá es el propio baseline,
+pero no sé si visto trabajar en ese baseline?
+10:12 - Sergio Moya Marín Sí, el baseline, bueno, he estado haciendo el
+documento pero lo tengo aquí, es un estudio, lo tengo aquí apuntado
+directamente, lo tengo que pasar a Word.
+Es material práctico de, bueno, de
+GitHub de la universidad, de investigadores de la Universidad de Bruselas, vale,
+en el que hablan de un modelo básico de detección de de fraudes, ¿vale?
+En este
+caso, sí que utiliza una estrategia de un entrenamiento supervisado, ¿vale?
+En
+el que los datos sí que los tiene etiquetados, ¿vale? Y tengo aquí, de hecho, el
+collab ejecutado, ¿vale?
+En el que básicamente, bueno, habla de cómo separa los
+los datos de validación de los de test, el feature engineering, la
+transformación que ejerce sobre estos datos, la fase de entrenamiento y luego
+con el modelo utiliza los datos de test para sacar esas predicciones y hacer las
+validaciones.
+Del modelo. Y luego pues lo mismo, la inferencia con nuevos datos
+y el bucle de reentrenamiento del modelo con los nuevos datos.
+En cuanto a la
+explicación detallada de qué es lo que hacen cada una de las De las partes pues
+no la tengo, pero si que esto lo quiero sacar, no creo que sea muy difícil al
+final Primero, vale, esos son simulados Vale, hace diferentes agrupaciones,
+sumas... Mira, una buena práctica en esto mismo es copiar todo eso, cambiar las
+variables, tirarlas a GPT o Gemini, poner en español y que también te explique
+cuáles son las funciones.
+12:53 - BADY PATRICIO GANA CASTILLO La verdad que sí.
+Demoras un minuto y al
+final vas a entender el código mucho más fácilmente entiendo que no has tenido
+tiempo ya eso lo tengo claro pero me preocupa ya eso me preocupa porque ya han
+pasado casi tres semanas y no hemos visto avance ya porque esto lo pudiste haber
+sacado en 10 minutos como cualquier otra persona y te voy a ser súper honesto,
+yo siempre prefiero la transparencia ante todo, a mí no me tiembla la mano a la
+hora de evaluar cómo se tiene que evaluar, entonces prefiero decírtelo ahora que
+tenemos aún mucho tiempo de holgura, de que debes trabajar en esto, debes
+dedicarle 
+su tiempo, ya sea aunque signifique sacrificar parte del fin de
+semana, pero te lo comento porque yo también fui estudiante de máster, fui
+estudiante de doctorado y y sé que no vas a alcanzar si es que esto pasa este
+año.
+Si te pones recién a trabajar en el código, en la escritura del informe el
+próximo año, no vas a llegar.
+Porque en toda investigación empiezan a aparecer
+problemas y te vas comiendo la holgura que tenías inicialmente o que pensabas
+con la cual podías contar.
+Eso te lo voy a decir solamente por eso mismo, por
+transparencia.
+No te voy a vender una ilusión de que todo está bien, no. Ya
+estábamos mal en términos entregables.
+Pero eso, me gusta ser directo en esta
+instancia porque es lo que uno necesita escuchar a veces.
+14:39 - Sergio Moya Marín Soy plenamente consciente, o sea, no voy a negarlo que
+no le he dedicado el tiempo que necesito.
+14:48 - BADY PATRICIO GANA CASTILLO
+Entonces no tengas miedo de apoyarte de la herramienta, el síndrome del impostor
+siempre te va a comer la cabeza de eso de parte y ves por dónde parto y aparece
+otra cosa y uno hace procrastinación productiva y hace otras cosas que tu mente
+piensa que son más productivas pero ahora mismo tu prioridad es cerrar esto
+porque después ya no vas a estar en esto.
+Pero esos grandes rasgos quería
+hacerte súper sincero respecto a eso y que vayamos sacando esto adelante te
+motivo también a que le dedique más tiempo entonces para la próxima reunión yo
+esto ya lo veo como una necesidad total esta baseline como código clarito debes
+tenerlo claro como el agua el contexto es decir es informe largo también visto
+como el agua ya con esas dos cosas yo sé que entiendes bien el problema pero
+ahora mismo la propia explicación me da mucha inseguridad de que quizás no
+domina bien el problema ya entonces eso podría ocasionar también caer en
+tentaciones de pensar de que todo va 
+bien cuando no está bien y así eso nos da
+la holgura de que por ejemplo cuando tú termines toda esta primera iteración yo
+pueda revisar y decirte, mira Sergio, quizás esta función no está haciendo lo
+que creíamos que hacía, o este conjunto de datos se transformó mal, o podrías
+probar otra estandarización de valores.
+Ponte tú. Muchas veces se estandariza
+entre 0 y 1. ¿Qué pasa si tú lo haces entre menos 1 y 1?
+¿Tus resultados van a
+mejorar, van a empeorar? Son exploraciones que debemos hacer previamente, antes
+de escribir el informe.
+Por eso, ese ciclo iterativo necesita holgura. Pero eso
+es grande rasgo.
+No sé si tienes algo más pendiente de los puntos. La próxima
+reunión ya sería urgente. ¿Por qué te lo comento?
+Porque la semana de navidades
+o festividades nadie trabaja. Nadie trabaja, por lo tanto yo lo doy por muerto,
+entonces básicamente tu deadline ya es la próxima semana, porque esos restos de
+días ahí tú puedes iterar en otras cosas, en el tiempo que te alcance como
+puedas, pero por ejemplo yo te voy a decir no nos juntemos el 5, juntémonos el 2
+de enero, obviamente nos juntamos la próxima semana y el 2 de ¿Ya te fijas?
+17:33 - Sergio Moya Marín Sí, sí, sí. 17:34 - BADY PATRICIO GANA CASTILLO
+Exacto.
+Pero te voy a dar la chance de que lo hagamos el mismo 19, a esta fecha,
+misma hora.
+No sé si tienes disponibilidad. 17:45 - Sergio Moya Marín Haré lo
+que sea para que tenga disponibilidad.
+17:49 - BADY PATRICIO GANA CASTILLO Si
+no, no me voy a sacar eso. Ya.
+Entonces sería el 19 y estamos... 19 horas,
+¿cierto? Para ti.
+17:57 - Sergio Moya Marín Sí, a las 19. Pero eso, no sé si
+necesitas algún otro apoyo, duda, consulta en la cual te pueda ayudar.
+18:08 - BADY PATRICIO GANA CASTILLO Yo de momento te digo, apóyate en la
+herramienta de ella.
+No hay ninguna necesidad, o sea, no hay ningún problema en
+no hacerlo, pero sé súper riguroso en los prompts.
+Es decir, explica bien el
+contexto para que no te investigue información que no necesitas. 18:28 - Sergio
+Moya Marín Vale, perfecto.
+18:29 - BADY PATRICIO GANA CASTILLO Por ejemplo, en
+la parte de contexto, que te hable de los datasets, que te hable de los
+resultados, que te hable del contexto mundial, por ejemplo, sería súper bueno
+tener una contextualización de cuánto es el porcentaje de transacciones que son
+fraude en un banco, por ejemplo, que me imagino que en algún estudio debe ser
+público.
+Cosas de ese estilo van a ayudar a que tu tesis mucho más sólida, se
+va a consolidar mucho mejor, va a tener una historia de principio a fin, porque
+estás contextualizando no solamente el problema, estás contextualizando el
+problema en su entorno.
+Eso, si no tienes más dudas o consultas, lo vamos
+dejando hasta acá.
+19:24 - Sergio Moya Marín puntos que también he estado mirando, a ver, he mirado
+todos, pero los que más he estado mirando pues ha sido pues la parte de la
+elaboración de la propuesta que fue lo que te mandé, que hice las correcciones,
+con ello hice el diagrama y también estuve viendo pues las diferencias entre
+clasificación y detección de anomalías.
+19:50 - BADY PATRICIO GANA CASTILLO
+Aprovechemos este momento Y puedes mostrarme nuevamente el diagrama. Sí.
+19:56 -
+Sergio Moya Marín Esto sí que, mira, te digo directamente que me ha apoyado en
+Google M porque he visto que hace virguerías con las presentaciones y todo.
+Hace
+unas ilustraciones espectaculares. Sí, es verdad que aquí incluye, digamos, como
+la técnica de smooth para el valor lanceo de datos, pero bueno, al final quería
+lo que es la estructura del flujo.
+Entonces, esto ya tiene otra pinta a lo que
+vimos la última vez.
+Habla de esa división estatificada de los datos de
+entrenamiento y test, del escalado.
+La parte de balanceo, esta parte la haré. Y
+luego ya pues nada, el modelado, etcétera, etcétera.
+Y la evaluación con test y
+generación. En cuanto a ilustración, está bien.
+Lo tengo que adaptar más,
+digamos, al caso del estudio.
+21:17 - BADY PATRICIO GANA CASTILLO más o menos. Sí, lo veo bien, lo veo bien.
+Quizás un poco muy técnico, ¿ya? Porque si esto lo ve una persona que no es
+informática o que no conoce sobre modelos de Machine Learning, no lo va a
+entender.
+Entonces, cuando yo me refería a un modelo, a un flujo que represente
+la propuesta, es más global todavía.
+Es decir, que muestre una tarjeta de
+crédito, que muestre una transacción, cómo sucede ese error y cómo lo vas a
+detectar tú.
+La cosa es que si tus padres lo pueden entender, está bien hecho.
+Si les muestras el diagrama y le dices qué ves acá y lo entienden con solo la
+imagen, está bien hecho.
+Busquemos ese tipo de enfoque. Vale de acuerdo pero
+está bien está bien porque cuando tú vayas a hablar sobre el marco metodológico
+esto es realmente lo que está pasando por detrás esto si lo puedes presentar ahí
+ya no sirve ese diagrama tan general exacto porque te lo digo porque esto tú no
+lo puedes vender pero el otro si si de hecho hay alguna seguro que hay alguna
+diapositiva por aquí que me ha hecho no google m que es bueno lo revisaré así si
+es eso una cosa es que hayas generado mucho contenido que eso también lo veo
+bien es mucho mejor que 
+no haber no haber hecho nada pero tienes que dominar muy
+bien lo que estás generando.
+23:08 - Sergio Moya Marín Sí, sí, sí. Porque después, ojo, porque en el momento,
+porque ahora tú preguntaste sin saber tanto.
+23:15 - BADY PATRICIO GANA CASTILLO
+Imagínate cómo te van a salir los resultados o la diapositiva o todo lo que
+vayas a hacer sabiendo bien lo que estás haciendo.
+Vas a poder discernir al
+tiro, oye, quizá este diagrama está mal. ¿Por qué?
+Porque, qué sé yo, escalador
+que no es el que corresponde, o no lo define y necesita definirlo.
+Cosas así de
+rigurosas te van a ayudar un montón. Y respecto a la diferencia de clasificación
+y detección de anomalías.
+23:50 - Sergio Moya Marín Sí, a ver, eso al final es un poco como lo explicaste
+tú también el otro día.
+La clasificación clasificación, al final, o digamos, el
+output de un modelo de clasificación, es el porcentaje de pertenencia a una
+categoría.
+Es decir, digamos, lo típico, los primeros modelos lo que hacían, los
+más conocidos, lo que hacían es, ¿qué porcentaje o qué probabilidad de que esta
+imagen sea de un gato o de un perro?
+Porque hay diferencias físicas notables
+entre un gato y un perro.
+Pero en cuanto a las, digamos, esto no sirve para la
+detección de anomalías puesto que una transacción individualmente sin contexto
+de anómala o digamos de fraude puede ser completamente equivalente a otra que no
+es un fraude, ¿vale?
+Entonces, lo que hacen los modelos es aprender sobre cuál
+es la normalidad, ¿vale?
+Y utilizan el contexto para aprender de esa normalidad,
+¿vale? Digamos.
+Y el output del modelo es de cada uno de los de esas
+transacciones, ¿cuán alejado está de esa normalidad que he aprendido de un banco
+de datos.
+Ya, súper.
+25:31 - BADY PATRICIO GANA CASTILLO Ya con eso al menos puedes defender el
+título de la propuesta. Muy bien.
+25:38 - Sergio Moya Marín Porque ese es el
+primer paso.
+25:41 - BADY PATRICIO GANA CASTILLO Tienes que entender
+absolutamente cada palabra del título de tu propuesta.
+Porque ahí es donde
+primero se atacan todas las comisiones. 25:51 - Sergio Moya Marín Sí.
+25:52 -
+BADY PATRICIO GANA CASTILLO pero bien, ya me queda más claro que te queda clara
+la diferencia de clasificación y textura de anomalía, la última vez fue un
+desastre, ya, así que, pero ahora super bien.
+26:04 - Sergio Moya Marín Bueno, gracias. 26:05 - BADY PATRICIO GANA CASTILLO
+Bueno, eso sería de momento Sergio, vamos a dar por verde ya lo que viene siendo
+la diferencia, ahí me convenciste totalmente, en el diagrama hay que iterar una
+vez más, el baseline lo tienes que obviamente lo tienes pero lo dejo en naranjo
+porque me lo tienes que explicar y el contexto es lo mismo y tenemos una vez más
+sobre eso para que quede mucho más sólido si te sirve puedes hacerme cualquier
+pregunta entremedio, si sacaste ese deep research obviamente lee lo primero y
+después me lo mandas, no me lo 
+mandes y después lo leas Ok, conozco esa
+práctica. Ahí podemos ir viendo qué tal. Muy bien. Así que eso, Sergio.
+Cuídate, que estés muy bien. Nos estaríamos viendo entonces la próxima semana.
+Viernes 19, si te acomoda. Sí, sí, sí.
+Viernes 19 mejor. Encima el jueves tengo
+viajes.
+27:10 - Sergio Moya Marín Es que ahora, justo a finales de año, está siendo un
+poco locura.
+Viajes de trabajo así que bueno lo que bien pues eso cuéntenos
