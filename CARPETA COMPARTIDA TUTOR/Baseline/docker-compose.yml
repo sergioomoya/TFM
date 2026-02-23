@@ -59,6 +59,8 @@ services:
       - NVIDIA_DRIVER_CAPABILITIES=compute,utility
     deploy:
       resources:
+        limits:
+          memory: 8G
         reservations:
           devices:
             - driver: nvidia

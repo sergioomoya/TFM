@@ -1,0 +1,10 @@
+﻿# Reducir uso de RAM - excluir de indexacion
+execution_progress.txt
+execution_log.txt
+execution_results/
+simulated-data-raw/
+simulated-data-transformed/
+experiments/results/
+*.pkl
+.ipynb_checkpoints/
+__pycache__/

@@ -11,7 +11,9 @@ Genera un reporte JSON y de texto con los resultados.
 """
 
 import argparse
+import fcntl
 import json
+import os
 import sys
 import time
 import traceback
@@ -20,6 +22,9 @@ from pathlib import Path
 
 import nbformat
 from nbconvert.preprocessors import ExecutePreprocessor
+
+PROGRESS_FILE = Path("execution_progress.txt")
+LOCK_FILE = Path("execution.lock")
 
 
 # =============================================================================
@@ -73,8 +78,21 @@ def execute_notebook(notebook_path: str, timeout: int = None) -> dict:
 
         code_cells = [c for c in nb.cells if c.cell_type == 'code']
         result["cells_total"] = len(code_cells)
+        total_cells = len(nb.cells)
 
-        ep = ExecutePreprocessor(
+        class ProgressExecutePreprocessor(ExecutePreprocessor):
+            def preprocess_cell(self, cell, resources, cell_index):
+                if cell.cell_type == 'code':
+                    try:
+                        PROGRESS_FILE.write_text(
+                            f"Celda {cell_index + 1}/{total_cells} | {datetime.now().strftime('%H:%M:%S')}\n",
+                            encoding='utf-8'
+                        )
+                    except Exception:
+                        pass
+                return super().preprocess_cell(cell, resources, cell_index)
+
+        ep = ProgressExecutePreprocessor(
             timeout=timeout,
             kernel_name='python3',
             allow_errors=False,
@@ -108,7 +126,27 @@ def execute_notebook(notebook_path: str, timeout: int = None) -> dict:
             "error": str(exc),
             "error_traceback": traceback.format_exc(),
         })
+        try:
+            prev = PROGRESS_FILE.read_text(encoding='utf-8') if PROGRESS_FILE.exists() else ''
+            PROGRESS_FILE.write_text(
+                prev + f"\nERROR | {datetime.now().strftime('%H:%M:%S')} | {str(exc)[:300]}\n",
+                encoding='utf-8'
+            )
+        except Exception:
+            pass
         print(f"  ✗ Error tras {elapsed:.1f}s: {exc}")
+        print(f"\n  Traceback completo:\n{traceback.format_exc()}")
+        try:
+            from nbclient.exceptions import CellExecutionError
+            if isinstance(exc, CellExecutionError) and hasattr(exc, 'cell') and exc.cell:
+                src = exc.cell.get('source', '')
+                if isinstance(src, list):
+                    src = ''.join(src)
+                print(f"\n  Celda que falló (primeras 10 líneas):")
+                for i, line in enumerate(src.split('\n')[:10]):
+                    print(f"    {i+1}: {line[:80]}")
+        except Exception:
+            pass
 
     return result
 
@@ -142,7 +180,53 @@ def generate_text_report(results: list, report_path: Path) -> None:
         f.write("=" * 70 + "\n")
 
 
+_lock_fd = None
+
+
+def acquire_lock() -> bool:
+    """Adquiere bloqueo exclusivo. Retorna False si otra ejecución está en curso."""
+    global _lock_fd
+    try:
+        _lock_fd = os.open(LOCK_FILE, os.O_CREAT | os.O_WRONLY | os.O_TRUNC, 0o644)
+        fcntl.flock(_lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        return True
+    except (BlockingIOError, OSError):
+        if _lock_fd is not None:
+            try:
+                os.close(_lock_fd)
+            except Exception:
+                pass
+            _lock_fd = None
+        return False
+    except Exception:
+        return False
+
+
+def release_lock():
+    global _lock_fd
+    try:
+        if _lock_fd is not None:
+            fcntl.flock(_lock_fd, fcntl.LOCK_UN)
+            os.close(_lock_fd)
+            _lock_fd = None
+        if LOCK_FILE.exists():
+            LOCK_FILE.unlink()
+    except Exception:
+        pass
+
+
 def main():
+    if not acquire_lock():
+        print("ERROR: Otra ejecución en curso. Espera a que termine o elimina execution.lock")
+        sys.exit(2)
+
+    try:
+        _main_impl()
+    finally:
+        release_lock()
+
+
+def _main_impl():
     parser = argparse.ArgumentParser(description="Ejecutar cuadernos unificados")
     parser.add_argument(
         "--notebook", type=str,

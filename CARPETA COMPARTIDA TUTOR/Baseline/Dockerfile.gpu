@@ -1,68 +1,56 @@
 # =============================================================================
-# Dockerfile.gpu - TFM Detección de Fraude (con soporte GPU NVIDIA)
+# Dockerfile.gpu - TFM Detección de Fraude (RTX 50 series / Blackwell)
 # =============================================================================
-# Imagen con PyTorch + CUDA para acelerar el entrenamiento de redes neuronales
-# del Capítulo 7 (Deep Learning).
+# Imagen con PyTorch + CUDA 12.8 para RTX 5080/5090 (compute capability sm_120).
+# Requiere CUDA 12.8 y PyTorch 2.7+ para soporte oficial.
 #
 # Requiere:
 #   - Docker Desktop con WSL2 backend
-#   - NVIDIA Container Toolkit (integrado en Docker Desktop para Windows)
-#   - GPU NVIDIA compatible con CUDA
+#   - NVIDIA Container Toolkit
+#   - GPU NVIDIA RTX 5080/5090 (Blackwell)
 #
 # Uso:
 #   docker compose build ch7-gpu
 #   docker compose run --rm ch7-gpu
 # =============================================================================
 
-FROM nvidia/cuda:11.3.1-cudnn8-runtime-ubuntu20.04
+FROM nvidia/cuda:12.8.0-cudnn-runtime-ubuntu22.04
 
 LABEL maintainer="TFM Detección de Fraude - Sergio Moya"
-LABEL description="Entorno Docker con GPU para Deep Learning (Chapter 7)"
+LABEL description="Entorno Docker con GPU RTX 5080 para Deep Learning (Chapter 7)"
 
-# Evitar prompts interactivos durante la instalación
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PIP_NO_CACHE_DIR=1
 ENV PIP_DISABLE_PIP_VERSION_CHECK=1
 
-# Instalar Python 3.8 y dependencias del sistema
+# Ubuntu 22.04: Python 3.10
 RUN apt-get update && apt-get install -y \
-    python3.8 \
-    python3.8-dev \
+    python3.10 \
+    python3.10-dev \
     python3-pip \
     build-essential \
     curl \
     git \
     graphviz \
     && rm -rf /var/lib/apt/lists/* \
-    && ln -sf /usr/bin/python3.8 /usr/bin/python \
+    && ln -sf /usr/bin/python3.10 /usr/bin/python \
     && ln -sf /usr/bin/pip3 /usr/bin/pip
 
 WORKDIR /app
 
-# Copiar requirements
-COPY requirements.txt .
-
-# 1) Instalar PyTorch con soporte CUDA 11.3 PRIMERO
-# (Los wheels de PyTorch incluyen las librerías CUDA necesarias)
-# Nota: typing-extensions>=4.13 requiere Python>=3.9, se restringe a <4.13
+# PyTorch 2.7+ con CUDA 12.8 (soporte RTX 5080/5090)
 RUN pip install --upgrade pip && \
-    echo "typing-extensions<4.13" > /tmp/constraints.txt && \
-    pip install torch==1.10.1+cu113 \
-    --extra-index-url https://download.pytorch.org/whl/cu113 \
-    -c /tmp/constraints.txt
+    pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128
 
-# 2) Instalar el resto de dependencias (sin reinstalar torch)
-RUN grep -v "^torch" requirements.txt > /tmp/requirements_no_torch.txt && \
-    pip install -r /tmp/requirements_no_torch.txt \
-    -c /tmp/constraints.txt && \
-    pip install nbconvert papermill jupyter-client ipykernel lxml_html_clean \
-    -c /tmp/constraints.txt && \
+# Resto de dependencias (compatibles con Python 3.10)
+COPY requirements.txt .
+RUN pip install pandas scikit-learn matplotlib seaborn graphviz xgboost imbalanced-learn shap skorch \
+    pandarallel jupyter jupyter-book Sphinx sphinxcontrib-bibtex \
+    nbconvert papermill jupyter-client ipykernel lxml_html_clean && \
     python -m ipykernel install --user --name python3
 
-# Copiar todo el proyecto
 COPY . .
 
-# Por defecto: ejecutar solo el Capítulo 7
 CMD ["python", "run_unified_notebooks.py", "--notebook", "Chapter_7_DeepLearning/Chapter_7_Unified.ipynb"]

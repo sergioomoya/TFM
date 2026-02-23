@@ -81,3 +81,5 @@ notebook-cache/
 # ---------------------
 execution_results/
 execution_results.json
+execution_progress.txt
+execution_log.txt
