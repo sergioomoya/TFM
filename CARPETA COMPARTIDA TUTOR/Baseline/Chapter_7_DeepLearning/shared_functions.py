@@ -1356,28 +1356,87 @@ class FraudDataset(torch.utils.data.Dataset):
         else:
             return self.x[index]
 
-def prepare_generators(training_set,valid_set,batch_size=64):
+def get_dataloader_config(batch_size=None):
+    """
+    Auto-configuración óptima de DataLoader con Mixed Precision.
+    - num_workers: 2 con AMP (AMP ahorra VRAM, permite prefetching)
+    - batch_size: Mayor con AMP (más batch_size = mejor GPU utilization)
+    - prefetch_factor: 4 para mantener GPU ocupada
+    """
+    cuda_available = torch.cuda.is_available()
+    n_cpus = os.cpu_count() or 4
     
-    train_loader_params = {'batch_size': batch_size,
-              'shuffle': True,
-              'num_workers': 0}
-    valid_loader_params = {'batch_size': batch_size,
-              'num_workers': 0}
+    # Con AMP, usamos VRAM más eficientemente, permitiendo prefetching
+    # y aprovechando mejor la GPU
+    if cuda_available:
+        nw = 2  # AMP libera RAM -> podemos usar workers
+        pin_mem = True
+        prefetch = 4
+    else:
+        nw = 0
+        pin_mem = False
+        prefetch = 2
+    
+    if batch_size is None and cuda_available:
+        try:
+            props = torch.cuda.get_device_properties(0)
+            vram_gb = props.total_memory / (1024 ** 3)
+            # Con AMP (FP16), usamos ~50% menos VRAM -> podemos duplicar batch_size
+            # o mantener batches grandes para saturar GPU
+            if vram_gb < 4:
+                batch_size = 16384  # 2x con AMP
+            elif vram_gb < 8:
+                batch_size = 32768  # 2x con AMP
+            elif vram_gb < 16:
+                batch_size = 32768  # ~80% de 16GB VRAM con AMP
+            else:
+                batch_size = 49152  # Máximo para RTX 5080 con AMP
+        except Exception:
+            batch_size = 512
+    elif batch_size is None:
+        batch_size = 512
+    
+    return {
+        'batch_size': batch_size,
+        'num_workers': nw,
+        'pin_memory': pin_mem,
+        'persistent_workers': nw > 0,
+        'prefetch_factor': prefetch if nw > 0 else None,
+    }
+
+def prepare_generators(training_set,valid_set,batch_size=None):
+    # Auto-configuración según recursos (CPU, GPU); batch_size=None → se infiere de VRAM
+    cfg = get_dataloader_config(batch_size)
+    bs, nw, pin_mem, persist = cfg['batch_size'], cfg['num_workers'], cfg['pin_memory'], cfg['persistent_workers']
+    
+    train_loader_params = {'batch_size': bs, 'shuffle': True,
+              'num_workers': nw, 'pin_memory': pin_mem, 'persistent_workers': persist}
+    valid_loader_params = {'batch_size': bs,
+              'num_workers': nw, 'pin_memory': pin_mem, 'persistent_workers': persist}
     
     training_generator = torch.utils.data.DataLoader(training_set, **train_loader_params)
     valid_generator = torch.utils.data.DataLoader(valid_set, **valid_loader_params)
     
     return training_generator,valid_generator
 
-def evaluate_model(model,generator,criterion):
+def evaluate_model(model,generator,criterion,use_amp=True):
+    """Evaluation with Mixed Precision support."""
     model.eval()
+    device = next(model.parameters()).device
+    use_amp = use_amp and device.type == 'cuda'
     batch_losses = []
-    for x_batch, y_batch in generator:
-        # Forward pass
-        y_pred = model(x_batch)
-        # Compute Loss
-        loss = criterion(y_pred.squeeze(), y_batch)
-        batch_losses.append(loss.item())
+    with torch.no_grad():
+        for x_batch, y_batch in generator:
+            x_batch, y_batch = x_batch.to(device), y_batch.to(device)
+            # Mixed Precision forward pass
+            if use_amp:
+                with torch.cuda.amp.autocast():
+                    y_pred = model(x_batch)
+                    loss = criterion(y_pred.squeeze(), y_batch)
+            else:
+                y_pred = model(x_batch)
+                loss = criterion(y_pred.squeeze(), y_batch)
+            batch_losses.append(loss.item())
     mean_loss = np.mean(batch_losses)    
     return mean_loss
 
@@ -1387,7 +1446,7 @@ class EarlyStopping:
         self.patience = patience
         self.verbose = verbose
         self.counter = 0
-        self.best_score = np.Inf
+        self.best_score = np.inf
     
     def continue_training(self,current_score):
         if self.best_score > current_score:
@@ -1402,8 +1461,15 @@ class EarlyStopping:
                 
         return self.counter <= self.patience  
     
-def training_loop(model,training_generator,valid_generator,optimizer,criterion,max_epochs=100,apply_early_stopping=True,patience=2,verbose=False):
-    #Setting the model in training mode
+def training_loop(model,training_generator,valid_generator,optimizer,criterion,max_epochs=100,apply_early_stopping=True,patience=2,verbose=False,use_amp=True,gradient_accumulation_steps=1,use_one_cycle_lr=True):
+    """
+    Training loop with Mixed Precision, Gradient Accumulation and One-Cycle LR.
+    
+    Args:
+        gradient_accumulation_steps: Acumular gradientes N veces antes de optimizar.
+                                     Simula batch_size * N sin usar más VRAM.
+        use_one_cycle_lr: Usar OneCycleLR para convergencia más rápida.
+    """
     model.train()
 
     if apply_early_stopping:
@@ -1412,21 +1478,66 @@ def training_loop(model,training_generator,valid_generator,optimizer,criterion,m
     all_train_losses = []
     all_valid_losses = []
     
-    #Training loop
+    # Mixed Precision setup
+    device = next(model.parameters()).device
+    use_amp = use_amp and device.type == 'cuda'
+    scaler = torch.cuda.amp.GradScaler() if use_amp else None
+    
+    # One-Cycle LR Scheduler setup
+    scheduler = None
+    if use_one_cycle_lr and device.type == 'cuda':
+        total_steps = len(training_generator) * max_epochs // gradient_accumulation_steps
+        scheduler = torch.optim.lr_scheduler.OneCycleLR(
+            optimizer, 
+            max_lr=optimizer.param_groups[0]['lr'] * 10,  # Peak LR 10x higher
+            total_steps=total_steps,
+            pct_start=0.3,  # 30% warmup
+            anneal_strategy='cos'
+        )
+    
     start_time=time.time()
+    optimizer.zero_grad()  # Zero grad at start for accumulation
+    
     for epoch in range(max_epochs):
         model.train()
         train_loss=[]
-        for x_batch, y_batch in training_generator:
-            optimizer.zero_grad()
-            # Forward pass
-            y_pred = model(x_batch)
-            # Compute Loss
-            loss = criterion(y_pred.squeeze(), y_batch)
-            # Backward pass
-            loss.backward()
-            optimizer.step()   
-            train_loss.append(loss.item())
+        accumulated_loss = 0
+        
+        for batch_idx, (x_batch, y_batch) in enumerate(training_generator):
+            x_batch, y_batch = x_batch.to(device), y_batch.to(device)
+            
+            # Mixed Precision forward pass
+            if use_amp:
+                with torch.cuda.amp.autocast():
+                    y_pred = model(x_batch)
+                    loss = criterion(y_pred.squeeze(), y_batch)
+                    loss = loss / gradient_accumulation_steps  # Normalize loss
+                # Scaled backward pass
+                scaler.scale(loss).backward()
+            else:
+                y_pred = model(x_batch)
+                loss = criterion(y_pred.squeeze(), y_batch)
+                loss = loss / gradient_accumulation_steps
+                loss.backward()
+            
+            accumulated_loss += loss.item() * gradient_accumulation_steps
+            
+            # Optimization step (every N batches or at end of epoch)
+            if (batch_idx + 1) % gradient_accumulation_steps == 0 or (batch_idx + 1) == len(training_generator):
+                if use_amp:
+                    scaler.step(optimizer)
+                    scaler.update()
+                else:
+                    optimizer.step()
+                
+                optimizer.zero_grad()
+                
+                # Update LR scheduler
+                if scheduler is not None:
+                    scheduler.step()
+            
+            train_loss.append(accumulated_loss)
+            accumulated_loss = 0
         
         #showing last training loss after each epoch
         all_train_losses.append(np.mean(train_loss))
@@ -1434,7 +1545,7 @@ def training_loop(model,training_generator,valid_generator,optimizer,criterion,m
             print('')
             print('Epoch {}: train loss: {}'.format(epoch, np.mean(train_loss)))
         #evaluating the model on the test set after each epoch    
-        valid_loss = evaluate_model(model,valid_generator,criterion)
+        valid_loss = evaluate_model(model,valid_generator,criterion,use_amp=use_amp)
         all_valid_losses.append(valid_loss)
         if verbose:
             print('valid loss: {}'.format(valid_loss))
@@ -1447,18 +1558,84 @@ def training_loop(model,training_generator,valid_generator,optimizer,criterion,m
     training_execution_time=time.time()-start_time
     return model,training_execution_time,all_train_losses,all_valid_losses
 
-def per_sample_mse(model,generator):
+def per_sample_mse(model,generator,use_amp=True):
+    """Per-sample MSE with Mixed Precision support."""
     model.eval()
+    device = next(model.parameters()).device
+    use_amp = use_amp and device.type == 'cuda'
     criterion = torch.nn.MSELoss(reduction="none")
     batch_losses = []
-    for x_batch, y_batch in generator:
-        # Forward pass
-        y_pred = model(x_batch)
-        # Compute Loss
-        loss = criterion(y_pred.squeeze(), y_batch)
-        loss_app = list(torch.mean(loss,axis=1).detach().numpy())
-        batch_losses.extend(loss_app)
+    with torch.no_grad():
+        for x_batch, y_batch in generator:
+            x_batch, y_batch = x_batch.to(device), y_batch.to(device)
+            # Mixed Precision forward pass
+            if use_amp:
+                with torch.cuda.amp.autocast():
+                    y_pred = model(x_batch)
+                    loss = criterion(y_pred.squeeze(), y_batch)
+            else:
+                y_pred = model(x_batch)
+                loss = criterion(y_pred.squeeze(), y_batch)
+            loss_app = list(torch.mean(loss,axis=1).cpu().numpy())
+            batch_losses.extend(loss_app)
     return batch_losses
+
+
+def parallel_training_loop(models_configs, training_generator, valid_generator, criterion, max_epochs=100, patience=2, verbose=False):
+    """
+    Entrena múltiples modelos pequeños en paralelo en la misma GPU.
+    Útil cuando cada modelo individualmente no satura la GPU.
+    
+    Args:
+        models_configs: Lista de tuplas (model, optimizer) o (model, optimizer, name)
+        training_generator, valid_generator: DataLoaders (compartidos)
+        criterion: Función de pérdida
+        max_epochs: Máximo de epochs
+        patience: Paciencia para early stopping
+    
+    Returns:
+        results: Lista de (model, training_time, train_losses, valid_losses) por modelo
+    """
+    import concurrent.futures
+    from threading import Thread
+    
+    device = next(models_configs[0][0].parameters()).device
+    results = [None] * len(models_configs)
+    
+    def train_single(idx, model, optimizer, name=None):
+        """Entrena un modelo individual."""
+        if verbose and name:
+            print(f"[{name}] Iniciando entrenamiento...")
+        
+        model_copy, time_val, train_losses, valid_losses = training_loop(
+            model, training_generator, valid_generator, optimizer, criterion,
+            max_epochs=max_epochs, patience=patience, verbose=False,
+            use_amp=True, gradient_accumulation_steps=1, use_one_cycle_lr=True
+        )
+        
+        results[idx] = (model_copy, time_val, train_losses, valid_losses)
+        if verbose and name:
+            print(f"[{name}] Completado en {time_val:.1f}s")
+    
+    # Para modelos pequeños, ejecutamos en paralelo usando threads
+    # (PyTorch libera GIL durante operaciones CUDA)
+    threads = []
+    for i, config in enumerate(models_configs):
+        if len(config) == 2:
+            model, optimizer = config
+            name = f"Model_{i}"
+        else:
+            model, optimizer, name = config
+        
+        t = Thread(target=train_single, args=(i, model, optimizer, name))
+        t.start()
+        threads.append(t)
+    
+    # Esperar a todos
+    for t in threads:
+        t.join()
+    
+    return results
 
 class FraudDatasetForPipe(torch.utils.data.Dataset):
     

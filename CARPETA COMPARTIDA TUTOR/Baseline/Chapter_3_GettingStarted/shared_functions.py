@@ -1387,7 +1387,7 @@ class EarlyStopping:
         self.patience = patience
         self.verbose = verbose
         self.counter = 0
-        self.best_score = np.Inf
+        self.best_score = np.inf
     
     def continue_training(self,current_score):
         if self.best_score > current_score:
@@ -1456,7 +1456,7 @@ def per_sample_mse(model,generator):
         y_pred = model(x_batch)
         # Compute Loss
         loss = criterion(y_pred.squeeze(), y_batch)
-        loss_app = list(torch.mean(loss,axis=1).detach().numpy())
+        loss_app = list(torch.mean(loss,axis=1).detach().cpu().numpy())
         batch_losses.extend(loss_app)
     return batch_losses
 

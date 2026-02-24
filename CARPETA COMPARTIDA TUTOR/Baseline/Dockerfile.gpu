@@ -44,11 +44,13 @@ WORKDIR /app
 RUN pip install --upgrade pip && \
     pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128
 
-# Resto de dependencias (compatibles con Python 3.10)
+# Resto de dependencias (compatibles con Python 3.10 y numpy 2.x de PyTorch)
+# pandas>=2.0 obligatorio: numpy 2.x (traído por PyTorch) es incompatible con pandas<2
 COPY requirements.txt .
-RUN pip install pandas scikit-learn matplotlib seaborn graphviz xgboost imbalanced-learn shap skorch \
+RUN pip install "pandas>=2.0" scikit-learn matplotlib seaborn graphviz xgboost imbalanced-learn shap skorch \
     pandarallel jupyter jupyter-book Sphinx sphinxcontrib-bibtex \
     nbconvert papermill jupyter-client ipykernel lxml_html_clean && \
+    pip install --force-reinstall --no-deps "pandas>=2.0" && \
     python -m ipykernel install --user --name python3
 
 COPY . .

@@ -1,0 +1,33 @@
+---
+description: 
+alwaysApply: true
+---
+
+# Ejecución Supervisada (Ciclo EMRR)
+
+Cuando el usuario solicite ejecutar, monitorizar o reiniciar cualquier proceso, aplicar siempre el **ciclo completo de ejecución supervisada**:
+
+## 1. Ejecutar
+- **Versión actualizada obligatoria:** Antes de lanzar, asegurarse de que el proceso usará la versión más reciente del código. Si hay una ejecución previa en curso, detenerla primero; eliminar `execution.lock` si existe; reiniciar el proceso para que cargue el código desde disco de nuevo. No confiar en que un contenedor o proceso ya en ejecución tenga las últimas ediciones (notebooks/scripts se cargan al arranque).
+- Lanzar el proceso (script, notebook, comando, contenedor).
+- Usar el entorno apropiado según el proyecto (Docker, venv, etc.).
+
+## 2. Monitorizar
+- Identificar dónde revisar progreso (logs, salida de terminal, archivos de estado).
+- Frecuencia de muestreo automático para monitorizar recursos si la ejecución es larga (RAM, CPU, GPU).
+- No asumir éxito sin verificar la salida.
+- **Obligatorio:** En cada comprobación de estado, escribir un comentario resumen (tiempo transcurrido, celda/etapa actual, errores si los hay, o confirmación de finalización). Hacerlo sin que el usuario lo pida.
+- **Uso del PC para aceleración:** Durante la monitorización, consultar métricas del sistema (GPU: `nvidia-smi` con utilization, memory.used, memory.total; RAM: `Get-CimInstance Win32_OperatingSystem` o equivalente). Si hay margen (p. ej. VRAM usada &lt; 50%, GPU utilization bajo), valorar y aplicar mejoras para acelerar: aumentar batch_size, ajustar num_workers si es seguro, etc. Documentar el criterio aplicado.
+
+## 3. Resolver errores
+- Instrumentar antes de corregir a ciegas (logs, mensajes concretos).
+- Diagnosticar la causa raíz antes de proponer la solución.
+- Documentar errores conocidos si existen runbooks o instrucciones.
+
+## 4. Reiniciar
+- Tras corregir, reiniciar la ejecución completa (no confiar en estado previo).
+- Aplicar limpieza previa si fue necesario (reiniciar servicios, liberar recursos).
+
+---
+
+**Criterio de éxito:** Proceso completado o artefactos esperados generados.

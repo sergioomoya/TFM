@@ -37,7 +37,8 @@ Write-Host "`n=== Paso 2: Sincronizar con Google Drive ===" -ForegroundColor Cya
 if (-not (Test-Path $Destino)) {
     Write-Error "El directorio destino no existe: $Destino"
 }
-robocopy $Origen $Destino /MIR /R:3 /W:5 /NP /NDL /NFL
+# /XF excluye: desktop.ini (Windows/GDrive) y ~$* (temporales Office)
+robocopy $Origen $Destino /MIR /R:3 /W:5 /NP /NDL /NFL /XF desktop.ini "~$*"
 
 $exitCode = $LASTEXITCODE
 if ($exitCode -ge 8) {
