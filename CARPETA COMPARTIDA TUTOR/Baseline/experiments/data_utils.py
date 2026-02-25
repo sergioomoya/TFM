@@ -489,6 +489,76 @@ def model_selection_wrapper(transactions_df: pd.DataFrame,
     return performances_df
 
 
+def compute_confusion_matrices_prequential(
+    transactions_df: pd.DataFrame,
+    results_dict: dict,
+    input_features: list,
+    output_feature: str,
+    clf_classes: dict,
+    start_date_training: datetime.datetime,
+    n_folds: int = 4,
+    delta_train: int = None,
+    delta_delay: int = None,
+    delta_assessment: int = None,
+    threshold: float = 0.5,
+) -> dict:
+    """
+    Re-entrena cada modelo con best_params y computa matrices de confusión agregadas
+    sobre los folds prequential de test.
+
+    Args:
+        transactions_df: DataFrame de transacciones
+        results_dict: Dict {nombre_modelo: {'best_params': ...}} con params de Pipeline (clf__X)
+        input_features: Lista de features
+        output_feature: Variable objetivo
+        clf_classes: Dict {nombre: ClaseClasificador} (ej. LogisticRegression, RandomForestClassifier)
+        start_date_training, n_folds, delta_*: Parámetros del split prequential
+        threshold: Umbral de clasificación (default 0.5)
+
+    Returns:
+        Dict {nombre: {'TN': int, 'FP': int, 'FN': int, 'TP': int, 'matrix': np.ndarray}}
+    """
+    import sklearn.pipeline
+    import sklearn.preprocessing
+
+    if delta_train is None:
+        delta_train = DELTA_TRAIN
+    if delta_delay is None:
+        delta_delay = DELTA_DELAY
+    if delta_assessment is None:
+        delta_assessment = DELTA_TEST
+
+    splits = prequentialSplit(
+        transactions_df, start_date_training=start_date_training,
+        n_folds=n_folds, delta_train=delta_train, delta_delay=delta_delay,
+        delta_assessment=delta_assessment,
+    )
+
+    output = {}
+    for name, res in results_dict.items():
+        best_params = res['best_params']
+        clf_params = {k.replace('clf__', ''): v for k, v in best_params.items() if k.startswith('clf__')}
+        clf = clf_classes[name](**clf_params)
+        pipe = sklearn.pipeline.Pipeline([
+            ('scaler', sklearn.preprocessing.StandardScaler()),
+            ('clf', clf),
+        ])
+        all_y_true, all_y_pred = [], []
+        for train_idx, test_idx in splits:
+            pipe.fit(transactions_df.loc[train_idx, input_features], transactions_df.loc[train_idx, output_feature])
+            y_prob = pipe.predict_proba(transactions_df.loc[test_idx, input_features])[:, 1]
+            all_y_true.extend(transactions_df.loc[test_idx, output_feature].values)
+            all_y_pred.extend((y_prob >= threshold).astype(int))
+
+        cm = sklearn.metrics.confusion_matrix(all_y_true, all_y_pred, labels=[0, 1])
+        output[name] = {
+            'TN': int(cm[0, 0]), 'FP': int(cm[0, 1]),
+            'FN': int(cm[1, 0]), 'TP': int(cm[1, 1]),
+            'matrix': cm,
+        }
+    return output
+
+
 def performance_assessment(predictions_df: pd.DataFrame,
                            output_feature: str = 'TX_FRAUD',
                            prediction_feature: str = 'predictions',

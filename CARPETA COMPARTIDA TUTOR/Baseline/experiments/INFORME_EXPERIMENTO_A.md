@@ -162,6 +162,7 @@ Todos los modelos usan `StandardScaler` como preprocesamiento y `random_state=42
 | `experiments/results/experiment_a_results.csv` | Métricas (AUC ROC, AUPRC, CP@100) con media y desv. estándar |
 | `experiments/results/experiment_a_predictions.pkl` | Predicciones, probabilidades y metadatos de cada modelo |
 | `experiments/results/experiment_a_detailed_metrics.json` | Accuracy, Confusion Matrix, Recall, F1, Precision, tiempos por fold |
+| `experiments/results/figures/experiment_a_confusion_matrices.png` | Gráfico de matrices de confusión (heatmaps) por modelo |
 | `experiments/results/figures/experiment_a_baseline_results.png` | Gráfico de barras con media ± desv. estándar |
 
 ---

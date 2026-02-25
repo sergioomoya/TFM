@@ -39,6 +39,7 @@ from experiments.data_utils import (
     load_transformed_data,
     card_precision_top_k_custom,
     model_selection_wrapper,
+    compute_confusion_matrices_prequential,
 )
 
 # Modo completo: 4 folds y grid completo (~15-30 min)
@@ -115,6 +116,20 @@ def main():
     elapsed = time.time() - start_total
     print(f"\nTiempo total: {elapsed:.1f}s\n")
 
+    # Matrices de confusión
+    clf_classes = {
+        "Logistic Regression": LogisticRegression,
+        "Random Forest": RandomForestClassifier,
+        "XGBoost": xgb.XGBClassifier,
+    }
+    confusion_matrices = compute_confusion_matrices_prequential(
+        transactions_df, results_a, INPUT_FEATURES, OUTPUT_FEATURE,
+        clf_classes, START_DATE_TRAINING_FOR_TEST,
+        n_folds=n_folds, delta_train=DELTA_TRAIN, delta_delay=DELTA_DELAY, delta_assessment=DELTA_TEST,
+    )
+    for name, cm_data in confusion_matrices.items():
+        results_a[name]['confusion_matrix'] = cm_data
+
     # Tabla y guardado
     model_names = list(results_a.keys())
     results_table = pd.DataFrame({
@@ -171,12 +186,31 @@ def main():
         ax.set_xticks(x_pos)
         ax.set_xticklabels(model_names, rotation=15, ha='right')
         ax.set_ylim([0, 1.05])
-    fig.suptitle(f'Validación prequential ({n_folds} folds)', fontsize=14)
-    plt.tight_layout()
+    fig.suptitle(f'Validación prequential ({n_folds} folds)', fontsize=14, y=1.02)
+    plt.tight_layout(rect=[0, 0, 1, 0.95])
     (FIGURES_DIR / 'experiment_a_baseline_results.png').parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(FIGURES_DIR / 'experiment_a_baseline_results.png', dpi=150, bbox_inches='tight')
     plt.close()
     print(f"Figura: {FIGURES_DIR / 'experiment_a_baseline_results.png'}")
+
+    # Matrices de confusión (heatmaps)
+    import seaborn as sns
+    fig_cm, axes_cm = plt.subplots(1, 3, figsize=(16, 5))
+    labels = ['Legítimo', 'Fraude']
+    for idx, (name, cm_data) in enumerate(confusion_matrices.items()):
+        cm = cm_data['matrix']
+        sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=labels, yticklabels=labels,
+                    ax=axes_cm[idx], cbar=False, annot_kws={'size': 13})
+        n_fraud = cm[1, 0] + cm[1, 1]
+        recall_pct = 100 * cm[1, 1] / n_fraud if n_fraud > 0 else 0
+        axes_cm[idx].set_title(f"{name}\nTP={cm[1,1]:,}  FN={cm[1,0]:,}  (Recall={recall_pct:.1f}%)", fontsize=11)
+        axes_cm[idx].set_ylabel('Real')
+        axes_cm[idx].set_xlabel('Predicho')
+    fig_cm.suptitle(f'Matrices de Confusión — Experimento A ({n_folds} folds, threshold=0.5)', fontsize=13, y=1.02)
+    plt.tight_layout(rect=[0, 0, 1, 0.93])
+    fig_cm.savefig(FIGURES_DIR / 'experiment_a_confusion_matrices.png', dpi=150, bbox_inches='tight')
+    plt.close()
+    print(f"Matrices de confusión: {FIGURES_DIR / 'experiment_a_confusion_matrices.png'}")
 
     print(f"Guardado: {RESULTS_DIR / 'experiment_a_results.csv'}")
     print(f"Guardado: {RESULTS_DIR / 'experiment_a_predictions.pkl'}")

@@ -196,45 +196,54 @@ def main():
         print(f"\n  Transacción FRAUDE (force plot): {fraud_ctx}")
         print(f"    Prob. predicción: {preds_sample[fraud_idx]:.4f}")
 
-        fig = plt.figure(figsize=(16, 3))
+        plt.close('all')
         shap.force_plot(
             explainer.expected_value, shap_values[fraud_idx],
-            X_sample_df.iloc[fraud_idx], matplotlib=True, show=False
+            X_sample_df.iloc[fraud_idx], matplotlib=True, show=False,
+            figsize=(22, 6), text_rotation=20,
         )
-        plt.title(f'Force Plot - Transacción FRAUDULENTA\n({fraud_ctx})', fontsize=11)
-        plt.tight_layout()
-        fig.savefig(FIGURES_DIR / 'experiment_d_shap_force_fraud.png', dpi=150, bbox_inches='tight')
-        plt.close()
+        fig_force = plt.gcf()
+        fig_force.subplots_adjust(top=0.65)
+        fig_force.suptitle('Force Plot — Transacción FRAUDULENTA', fontsize=14, fontweight='bold', y=0.99)
+        fig_force.text(0.5, 0.93, fraud_ctx, ha='center', fontsize=9, style='italic',
+                       color='#444444', transform=fig_force.transFigure)
+        fig_force.savefig(FIGURES_DIR / 'experiment_d_shap_force_fraud.png', dpi=150, bbox_inches='tight')
+        plt.close('all')
 
     normal_ctx = describe_transaction(normal_idx, "NORMAL")
     print(f"\n  Transacción NORMAL (force plot): {normal_ctx}")
     print(f"    Prob. predicción: {preds_sample[normal_idx]:.4f}")
 
-    fig = plt.figure(figsize=(16, 3))
+    plt.close('all')
     shap.force_plot(
         explainer.expected_value, shap_values[normal_idx],
-        X_sample_df.iloc[normal_idx], matplotlib=True, show=False
+        X_sample_df.iloc[normal_idx], matplotlib=True, show=False,
+        figsize=(22, 6), text_rotation=20,
     )
-    plt.title(f'Force Plot - Transacción NORMAL\n({normal_ctx})', fontsize=11)
-    plt.tight_layout()
-    fig.savefig(FIGURES_DIR / 'experiment_d_shap_force_normal.png', dpi=150, bbox_inches='tight')
-    plt.close()
+    fig_force = plt.gcf()
+    fig_force.subplots_adjust(top=0.65)
+    fig_force.suptitle('Force Plot — Transacción NORMAL', fontsize=14, fontweight='bold', y=0.99)
+    fig_force.text(0.5, 0.93, normal_ctx, ha='center', fontsize=9, style='italic',
+                   color='#444444', transform=fig_force.transFigure)
+    fig_force.savefig(FIGURES_DIR / 'experiment_d_shap_force_normal.png', dpi=150, bbox_inches='tight')
+    plt.close('all')
 
-    # Mejora 5: Dependence plot TX_AMOUNT vs TERMINAL_ID_RISK_7DAY_WINDOW
+    # Mejora 5: Dependence plots
     for dep_feat in ['TX_AMOUNT', 'TERMINAL_ID_RISK_7DAY_WINDOW']:
         if dep_feat in INPUT_FEATURES:
             try:
-                fig = plt.figure(figsize=(10, 5))
+                plt.close('all')
                 shap.dependence_plot(dep_feat, shap_values, X_sample_df, show=False)
-                plt.title(f'SHAP Dependence: {dep_feat}', fontsize=12)
-                plt.tight_layout()
+                fig_dep = plt.gcf()
+                fig_dep.set_size_inches(10, 5)
+                fig_dep.suptitle(f'SHAP Dependence: {dep_feat}', fontsize=12)
+                fig_dep.tight_layout()
                 safe_name = dep_feat.lower().replace(' ', '_')
-                fig.savefig(FIGURES_DIR / f'experiment_d_shap_dependence_{safe_name}.png', dpi=150, bbox_inches='tight')
-                plt.close()
+                fig_dep.savefig(FIGURES_DIR / f'experiment_d_shap_dependence_{safe_name}.png', dpi=150, bbox_inches='tight')
+                plt.close('all')
                 print(f"\n✓ Dependence plot {dep_feat} guardado")
             except Exception as e:
                 print(f"  ⚠ Dependence plot {dep_feat}: {e}")
-            break
 
     # Guardar resultados
     fi_df.to_csv(RESULTS_DIR / 'experiment_d_feature_importance.csv', index=False)
