@@ -53,11 +53,20 @@ Se han diseñado ramas y notebooks específicos para validar escenarios concreto
     - **Aportación:** Integración de la métrica de negocio `Card Precision@100` (CP@100) en el flujo de evaluación estándar.
     - **Metodología Capítulo 5:** Validación prequential (4 folds), GridSearchCV con búsqueda de hiperparámetros, reporte de media ± desviación estándar.
 
-2.  **Experimento C (Test de Data Leakage):**
+2.  **Experimento B (Cost-Sensitive — Rediseñado):**
+    - **Diagnóstico:** El enfoque original (`class_weight='balanced'`, ratio ~200:1) distorsionaba las probabilidades y empeoraba AUPRC/CP@100 frente al baseline.
+    - **Rediseño con tres sub-variantes:**
+      - **B1 — Pesos moderados:** `class_weight={0:1, 1:w}` con w ∈ {5,10,20} (LR, RF) y `scale_pos_weight` ∈ {1,3,5,10,20} (XGBoost). Preserva calibración de probabilidades.
+      - **B2 — Calibración de probabilidades:** `CalibratedClassifierCV` (isotonic regression) sobre los mejores modelos B1 para mejorar la calidad del ranking.
+      - **B3 — Búsqueda ampliada (XGBoost GPU):** `RandomizedSearchCV` con 60 iteraciones sobre espacio de ~2.6M combinaciones (max_depth, min_child_weight, subsample, gamma, regularización). Aprovechamiento óptimo de GPU.
+    - **Optimización GPU:** De ~1,296 fits exhaustivos a ~480 aleatorizados; early stopping; regularización explícita.
+    - Script: `run_experiment_b_standalone.py`.
+
+3.  **Experimento C (Test de Data Leakage):**
     - **Aportación:** Demostración empírica del peligro del filtrado de información.
     - **Refactorizado:** Cinco ramas (Correcta, Leak_split, Leak_scaler, Leak_smote, Leak_todas) para desglosar el impacto por fuente. Tres modelos (LR, RF, XGBoost). Parámetros SMOTE en `config.SMOTE_PARAMS`.
 
-3.  **Experimento D (Interpretabilidad):**
+4.  **Experimento D (Interpretabilidad):**
     - **Aportación:** Uso de **SHAP** (SHapley Additive exPlanations) sobre el modelo XGBoost.
     - Permite explicar no solo qué transacciones son fraude, sino *por qué* lo son, aportando valor al analista de fraude.
     - **Mejoras (CRITICA_MEJORA_EXPERIMENTOS):** Modelo XGBoost baseline (mejor AUPRC); Feature Importance Gain/weight/cover; tabla mean \|SHAP\|; Force plots con contexto; Beeswarm 1000 muestras; Dependence plots.

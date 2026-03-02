@@ -41,6 +41,7 @@ from experiments.data_utils import (
     model_selection_wrapper,
     compute_confusion_matrices_prequential,
 )
+from experiments.hw_config import get_hw_config, get_xgboost_gpu_params
 
 # Modo completo: 4 folds y grid completo (~15-30 min)
 QUICK = False
@@ -64,6 +65,12 @@ else:
     }
 
 def main():
+    hw = get_hw_config()
+    print(f"Hardware: {'GPU NVIDIA' if hw['gpu_available'] else 'CPU'} | n_jobs={hw['n_jobs']} | CPUs={hw['n_cpus']}")
+    xgb_gpu = get_xgboost_gpu_params()
+    if xgb_gpu:
+        print(f"  XGBoost GPU: {xgb_gpu}")
+
     print("Cargando datos...")
     transactions_df = load_transformed_data()
 
@@ -82,7 +89,7 @@ def main():
     classifiers = {
         "Logistic Regression": LogisticRegression(),
         "Random Forest": RandomForestClassifier(),
-        "XGBoost": xgb.XGBClassifier(),
+        "XGBoost": xgb.XGBClassifier(**xgb_gpu),
     }
 
     print(f"\nExperimento A — {n_folds} folds, modo {'rápido' if QUICK else 'completo'}\n")
@@ -98,7 +105,7 @@ def main():
             START_DATE_TRAINING_FOR_VALID, START_DATE_TRAINING_FOR_TEST,
             n_folds=n_folds, delta_train=DELTA_TRAIN, delta_delay=DELTA_DELAY, delta_assessment=DELTA_TEST,
             performance_metrics_list_grid=perf_metrics_grid, performance_metrics_list=perf_metrics_names,
-            n_jobs=-1,
+            n_jobs=hw['n_jobs'],
         )
         best_idx = perf_df['Average precision Validation'].idxmax()
         best = perf_df.loc[best_idx]

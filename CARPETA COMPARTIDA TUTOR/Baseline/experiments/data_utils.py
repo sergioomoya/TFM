@@ -194,6 +194,29 @@ def compute_class_ratio(y: pd.Series) -> float:
     return n_negative / n_positive
 
 
+def get_xgboost_cost_sensitive():
+    """
+    Retorna una clase XGBoost con scale_pos_weight configurable.
+    - scale_pos_weight=1: sin ponderación (baseline)
+    - scale_pos_weight='auto': calcula n_neg/n_pos en fit
+    - scale_pos_weight=N (número): usa N directamente
+    """
+    import xgboost as xgb
+
+    class XGBoostCostSensitive(xgb.XGBClassifier):
+        """XGBClassifier con scale_pos_weight configurable (1, 'auto', o valor numérico)."""
+
+        def fit(self, X, y, **kwargs):
+            spw = getattr(self, 'scale_pos_weight', None)
+            if spw == 'auto' or spw is None:
+                n_pos = max(int((y == 1).sum()), 1)
+                n_neg = int((y == 0).sum())
+                self.scale_pos_weight = n_neg / n_pos
+            return super().fit(X, y, **kwargs)
+
+    return XGBoostCostSensitive
+
+
 def card_precision_top_k_day(df_day: pd.DataFrame, top_k: int) -> tuple:
     """
     Calcula la Card Precision@k para un solo día.
@@ -277,13 +300,14 @@ def card_precision_top_k(predictions_df: pd.DataFrame, top_k: int,
 
 
 def card_precision_top_k_custom(y_true: pd.Series, y_pred: np.ndarray,
-                                 top_k: int, transactions_df: pd.DataFrame) -> float:
+                                 top_k: int, transactions_df: pd.DataFrame, **kwargs) -> float:
     """
     Scorer personalizado para GridSearchCV que computa Card Precision@k.
 
     Compatible con la interfaz de sklearn: recibe y_true (índices del fold)
     y y_pred (probabilidades). Usa transactions_df para construir predictions_df
     con CUSTOMER_ID, TX_TIME_DAYS necesarios para CP@k.
+    **kwargs: ignora args extra (needs_proba, etc.) de sklearn 1.3+
 
     Args:
         y_true: Etiquetas del fold (index = índices de transacciones)
@@ -557,6 +581,211 @@ def compute_confusion_matrices_prequential(
             'matrix': cm,
         }
     return output
+
+
+def prequential_randomized_search(transactions_df: pd.DataFrame,
+                                   classifier,
+                                   input_features: list,
+                                   output_feature: str,
+                                   param_distributions: dict,
+                                   scoring: dict,
+                                   start_date_training: datetime.datetime,
+                                   n_folds: int = 4,
+                                   n_iter: int = 50,
+                                   expe_type: str = 'Test',
+                                   delta_train: int = None,
+                                   delta_delay: int = None,
+                                   delta_assessment: int = None,
+                                   performance_metrics_list_grid: list = None,
+                                   performance_metrics_list: list = None,
+                                   n_jobs: int = -1) -> pd.DataFrame:
+    """
+    RandomizedSearchCV con validación prequential.
+
+    Muestrea n_iter combinaciones del espacio de hiperparámetros
+    en vez de explorar exhaustivamente. Ideal para grids grandes (XGBoost GPU).
+    """
+    if performance_metrics_list_grid is None:
+        performance_metrics_list_grid = ['roc_auc']
+    if performance_metrics_list is None:
+        performance_metrics_list = ['AUC ROC']
+
+    pipe = sklearn.pipeline.Pipeline([
+        ('scaler', sklearn.preprocessing.StandardScaler()),
+        ('clf', classifier),
+    ])
+
+    prequential_split_indices = prequentialSplit(
+        transactions_df,
+        start_date_training=start_date_training,
+        n_folds=n_folds,
+        delta_train=delta_train,
+        delta_delay=delta_delay,
+        delta_assessment=delta_assessment,
+    )
+
+    search = sklearn.model_selection.RandomizedSearchCV(
+        pipe, param_distributions, scoring=scoring,
+        cv=prequential_split_indices,
+        refit=False, n_jobs=n_jobs,
+        n_iter=n_iter, random_state=SEED,
+    )
+
+    X = transactions_df[input_features]
+    y = transactions_df[output_feature]
+    search.fit(X, y)
+
+    performances_df = pd.DataFrame()
+    for i, metric in enumerate(performance_metrics_list_grid):
+        col_mean = f'mean_test_{metric}'
+        col_std = f'std_test_{metric}'
+        if col_mean in search.cv_results_:
+            performances_df[performance_metrics_list[i] + ' ' + expe_type] = \
+                search.cv_results_[col_mean]
+            performances_df[performance_metrics_list[i] + ' ' + expe_type + ' Std'] = \
+                search.cv_results_[col_std]
+
+    performances_df['Parameters'] = search.cv_results_['params']
+    performances_df['Execution time'] = search.cv_results_['mean_fit_time']
+
+    return performances_df
+
+
+def model_selection_wrapper_randomized(transactions_df: pd.DataFrame,
+                                       classifier,
+                                       input_features: list,
+                                       output_feature: str,
+                                       param_distributions: dict,
+                                       scoring: dict,
+                                       start_date_training_for_valid: datetime.datetime,
+                                       start_date_training_for_test: datetime.datetime,
+                                       n_folds: int = 4,
+                                       n_iter: int = 50,
+                                       delta_train: int = None,
+                                       delta_delay: int = None,
+                                       delta_assessment: int = None,
+                                       performance_metrics_list_grid: list = None,
+                                       performance_metrics_list: list = None,
+                                       n_jobs: int = -1) -> pd.DataFrame:
+    """
+    model_selection_wrapper con RandomizedSearchCV en vez de GridSearchCV.
+    """
+    if performance_metrics_list_grid is None:
+        performance_metrics_list_grid = ['roc_auc']
+    if performance_metrics_list is None:
+        performance_metrics_list = ['AUC ROC']
+
+    perf_valid = prequential_randomized_search(
+        transactions_df, classifier, input_features, output_feature,
+        param_distributions, scoring,
+        start_date_training=start_date_training_for_valid,
+        n_folds=n_folds, n_iter=n_iter,
+        expe_type='Validation',
+        delta_train=delta_train, delta_delay=delta_delay,
+        delta_assessment=delta_assessment,
+        performance_metrics_list_grid=performance_metrics_list_grid,
+        performance_metrics_list=performance_metrics_list,
+        n_jobs=n_jobs,
+    )
+
+    perf_test = prequential_randomized_search(
+        transactions_df, classifier, input_features, output_feature,
+        param_distributions, scoring,
+        start_date_training=start_date_training_for_test,
+        n_folds=n_folds, n_iter=n_iter,
+        expe_type='Test',
+        delta_train=delta_train, delta_delay=delta_delay,
+        delta_assessment=delta_assessment,
+        performance_metrics_list_grid=performance_metrics_list_grid,
+        performance_metrics_list=performance_metrics_list,
+        n_jobs=n_jobs,
+    )
+
+    perf_valid = perf_valid.drop(
+        columns=[c for c in ['Parameters', 'Execution time'] if c in perf_valid.columns],
+        errors='ignore'
+    )
+    performances_df = pd.concat([perf_test, perf_valid], axis=1)
+    return performances_df
+
+
+def calibrate_and_evaluate_prequential(
+    transactions_df: pd.DataFrame,
+    classifier_class,
+    best_params: dict,
+    input_features: list,
+    output_feature: str,
+    start_date_training: datetime.datetime,
+    n_folds: int = 4,
+    delta_train: int = None,
+    delta_delay: int = None,
+    delta_assessment: int = None,
+    calibration_method: str = 'isotonic',
+    calibration_cv: int = 3,
+) -> dict:
+    """
+    Entrena con best_params, calibra probabilidades con CalibratedClassifierCV,
+    y evalúa AUPRC / CP@100 sobre los folds de test.
+
+    La calibración mejora la calidad del ranking de probabilidades, lo cual
+    impacta directamente en AUPRC y CP@100.
+
+    Returns:
+        Dict con métricas (auc_roc, auprc, cp100) como media ± std sobre folds.
+    """
+    from sklearn.calibration import CalibratedClassifierCV
+
+    if delta_train is None:
+        delta_train = DELTA_TRAIN
+    if delta_delay is None:
+        delta_delay = DELTA_DELAY
+    if delta_assessment is None:
+        delta_assessment = DELTA_TEST
+
+    splits = prequentialSplit(
+        transactions_df, start_date_training=start_date_training,
+        n_folds=n_folds, delta_train=delta_train, delta_delay=delta_delay,
+        delta_assessment=delta_assessment,
+    )
+
+    fold_metrics = {'auc_roc': [], 'auprc': [], 'cp100': []}
+    clf_params = {k.replace('clf__', ''): v for k, v in best_params.items() if k.startswith('clf__')}
+
+    for train_idx, test_idx in splits:
+        X_train = transactions_df.loc[train_idx, input_features]
+        y_train = transactions_df.loc[train_idx, output_feature]
+        X_test = transactions_df.loc[test_idx, input_features]
+        y_test = transactions_df.loc[test_idx, output_feature]
+
+        scaler = sklearn.preprocessing.StandardScaler()
+        X_train_scaled = scaler.fit_transform(X_train)
+        X_test_scaled = scaler.transform(X_test)
+
+        base_clf = classifier_class(**clf_params)
+        calibrated = CalibratedClassifierCV(
+            base_clf, method=calibration_method, cv=calibration_cv,
+        )
+        calibrated.fit(X_train_scaled, y_train)
+        y_prob = calibrated.predict_proba(X_test_scaled)[:, 1]
+
+        fold_metrics['auc_roc'].append(
+            sklearn.metrics.roc_auc_score(y_test, y_prob))
+        fold_metrics['auprc'].append(
+            sklearn.metrics.average_precision_score(y_test, y_prob))
+
+        pred_df = transactions_df.loc[test_idx].copy()
+        pred_df['predictions'] = y_prob
+        _, _, mean_cp = card_precision_top_k(pred_df, top_k=100)
+        fold_metrics['cp100'].append(mean_cp)
+
+    return {
+        'auc_roc_mean': np.mean(fold_metrics['auc_roc']),
+        'auc_roc_std': np.std(fold_metrics['auc_roc']),
+        'auprc_mean': np.mean(fold_metrics['auprc']),
+        'auprc_std': np.std(fold_metrics['auprc']),
+        'cp100_mean': np.mean(fold_metrics['cp100']),
+        'cp100_std': np.std(fold_metrics['cp100']),
+    }
 
 
 def performance_assessment(predictions_df: pd.DataFrame,

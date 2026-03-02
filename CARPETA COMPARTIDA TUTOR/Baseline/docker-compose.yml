@@ -6,6 +6,8 @@
 #   docker compose run --rm unified-notebooks     → Ejecutar cuadernos unificados (Ch3-7)
 #   docker compose run --rm ch7-gpu               → Ejecutar Ch7 con GPU NVIDIA
 #   docker compose run --rm experiments           → Ejecutar TODOS los experimentos
+#   docker compose run --rm experiments-gpu      → Experimento B con GPU (XGBoost)
+#   docker compose run --rm jupyter-gpu           → Jupyter Lab con GPU (interactivo)
 #   docker compose run --rm jupyter               → Jupyter Lab interactivo
 #
 #   Ejecutar un solo cuaderno unificado:
@@ -45,7 +47,41 @@ services:
     command: python experiments/run_experiment.py --all
     working_dir: /app
 
+  # Servicio: experimentos A/B con GPU (XGBoost tree_method gpu_hist / device cuda)
+  # Límite 12G para encajar en Docker Desktop (~15.5G total)
+  # Ajustes NCCL: shm_size, ipc, ulimits y vars evitan fallos "NCCL failure" en gpu_hist
+  # Si aún falla: añadir XGBOOST_USE_CPU=1 en environment
+  experiments-gpu:
+    build:
+      context: .
+      dockerfile: Dockerfile.gpu
+    container_name: tfm-experiments-gpu
+    volumes:
+      - .:/app
+    shm_size: '2g'
+    ipc: host
+    ulimits:
+      memlock: -1
+    environment:
+      - PYTHONUNBUFFERED=1
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+      - NCCL_P2P_DISABLE=1
+      - NCCL_IB_DISABLE=1
+    deploy:
+      resources:
+        limits:
+          memory: 12G
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    command: python experiments/run_experiment_b_standalone.py
+    working_dir: /app
+
   # Servicio: ejecutar Chapter 7 con GPU NVIDIA (Deep Learning acelerado)
+  # Ajustes NCCL/shared memory para evitar fallos GPU en Docker
   ch7-gpu:
     build:
       context: .
@@ -53,10 +89,16 @@ services:
     container_name: tfm-ch7-gpu
     volumes:
       - .:/app
+    shm_size: '2g'
+    ipc: host
+    ulimits:
+      memlock: -1
     environment:
       - PYTHONUNBUFFERED=1
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+      - NCCL_P2P_DISABLE=1
+      - NCCL_IB_DISABLE=1
     deploy:
       resources:
         limits:
@@ -69,7 +111,41 @@ services:
     command: python run_unified_notebooks.py --notebook Chapter_7_DeepLearning/Chapter_7_Unified.ipynb --timeout 0
     working_dir: /app
 
-  # Servicio auxiliar: Jupyter Lab interactivo
+  # Servicio: Jupyter Lab con GPU (para cuadernos que usan XGBoost/PyTorch GPU)
+  jupyter-gpu:
+    build:
+      context: .
+      dockerfile: Dockerfile.gpu
+    container_name: tfm-jupyter-gpu
+    volumes:
+      - .:/app
+    ports:
+      - "8889:8888"
+    shm_size: '2g'
+    ipc: host
+    ulimits:
+      memlock: -1
+    environment:
+      - PYTHONUNBUFFERED=1
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+      - NCCL_P2P_DISABLE=1
+      - NCCL_IB_DISABLE=1
+    deploy:
+      resources:
+        limits:
+          memory: 16G
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    command: >
+      jupyter lab --ip=0.0.0.0 --port=8888 --no-browser
+      --allow-root --NotebookApp.token=''
+    working_dir: /app
+
+  # Servicio auxiliar: Jupyter Lab interactivo (CPU)
   jupyter:
     build:
       context: .

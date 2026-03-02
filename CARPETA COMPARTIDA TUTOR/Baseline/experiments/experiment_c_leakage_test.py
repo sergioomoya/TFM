@@ -23,16 +23,19 @@ from experiments.config import (
     START_DATE_TRAINING, DELTA_TRAIN, DELTA_DELAY, DELTA_TEST,
 )
 from experiments.data_utils import load_transformed_data, get_train_test_set, card_precision_top_k
+from experiments.hw_config import get_hw_config, get_xgboost_gpu_params
 
 
 def get_classifier(name):
+    hw = get_hw_config()
+    xgb_gpu = get_xgboost_gpu_params()
     if name == "Logistic Regression":
         return LogisticRegression(max_iter=1000, random_state=SEED)
     if name == "Random Forest":
-        return RandomForestClassifier(n_estimators=100, random_state=SEED, n_jobs=-1)
+        return RandomForestClassifier(n_estimators=100, random_state=SEED, n_jobs=hw['n_jobs'])
     if name == "XGBoost":
         return xgb.XGBClassifier(n_estimators=100, random_state=SEED, use_label_encoder=False,
-                                 eval_metric='logloss', n_jobs=-1)
+                                 eval_metric='logloss', n_jobs=hw['n_jobs'], **xgb_gpu)
     raise ValueError(f"Unknown model: {name}")
 
 
