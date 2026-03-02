@@ -106,6 +106,7 @@ def get_train_test_set(transactions_df: pd.DataFrame,
                        delta_delay: int = DELTA_DELAY,
                        delta_test: int = DELTA_TEST,
                        sampling_ratio: float = 1.0,
+                       undersample_legit_ratio: float = None,
                        random_state: int = SEED) -> tuple:
     """
     Obtiene los conjuntos train/test con división temporal estricta.
@@ -120,6 +121,9 @@ def get_train_test_set(transactions_df: pd.DataFrame,
         delta_delay: Días de delay (reporte de fraude)
         delta_test: Días de test
         sampling_ratio: Ratio de submuestreo (1.0 = sin submuestreo)
+        undersample_legit_ratio: Si se especifica, submuestreo de legítimas para
+            reducir desbalance. Target legítimas/fraudes = undersample_legit_ratio.
+            Ej: 10.0 → ratio 10:1; 1.0 → balanceado 1:1. None = sin submuestreo.
         random_state: Semilla para reproducibilidad
     
     Returns:
@@ -167,6 +171,18 @@ def get_train_test_set(transactions_df: pd.DataFrame,
         train_df_genuine = train_df[train_df.TX_FRAUD == 0].sample(
             frac=sampling_ratio, random_state=random_state
         )
+        train_df = pd.concat([train_df_frauds, train_df_genuine])
+
+    # Submuestreo de legítimas para reducir desbalance (solo train, test intacto)
+    if undersample_legit_ratio is not None and undersample_legit_ratio > 0:
+        train_df_frauds = train_df[train_df.TX_FRAUD == 1]
+        train_df_genuine = train_df[train_df.TX_FRAUD == 0]
+        n_fraud = len(train_df_frauds)
+        n_legit_target = int(n_fraud * undersample_legit_ratio)
+        if len(train_df_genuine) > n_legit_target:
+            train_df_genuine = train_df_genuine.sample(
+                n=n_legit_target, random_state=random_state
+            )
         train_df = pd.concat([train_df_frauds, train_df_genuine])
 
     train_df = train_df.sort_values('TRANSACTION_ID')
@@ -329,7 +345,8 @@ def prequentialSplit(transactions_df: pd.DataFrame,
                      n_folds: int = 4,
                      delta_train: int = None,
                      delta_delay: int = None,
-                     delta_assessment: int = None) -> list:
+                     delta_assessment: int = None,
+                     undersample_legit_ratio: float = None) -> list:
     """
     Genera índices para validación prequential (Capítulo 5).
 
@@ -343,6 +360,7 @@ def prequentialSplit(transactions_df: pd.DataFrame,
         delta_train: Días de entrenamiento (usa DELTA_TRAIN si None)
         delta_delay: Días de delay (usa DELTA_DELAY si None)
         delta_assessment: Días de test por fold (usa DELTA_TEST si None)
+        undersample_legit_ratio: Ratio legítimas/fraudes objetivo en train (None=sin submuestreo)
 
     Returns:
         Lista de tuplas (índices train, índices test)
@@ -366,6 +384,7 @@ def prequentialSplit(transactions_df: pd.DataFrame,
             delta_train=delta_train,
             delta_delay=delta_delay,
             delta_test=delta_assessment,
+            undersample_legit_ratio=undersample_legit_ratio,
         )
         prequential_split_indices.append(
             (list(train_df.index), list(test_df.index)))
@@ -384,6 +403,7 @@ def prequential_grid_search(transactions_df: pd.DataFrame,
                             delta_train: int = None,
                             delta_delay: int = None,
                             delta_assessment: int = None,
+                            undersample_legit_ratio: float = None,
                             performance_metrics_list_grid: list = None,
                             performance_metrics_list: list = None,
                             n_jobs: int = -1) -> pd.DataFrame:
@@ -425,6 +445,7 @@ def prequential_grid_search(transactions_df: pd.DataFrame,
         delta_train=delta_train,
         delta_delay=delta_delay,
         delta_assessment=delta_assessment,
+        undersample_legit_ratio=undersample_legit_ratio,
     )
 
     grid_search = sklearn.model_selection.GridSearchCV(
@@ -464,6 +485,7 @@ def model_selection_wrapper(transactions_df: pd.DataFrame,
                             delta_train: int = None,
                             delta_delay: int = None,
                             delta_assessment: int = None,
+                            undersample_legit_ratio: float = None,
                             performance_metrics_list_grid: list = None,
                             performance_metrics_list: list = None,
                             n_jobs: int = -1) -> pd.DataFrame:
@@ -486,6 +508,7 @@ def model_selection_wrapper(transactions_df: pd.DataFrame,
         delta_train=delta_train,
         delta_delay=delta_delay,
         delta_assessment=delta_assessment,
+        undersample_legit_ratio=undersample_legit_ratio,
         performance_metrics_list_grid=performance_metrics_list_grid,
         performance_metrics_list=performance_metrics_list,
         n_jobs=n_jobs,
@@ -500,6 +523,7 @@ def model_selection_wrapper(transactions_df: pd.DataFrame,
         delta_train=delta_train,
         delta_delay=delta_delay,
         delta_assessment=delta_assessment,
+        undersample_legit_ratio=undersample_legit_ratio,
         performance_metrics_list_grid=performance_metrics_list_grid,
         performance_metrics_list=performance_metrics_list,
         n_jobs=n_jobs,
@@ -524,6 +548,7 @@ def compute_confusion_matrices_prequential(
     delta_train: int = None,
     delta_delay: int = None,
     delta_assessment: int = None,
+    undersample_legit_ratio: float = None,
     threshold: float = 0.5,
 ) -> dict:
     """
@@ -556,6 +581,7 @@ def compute_confusion_matrices_prequential(
         transactions_df, start_date_training=start_date_training,
         n_folds=n_folds, delta_train=delta_train, delta_delay=delta_delay,
         delta_assessment=delta_assessment,
+        undersample_legit_ratio=undersample_legit_ratio,
     )
 
     output = {}

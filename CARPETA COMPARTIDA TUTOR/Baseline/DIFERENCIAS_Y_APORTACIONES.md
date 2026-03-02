@@ -52,6 +52,7 @@ Se han diseñado ramas y notebooks específicos para validar escenarios concreto
     - Establecimiento de una línea base "pura" sin técnicas de balanceo.
     - **Aportación:** Integración de la métrica de negocio `Card Precision@100` (CP@100) en el flujo de evaluación estándar.
     - **Metodología Capítulo 5:** Validación prequential (4 folds), GridSearchCV con búsqueda de hiperparámetros, reporte de media ± desviación estándar.
+    - **Variante A-Undersampled:** Submuestreo de transacciones legítimas en train/valid (ratio configurable, p. ej. 10:1) para reducir el desbalance; test intacto. Script: `run_experiment_a_undersampled.py`. Ver `INFORME_EXPERIMENTO_A_UNDERSAMPLED.md`.
 
 2.  **Experimento B (Cost-Sensitive — Rediseñado):**
     - **Diagnóstico:** El enfoque original (`class_weight='balanced'`, ratio ~200:1) distorsionaba las probabilidades y empeoraba AUPRC/CP@100 frente al baseline.
