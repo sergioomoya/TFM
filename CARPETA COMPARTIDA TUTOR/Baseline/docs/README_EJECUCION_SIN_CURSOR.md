@@ -19,10 +19,10 @@ Esto es un **bug conocido de Cursor** en versiones recientes, no un problema de 
 
 **Opción A - Doble clic (más fácil):**
 ```
-ejecutar_ch7_sin_cursor.bat
+run_ch7_externo.bat
 ```
 
-**Opción B - PowerShell (si tienes tee disponible):**
+**Opción B - PowerShell:**
 ```powershell
 .\run_ch7_externo.ps1
 ```

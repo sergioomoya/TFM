@@ -1312,6 +1312,14 @@ def plot_decision_boundary(classifier_0,
 import torch
 import torch.nn.functional as F
 
+# Optimización GPU: TF32 en Ampere+ (RTX 30/40/50), CUDNN benchmark
+if torch.cuda.is_available():
+    torch.backends.cudnn.benchmark = True
+    try:
+        torch.set_float32_matmul_precision('high')  # Acelera matmul en RTX 5080
+    except AttributeError:
+        pass
+
 
 # ### seed_everything
 # 
@@ -1369,9 +1377,10 @@ def get_dataloader_config(batch_size=None):
     # Con AMP, usamos VRAM más eficientemente, permitiendo prefetching
     # y aprovechando mejor la GPU
     if cuda_available:
-        nw = 2  # AMP libera RAM -> podemos usar workers
+        nw = min(8, (n_cpus or 4) - 2)  # Más workers = menor riesgo de que GPU espere datos
+        nw = max(2, nw)  # Mínimo 2 para prefetch efectivo
         pin_mem = True
-        prefetch = 4
+        prefetch = 8   # Más prefetch para modelos pequeños (GPU muy rápida vs carga de datos)
     else:
         nw = 0
         pin_mem = False
@@ -1381,18 +1390,17 @@ def get_dataloader_config(batch_size=None):
         try:
             props = torch.cuda.get_device_properties(0)
             vram_gb = props.total_memory / (1024 ** 3)
-            # Con AMP (FP16), usamos ~50% menos VRAM -> podemos duplicar batch_size
-            # o mantener batches grandes para saturar GPU
+            # Modelos MLP/LSTM del capítulo: VRAM baja (~2GB con bs=2048); subir batch para saturar GPU
             if vram_gb < 4:
-                batch_size = 16384  # 2x con AMP
+                batch_size = 512
             elif vram_gb < 8:
-                batch_size = 32768  # 2x con AMP
+                batch_size = 2048
             elif vram_gb < 16:
-                batch_size = 32768  # ~80% de 16GB VRAM con AMP
+                batch_size = 8192
             else:
-                batch_size = 49152  # Máximo para RTX 5080 con AMP
+                batch_size = 8192   # RTX 5080: balance GPU util vs RAM (GridSearch usa mucha memoria)
         except Exception:
-            batch_size = 512
+            batch_size = 1024
     elif batch_size is None:
         batch_size = 512
     
@@ -1408,11 +1416,16 @@ def prepare_generators(training_set,valid_set,batch_size=None):
     # Auto-configuración según recursos (CPU, GPU); batch_size=None → se infiere de VRAM
     cfg = get_dataloader_config(batch_size)
     bs, nw, pin_mem, persist = cfg['batch_size'], cfg['num_workers'], cfg['pin_memory'], cfg['persistent_workers']
+    prefetch = cfg.get('prefetch_factor')
     
     train_loader_params = {'batch_size': bs, 'shuffle': True,
               'num_workers': nw, 'pin_memory': pin_mem, 'persistent_workers': persist}
+    if prefetch is not None and nw > 0:
+        train_loader_params['prefetch_factor'] = prefetch
     valid_loader_params = {'batch_size': bs,
               'num_workers': nw, 'pin_memory': pin_mem, 'persistent_workers': persist}
+    if prefetch is not None and nw > 0:
+        valid_loader_params['prefetch_factor'] = prefetch
     
     training_generator = torch.utils.data.DataLoader(training_set, **train_loader_params)
     valid_generator = torch.utils.data.DataLoader(valid_set, **valid_loader_params)

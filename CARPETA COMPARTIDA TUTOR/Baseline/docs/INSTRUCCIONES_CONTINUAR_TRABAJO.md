@@ -84,7 +84,7 @@ docker compose down --remove-orphans  # Limpia contenedores
 
 **Opción 1 - Doble clic (más fácil):**
 ```
-ejecutar_ch7_sin_cursor.bat
+run_ch7_externo.bat
 ```
 
 **Opción 2 - PowerShell:**

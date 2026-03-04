@@ -1,5 +1,5 @@
 format: jb-book
-root: Foreword
+root: docs/Foreword
 parts:
 - caption: 1. Book overview
   numbered: True

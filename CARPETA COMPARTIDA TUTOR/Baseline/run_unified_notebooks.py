@@ -1,20 +1,30 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-Ejecuta todos los cuadernos unificados (Chapter 3 → 7) dentro del contenedor Docker.
+Ejecuta cuadernos unificados (Chapter 3 → 7).
 
 Uso:
-    python run_unified_notebooks.py              → Ejecutar todos
-    python run_unified_notebooks.py --notebook Chapter_3_GettingStarted/Chapter_3_Unified.ipynb
+  Docker:
+    docker compose run --rm ch7-gpu
+  Local (entorno tfm):
+    conda activate tfm
+    python run_unified_notebooks.py
+    python run_unified_notebooks.py --notebook Chapter_7_DeepLearning/Chapter_7_Unified.ipynb --timeout 0
 
-Genera un reporte JSON y de texto con los resultados.
+Ejecutar desde la raíz del proyecto (Baseline).
+Genera reporte JSON y de texto en execution_results/.
 """
 
 import argparse
-import fcntl
 import json
 import os
 import sys
+
+try:
+    import fcntl
+    HAS_FCNTL = True
+except ImportError:
+    HAS_FCNTL = False
 import time
 import traceback
 from datetime import datetime
@@ -99,7 +109,8 @@ def execute_notebook(notebook_path: str, timeout: int = None) -> dict:
         )
 
         start = time.time()
-        ep.preprocess(nb, {'metadata': {'path': str(path.parent)}})
+        nb_dir = str(path.parent.resolve())
+        ep.preprocess(nb, {'metadata': {'path': nb_dir}})
         elapsed = time.time() - start
 
         executed = sum(
@@ -186,6 +197,15 @@ _lock_fd = None
 def acquire_lock() -> bool:
     """Adquiere bloqueo exclusivo. Retorna False si otra ejecución está en curso."""
     global _lock_fd
+    if not HAS_FCNTL:
+        # Windows: comprobación por archivo (evitar ejecuciones simultáneas)
+        if LOCK_FILE.exists():
+            return False
+        try:
+            LOCK_FILE.touch()
+            return True
+        except Exception:
+            return False
     try:
         _lock_fd = os.open(LOCK_FILE, os.O_CREAT | os.O_WRONLY | os.O_TRUNC, 0o644)
         fcntl.flock(_lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -205,7 +225,7 @@ def acquire_lock() -> bool:
 def release_lock():
     global _lock_fd
     try:
-        if _lock_fd is not None:
+        if HAS_FCNTL and _lock_fd is not None:
             fcntl.flock(_lock_fd, fcntl.LOCK_UN)
             os.close(_lock_fd)
             _lock_fd = None

@@ -63,7 +63,7 @@ docker compose run --rm ch7-gpu
 │   ├── experiment_c_...ipynb  # Test de Data Leakage
 │   └── experiment_d_...ipynb  # Interpretabilidad (XAI)
 ├── sprints/                   # Documentación de gestión del proyecto (Agile)
-├── DIFERENCIAS_Y_APORTACIONES.md # Resumen de cambios respecto al repo original
+├── docs/                      # Documentación adicional (DIFERENCIAS_Y_APORTACIONES, informes, instrucciones)
 ├── Dockerfile                 # Definición de imagen CPU
 ├── Dockerfile.gpu             # Definición de imagen GPU (NVIDIA)
 ├── docker-compose.yml         # Orquestación de servicios
@@ -78,7 +78,7 @@ Consulta el archivo [CONTRIBUTING.md](CONTRIBUTING.md) para conocer las normas d
 
 Los resultados detallados de la última ejecución se encuentran en:
 - [INFORME_RESULTADOS_EXPERIMENTOS.md](experiments/INFORME_RESULTADOS_EXPERIMENTOS.md)
-- [DIFERENCIAS_Y_APORTACIONES.md](DIFERENCIAS_Y_APORTACIONES.md)
+- [DIFERENCIAS_Y_APORTACIONES.md](docs/DIFERENCIAS_Y_APORTACIONES.md)
 
 ## ⚖️ Licencia
 
