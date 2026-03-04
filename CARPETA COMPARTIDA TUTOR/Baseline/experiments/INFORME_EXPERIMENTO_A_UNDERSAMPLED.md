@@ -105,19 +105,31 @@ Métricas extraídas de la ejecución controlada (log `experiment_a_balance_run_
 
 ## 6. Comparativa con Experimento A (baseline)
 
-Tras ejecutar la variante 10:1, se compara con el Experimento A original (sin undersampling):
+### Tabla comparativa de métricas (4 folds prequential)
 
-| Métrica | XGBoost Baseline A | XGBoost Undersamp 10:1 | Observación |
-|---------|-------------------|------------------------|-------------|
-| AUPRC | 0,690 | 0,659 | Ligera disminución |
-| CP@100 | 0,296 | 0,279 | Ligera disminución |
-| Recall fraude | 61,75 % | 66,31 % | **Mejora +4,56 pp** |
-| FP | 85 | 579 | Aumento sustancial de falsas alarmas |
-| Tiempo XGBoost | ~55 min (CPU) | 16,1 s (GPU) | Reducción drástica (menos datos + GPU) |
+| Modelo | AUC ROC (baseline) | AUC ROC (undersamp 10:1) | AUPRC (baseline) | AUPRC (undersamp 10:1) | CP@100 (baseline) | CP@100 (undersamp 10:1) |
+|--------|-------------------|--------------------------|------------------|------------------------|-------------------|-------------------------|
+| Logistic Regression | 0,869 | 0,871 | 0,635 | 0,624 | 0,218 | 0,265 |
+| Random Forest      | 0,873 | 0,875 | 0,685 | 0,648 | 0,256 | 0,285 |
+| XGBoost            | 0,846 | 0,868 | 0,600 | **0,659** | 0,235 | **0,279** |
 
-- El undersampling 10:1 **mejora el Recall de fraude** (+4,56 puntos porcentuales), detectando más fraudes reales.
+*Fuente: experiment_a_original_results.csv, experiment_a_undersamp_10_results.csv (ejecución run_experiment_a_all_balance_variants.py).*
+
+### XGBoost: baseline vs undersamp 10:1 (detalle)
+
+| Métrica | Baseline A | Undersamp 10:1 | Observación |
+|---------|------------|----------------|-------------|
+| AUPRC | 0,600 | 0,659 | **Mejora +0,059** |
+| CP@100 | 0,235 | 0,279 | **Mejora +0,044** |
+| Recall fraude | 61,75 %* | 66,31 % | **Mejora +4,56 pp** |
+| FP | 85* | 579 | Aumento de falsas alarmas |
+| Tiempo entrenamiento | ~55 min (CPU)* | 16,1 s (GPU) | Reducción notable |
+
+*\* Valores del Experimento A documentado en INFORME_EXPERIMENTO_A.md (ejecución completa).*
+
+- El undersampling 10:1 **mejora AUPRC y CP@100** en XGBoost respecto al baseline de la misma ejecución.
+- **Aumenta el Recall de fraude** (66,31 % vs 61,75 %), detectando más fraudes reales.
 - **Aumenta los FP** de 85 a 579: el modelo es más sensible pero genera más falsas alarmas.
-- AUPRC y CP@100 empeoran ligeramente, coherente con el trade-off recall/precisión.
 
 ---
 
