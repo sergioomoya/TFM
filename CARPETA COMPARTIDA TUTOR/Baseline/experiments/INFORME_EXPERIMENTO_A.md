@@ -183,3 +183,9 @@ Todos los modelos usan `StandardScaler` como preprocesamiento y `random_state=42
 - **XGBoost** obtiene la mejor AUPRC (**0.6904**), el mejor Recall de fraude (**61.75%**) y el mejor F1 de fraude (**73.92%**); **Random Forest** la mejor AUC ROC y CP@100.
 - **Hiperparámetros:** XGBoost con `max_depth=3` y 100 estimadores demuestra que un modelo conservador (árboles poco profundos) es preferible a uno complejo, logrando alta Precision (92.07%) con el mejor Recall.
 - La metodología temporal (prequential) y el pipeline sin leakage garantizan resultados honestos para comparación con experimentos posteriores.
+
+---
+
+## 8. Variante Undersampling (10:1)
+
+Existe una variante del Experimento A que aplica **undersampling de legítimas** (ratio 10:1) en train/valid. Ver `INFORME_EXPERIMENTO_A_UNDERSAMPLED.md` para metodología, resultados (AUPRC 0,659, CP@100 0,279, Recall 66,31 %, FP 579, tiempo XGBoost 16,1 s) y comparativa con el baseline.

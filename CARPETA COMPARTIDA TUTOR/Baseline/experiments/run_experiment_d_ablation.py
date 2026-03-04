@@ -25,6 +25,8 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
 import shap
 import xgboost as xgb
 from sklearn.preprocessing import StandardScaler
@@ -34,7 +36,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from experiments.config import (
     SEED, INPUT_FEATURES, OUTPUT_FEATURE,
-    BASELINE_PARAMS, RESULTS_DIR, FIGURES_DIR,
+    BASELINE_PARAMS, RESULTS_DIR, FIGURES_DIR, COLORS,
     START_DATE_TRAINING, DELTA_TRAIN, DELTA_DELAY, DELTA_TEST,
 )
 from experiments.data_utils import (
@@ -43,6 +45,7 @@ from experiments.data_utils import (
 )
 
 warnings.filterwarnings('ignore')
+sns.set_style('darkgrid', {'axes.facecolor': '0.9'})
 
 
 def get_top_shap_feature(shap_csv_path: Path) -> str:
@@ -86,7 +89,7 @@ def train_and_evaluate(features, model_name, train_df, test_df):
 
 
 def compute_shap_ranking(model, scaler, features, test_df, sample_size=1000):
-    """Calcula mean |SHAP| por variable para el ranking de importancia."""
+    """Calcula mean |SHAP| por variable y retorna ranking más valores SHAP para visualización."""
     X_test_scaled = scaler.transform(test_df[features])
     np.random.seed(SEED)
     n = min(sample_size, len(X_test_scaled))
@@ -101,7 +104,7 @@ def compute_shap_ranking(model, scaler, features, test_df, sample_size=1000):
         'mean_abs_SHAP': mean_abs_shap,
     }).sort_values('mean_abs_SHAP', ascending=False)
     df['rank'] = range(1, len(df) + 1)
-    return df
+    return {'df': df, 'shap_values': shap_values, 'X_sample_df': X_sample_df, 'explainer': explainer}
 
 
 def main():
@@ -142,14 +145,68 @@ def main():
 
     # Ranking de importancia SHAP del modelo ablated (14 features restantes)
     print(f"\n--- Ranking mean |SHAP| del modelo SIN {top_feature} ---")
-    shap_ablated_df = compute_shap_ranking(
+    shap_result = compute_shap_ranking(
         metrics_ablated['model'],
         metrics_ablated['scaler'],
         features_ablated,
         test_df,
     )
+    shap_ablated_df = shap_result['df']
     shap_ablated_df.to_csv(RESULTS_DIR / 'experiment_d_ablation_shap_ranking.csv', index=False)
     print(shap_ablated_df.to_string(index=False))
+
+    # Figuras
+    FIGURES_DIR.mkdir(parents=True, exist_ok=True)
+
+    # Figura 1: Comparación de métricas (full vs ablated)
+    fig1, ax1 = plt.subplots(figsize=(8, 5))
+    metrics_names = ['AUC ROC', 'AUPRC', 'CP@100']
+    full_vals = [metrics_full['auc_roc'], metrics_full['auprc'], metrics_full['card_precision_at_100']]
+    ablated_vals = [metrics_ablated['auc_roc'], metrics_ablated['auprc'], metrics_ablated['card_precision_at_100']]
+    x = np.arange(len(metrics_names))
+    w = 0.35
+    bars1 = ax1.bar(x - w/2, full_vals, w, label=f'D completo (15 features)', color=COLORS.get('baseline', '#2F4D7E'))
+    bars2 = ax1.bar(x + w/2, ablated_vals, w, label=f'D ablación (14 features)', color=COLORS.get('cost_sensitive', '#CA8035'))
+    ax1.set_ylabel('Valor', fontsize=12)
+    ax1.set_xticks(x)
+    ax1.set_xticklabels(metrics_names)
+    ax1.legend()
+    ax1.set_title(f'Comparación de métricas: modelo completo vs sin {top_feature}', fontsize=12, fontweight='bold')
+    ax1.set_ylim(0, 1.0)
+    for b in bars1:
+        ax1.text(b.get_x() + b.get_width()/2 - 0.08, b.get_height() + 0.02, f'{b.get_height():.3f}', ha='center', fontsize=9)
+    for b in bars2:
+        ax1.text(b.get_x() + b.get_width()/2 + 0.08, b.get_height() + 0.02, f'{b.get_height():.3f}', ha='center', fontsize=9)
+    plt.tight_layout()
+    fig1.savefig(FIGURES_DIR / 'experiment_d_ablation_metrics_comparison.png', dpi=150, bbox_inches='tight')
+    plt.close()
+    print("\n✓ Figura: experiment_d_ablation_metrics_comparison.png")
+
+    # Figura 2: Bar chart mean |SHAP| del modelo ablated (14 features)
+    fig2, ax2 = plt.subplots(figsize=(10, 7))
+    df_plot = shap_ablated_df.sort_values('mean_abs_SHAP', ascending=True)
+    colors_bar = [COLORS.get('baseline', '#2F4D7E') if i < len(df_plot) - 3 else COLORS.get('cost_sensitive', '#CA8035')
+                  for i in range(len(df_plot))]
+    ax2.barh(range(len(df_plot)), df_plot['mean_abs_SHAP'].values, color=colors_bar)
+    ax2.set_yticks(range(len(df_plot)))
+    ax2.set_yticklabels(df_plot['Feature'].values, fontsize=10)
+    ax2.invert_yaxis()
+    ax2.set_xlabel('mean |SHAP|', fontsize=12)
+    ax2.set_title(f'Ranking de importancia SHAP tras ablación (sin {top_feature})\nModelo reentrenado con 14 features', fontsize=12, fontweight='bold')
+    plt.tight_layout()
+    fig2.savefig(FIGURES_DIR / 'experiment_d_ablation_shap_ranking.png', dpi=150, bbox_inches='tight')
+    plt.close()
+    print("✓ Figura: experiment_d_ablation_shap_ranking.png")
+
+    # Figura 3: Beeswarm SHAP del modelo ablated
+    plt.close('all')
+    shap.summary_plot(shap_result['shap_values'], shap_result['X_sample_df'], show=False)
+    fig3 = plt.gcf()
+    fig3.suptitle(f'SHAP Beeswarm - Modelo ablated (sin {top_feature})\n1000 muestras de test', fontsize=14, y=1.02)
+    fig3.tight_layout()
+    fig3.savefig(FIGURES_DIR / 'experiment_d_ablation_shap_beeswarm.png', dpi=150, bbox_inches='tight')
+    plt.close('all')
+    print("✓ Figura: experiment_d_ablation_shap_beeswarm.png")
 
     # Comparación
     print("\n" + "=" * 70)
@@ -215,7 +272,11 @@ def main():
         f.write("|------|---------|---------------|\n")
         for _, row in shap_ablated_df.iterrows():
             f.write(f"| {row['rank']} | {row['Feature']} | {row['mean_abs_SHAP']:.6f} |\n")
-        f.write("\n**Conclusión:** " + (
+        f.write("\n## Figuras generadas\n\n")
+        f.write("- `experiment_d_ablation_metrics_comparison.png` — Comparación de métricas full vs ablated\n")
+        f.write("- `experiment_d_ablation_shap_ranking.png` — Bar chart mean |SHAP| del modelo ablated\n")
+        f.write("- `experiment_d_ablation_shap_beeswarm.png` — Beeswarm SHAP del modelo ablated\n\n")
+        f.write("**Conclusión:** " + (
             "Validación exitosa: la feature eliminada contribuía al rendimiento." if validacion_exitosa
             else "Las métricas no mostraron degradación significativa."
         ) + "\n")
@@ -224,6 +285,9 @@ def main():
     print(f"  - {RESULTS_DIR / 'experiment_d_ablation_comparison.csv'}")
     print(f"  - {RESULTS_DIR / 'experiment_d_ablation_shap_ranking.csv'}")
     print(f"  - {report_path}")
+    print(f"  - Figuras: {FIGURES_DIR / 'experiment_d_ablation_metrics_comparison.png'}")
+    print(f"            {FIGURES_DIR / 'experiment_d_ablation_shap_ranking.png'}")
+    print(f"            {FIGURES_DIR / 'experiment_d_ablation_shap_beeswarm.png'}")
 
 
 if __name__ == "__main__":

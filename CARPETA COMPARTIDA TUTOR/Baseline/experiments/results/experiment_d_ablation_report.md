@@ -31,4 +31,10 @@ Nuevo orden de las 14 features restantes en el modelo reentrenado:
 | 13 | TX_DURING_WEEKEND | 0.052220 |
 | 14 | TERMINAL_ID_RISK_1DAY_WINDOW | 0.031257 |
 
+## Figuras generadas
+
+- `experiment_d_ablation_metrics_comparison.png` — Comparación de métricas full vs ablated
+- `experiment_d_ablation_shap_ranking.png` — Bar chart mean |SHAP| del modelo ablated
+- `experiment_d_ablation_shap_beeswarm.png` — Beeswarm SHAP del modelo ablated
+
 **Conclusión:** Validación exitosa: la feature eliminada contribuía al rendimiento.

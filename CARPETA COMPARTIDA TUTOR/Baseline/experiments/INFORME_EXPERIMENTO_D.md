@@ -1,15 +1,17 @@
 # Informe del Experimento D: Interpretabilidad y XAI (Explainable AI)
 
 **Estado:** Implementado, ejecutado y documentado (mejoras según CRITICA_MEJORA_EXPERIMENTOS.md aplicadas)  
-**Ubicación:** `experiments/experiment_d_interpretability.ipynb`  
-**Fecha de ejecución:** 19 de febrero de 2026  
+**Ubicación:** `experiments/experiment_d_interpretability.ipynb`, `experiments/run_experiment_d_standalone.py`, `experiments/run_experiment_d_ablation.py`  
+**Fecha de ejecución:** 19 de febrero de 2026 (interpretabilidad), ablación complementaria marzo 2026  
 **Tiempo de ejecución:** 17.0 s (8/8 celdas) — contenedor Docker
 
 ---
 
 ## 1. Introducción
 
-Los modelos de "caja negra" como XGBoost ofrecen alto rendimiento pero **baja explicabilidad**. En el sector financiero es obligatorio justificar por qué se bloquea una transacción (regulaciones como GDPR). Este experimento aplica técnicas de **Explainable AI (XAI)** para abrir la caja negra y analizar qué variables impulsan las predicciones de fraude.
+Los modelos de *machine learning* de alto rendimiento como XGBoost suelen comportarse como "cajas negras": proporcionan predicciones precisas pero sin una explicación directa de los factores que las determinan. En el ámbito de la detección de fraude en transacciones con tarjeta de crédito, la **explicabilidad** no es opcional: las normativas (p. ej. GDPR) y las exigencias operativas requieren poder justificar ante el cliente o la autoridad por qué una transacción fue bloqueada o marcada como sospechosa.
+
+El **Experimento D** aborda el Objetivo Específico 6 del TFM: *"Analizar la importancia de las características"*. Se aplican técnicas de **Explainable AI (XAI)** —Feature Importance nativa de XGBoost y valores SHAP— para identificar qué variables impulsan las predicciones de fraude. Adicionalmente, se realiza una **validación por ablación** que confirma empíricamente que la característica más importante según SHAP contribuye de forma medible al rendimiento del modelo.
 
 ---
 
@@ -89,8 +91,81 @@ Rutas: `experiments/results/figures/`
 
 ---
 
-## 5. Conclusiones
+## 5. Validación por ablación (eliminación de la top feature SHAP)
+
+### 5.1. Motivación y diseño experimental
+
+Los análisis de importancia (Feature Importance, SHAP) identifican qué variables contribuyen a las predicciones, pero **no garantizan por sí solos** que esa contribución sea causal o irreemplazable. Para validar empíricamente que la característica con mayor impacto SHAP aporta valor real, se diseñó un **experimento de ablación** (ablation study): eliminar la variable top, reentrenar el modelo desde cero con el resto de features y comparar el rendimiento.
+
+Este enfoque es estándar en la literatura de interpretabilidad y selección de características, ya que cuantifica el coste de eliminar información del modelo.
+
+### 5.2. Metodología
+
+1. **Identificación de la top feature:** Se tomó la variable con mayor mean |SHAP| del Experimento D original: `CUSTOMER_ID_AVG_AMOUNT_30DAY_WINDOW` (media del importe de transacciones del cliente en ventana de 30 días).
+2. **Modelo completo (baseline):** XGBoost baseline con las 15 features originales.
+3. **Modelo ablated:** Mismo XGBoost, mismas condiciones, pero **sin** la top feature (14 variables).
+4. **Comparación:** AUC ROC, AUPRC y Card Precision@100 en el mismo conjunto de test.
+5. **Análisis de redistribución:** Cálculo del nuevo ranking mean |SHAP| sobre el modelo ablated para observar cómo cambia la importancia relativa de las variables restantes.
+
+**Script:** `experiments/run_experiment_d_ablation.py`
+
+### 5.3. Resultados: comparación de métricas
+
+| Modelo | AUC ROC | AUPRC | CP@100 |
+|--------|---------|-------|--------|
+| D (completo, 15 features) | 0.8618 | 0.6389 | 0.2729 |
+| D (ablación, 14 features) | 0.8498 | 0.5942 | 0.2714 |
+| **Δ (ablated − full)** | **−0.0121** | **−0.0447** | −0.0014 |
+
+![Comparación de métricas: modelo completo vs ablación](results/figures/experiment_d_ablation_metrics_comparison.png)
+
+**Figura 5.** Comparación de AUC ROC, AUPRC y CP@100 entre el modelo con 15 features (completo) y el modelo reentrenado sin `CUSTOMER_ID_AVG_AMOUNT_30DAY_WINDOW` (ablación). La degradación de AUPRC (−4.47 pp) confirma que esta variable aporta valor predictivo real.
+
+### 5.4. Redistribución del ranking de importancia
+
+Al reentrenar con 14 features, el modelo redistribuye el poder predictivo entre las variables restantes. El ranking mean |SHAP| **no se mantiene**: otras features capturan parte de la información que aportaba la eliminada.
+
+| Rank | Feature | mean_abs_SHAP |
+|------|---------|---------------|
+| 1 | TX_AMOUNT | 1.027 |
+| 2 | CUSTOMER_ID_AVG_AMOUNT_7DAY_WINDOW | 0.967 |
+| 3 | CUSTOMER_ID_AVG_AMOUNT_1DAY_WINDOW | 0.410 |
+| 4 | CUSTOMER_ID_NB_TX_30DAY_WINDOW | 0.336 |
+| 5 | TERMINAL_ID_NB_TX_30DAY_WINDOW | 0.290 |
+| ... | ... | ... |
+
+![Ranking mean |SHAP| tras ablación](results/figures/experiment_d_ablation_shap_ranking.png)
+
+**Figura 6.** Ranking de importancia (mean |SHAP|) del modelo ablated. `TX_AMOUNT` pasa a la primera posición; `CUSTOMER_ID_AVG_AMOUNT_7DAY_WINDOW` escala al segundo lugar, evidenciando la redistribución de importancia.
+
+![Beeswarm SHAP modelo ablated](results/figures/experiment_d_ablation_shap_beeswarm.png)
+
+**Figura 7.** Beeswarm SHAP del modelo reentrenado sin la top feature. Muestra la dispersión de contribuciones de cada variable restante (1000 muestras de test).
+
+### 5.5. Interpretación y conclusiones de la ablación
+
+1. **Validación exitosa:** La caída de AUPRC (−4.47 pp) y AUC ROC (−1.21 pp) demuestra que `CUSTOMER_ID_AVG_AMOUNT_30DAY_WINDOW` aporta información predictiva no redundante con el resto de variables.
+2. **Redistribución no trivial:** El ranking de las 14 features restantes cambia respecto al modelo original; no se mantiene el orden relativo. Esto es coherente con la teoría: al eliminar una feature, el modelo reajusta sus splits y las importancias relativas se modifican.
+3. **Implicación metodológica:** La ablación complementa el análisis SHAP, proporcionando evidencia causal de que la importancia cuantificada se traduce en pérdida de rendimiento medible.
+
+### 5.6. Archivos y figuras generados
+
+| Archivo | Descripción |
+|---------|-------------|
+| `experiment_d_ablation_comparison.csv` | Comparación de métricas full vs ablated |
+| `experiment_d_ablation_shap_ranking.csv` | Ranking mean \|SHAP\| completo del modelo ablated |
+| `experiment_d_ablation_report.md` | Informe resumido en Markdown |
+| `experiment_d_ablation_metrics_comparison.png` | Gráfico de barras: comparación de métricas |
+| `experiment_d_ablation_shap_ranking.png` | Bar chart: ranking mean \|SHAP\| de las 14 features |
+| `experiment_d_ablation_shap_beeswarm.png` | Beeswarm SHAP del modelo ablated |
+
+**Ejecución:** `docker compose run --rm experiments python experiments/run_experiment_d_ablation.py`
+
+---
+
+## 6. Conclusiones
 
 - El modelo aprende patrones de negocio lógicos: riesgo histórico del terminal, monto, y comportamiento del cliente.
 - La explicabilidad valida que el modelo no está capturando ruido.
 - SHAP proporciona comprensión tanto global (Beeswarm) como local (Force plots), útil para auditorías y cumplimiento regulatorio.
+- **La ablación confirma** que la característica con mayor impacto SHAP contribuye al rendimiento; las métricas caen al eliminarla.

@@ -215,6 +215,19 @@ Analizar qué variables impulsan las predicciones del modelo de detección de fr
    - Se han generado force plots para transacciones individuales (fraudulenta y normal) con **descripción de la transacción** (TX_AMOUNT, TERMINAL_ID, CUSTOMER_ID, riesgo del terminal).
    - Las barras rojas indican características que aumentan el riesgo de fraude, las azules lo disminuyen.
 
+### 4.6 Validación por ablación (eliminación de top feature SHAP)
+
+Para validar que la importancia SHAP refleja contribución real al modelo, se eliminó la característica con mayor mean |SHAP| (`CUSTOMER_ID_AVG_AMOUNT_30DAY_WINDOW`), se reentrenó el XGBoost baseline con las 14 restantes y se compararon métricas.
+
+| Modelo | AUC ROC | AUPRC | CP@100 |
+|--------|---------|-------|--------|
+| D (completo, 15 features) | 0.8618 | 0.6389 | 0.2729 |
+| D (ablación, 14 features) | 0.8498 | 0.5942 | 0.2714 |
+| **Δ** | **−0.0121** | **−0.0447** | −0.0014 |
+
+**Conclusión:** La ablación confirma que la top feature SHAP aporta valor predictivo; AUPRC cae ~4.5 pp al eliminarla. El ranking mean |SHAP| de las 14 restantes **cambia** tras reentrenar (TX_AMOUNT pasa a 1.º, CUSTOMER_ID_AVG_AMOUNT_7DAY_WINDOW a 2.º).  
+**Script:** `run_experiment_d_ablation.py` — Archivos: `experiment_d_ablation_comparison.csv`, `experiment_d_ablation_shap_ranking.csv`.
+
 ---
 
 ## 5. Tabla Comparativa Global
@@ -231,6 +244,7 @@ Analizar qué variables impulsan las predicciones del modelo de detección de fr
 | C — Leak_todas ⚠️ | Random Forest | **0.9999** | **0.9999** | N/A | **Data leakage catastrófico** |
 | C — Leak_todas ⚠️ | XGBoost | **0.9992** | **0.9995** | N/A | **Data leakage catastrófico** |
 | D — XAI | XGBoost baseline | **0.8618** | **0.6389** | **0.2729** | Interpretabilidad del mejor modelo |
+| D — Ablación | XGBoost (14 features) | 0.8498 | 0.5942 | 0.2714 | Sin top SHAP (CUSTOMER_ID_AVG_AMOUNT_30DAY_WINDOW); validación de importancia |
 
 ---
 
@@ -251,6 +265,7 @@ Analizar qué variables impulsan las predicciones del modelo de detección de fr
 
 - El riesgo histórico del terminal (`TERMINAL_ID_RISK_*DAY_WINDOW`) es el predictor dominante, lo cual valida que las features de ingeniería del Capítulo 3 capturan señales relevantes.
 - SHAP proporciona una comprensión más matizada que la Feature Importance nativa, revelando que el impacto de las variables varía significativamente según la transacción individual.
+- **La ablación** (eliminar la top feature SHAP y reentrenar) confirma que la importancia SHAP refleja valor predictivo real: AUPRC cae ~4.5 pp al eliminar `CUSTOMER_ID_AVG_AMOUNT_30DAY_WINDOW`.
 
 ### 6.4 Próximos pasos sugeridos
 
@@ -277,6 +292,8 @@ Analizar qué variables impulsan las predicciones del modelo de detección de fr
 | `experiments/results/experiment_d_feature_importance_all_types.csv` | Feature importance con tipos |
 | `experiments/results/experiment_d_shap_mean_impact.csv` | mean \|SHAP\| por variable |
 | `experiments/results/experiment_d_results.pkl` | Valores SHAP, métricas y metadatos |
+| `experiments/results/experiment_d_ablation_comparison.csv` | Comparación full vs ablated (métricas) |
+| `experiments/results/experiment_d_ablation_shap_ranking.csv` | Ranking mean \|SHAP\| del modelo ablated |
 | `experiments/results/execution_report.json` | Reporte de ejecución (tiempos, estado) |
 
 ### 7.2 Figuras generadas
@@ -302,6 +319,9 @@ docker compose run --rm unified-notebooks
 
 # 2. Ejecutar los experimentos
 docker compose run --rm experiments python experiments/run_experiment.py --all
+
+# 3. (Opcional) Ejecutar ablación del Experimento D
+docker compose run --rm experiments python experiments/run_experiment_d_ablation.py
 ```
 
 **Semilla aleatoria:** 42 (fijada en todos los modelos y operaciones de splitting)  
