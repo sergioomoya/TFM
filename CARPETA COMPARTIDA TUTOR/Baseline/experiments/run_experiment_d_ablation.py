@@ -13,6 +13,7 @@ Flujo:
 3. Entrena XGBoost baseline SIN la top feature (ablación)
 4. Compara AUC ROC, AUPRC, Card Precision@100 entre ambos
 5. Calcula y guarda el ranking mean |SHAP| de las features restantes en el modelo ablated
+6. Genera figuras: comparación de métricas, bar chart ranking SHAP, beeswarm SHAP
 
 Uso: python experiments/run_experiment_d_ablation.py
      docker compose run --rm experiments python experiments/run_experiment_d_ablation.py

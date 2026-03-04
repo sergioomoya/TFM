@@ -165,7 +165,12 @@ Al reentrenar con 14 features, el modelo redistribuye el poder predictivo entre 
 
 ## 6. Conclusiones
 
-- El modelo aprende patrones de negocio lógicos: riesgo histórico del terminal, monto, y comportamiento del cliente.
-- La explicabilidad valida que el modelo no está capturando ruido.
-- SHAP proporciona comprensión tanto global (Beeswarm) como local (Force plots), útil para auditorías y cumplimiento regulatorio.
-- **La ablación confirma** que la característica con mayor impacto SHAP contribuye al rendimiento; las métricas caen al eliminarla.
+1. **Patrones de negocio coherentes:** El modelo aprovecha variables de alto valor semántico: riesgo histórico del terminal (`TERMINAL_ID_RISK_*`), monto de la transacción (`TX_AMOUNT`) y comportamiento del cliente (`CUSTOMER_ID_AVG_AMOUNT_*`). No se detectan dependencias aparentemente arbitrarias o ruidosas.
+
+2. **Valor de la explicabilidad:** La interpretabilidad permite validar que el modelo refleja conocimiento de dominio razonable y facilita la aceptación por parte de equipos de negocio, auditoría y reguladores.
+
+3. **Complementariedad de técnicas:** La Feature Importance (Gain) y el análisis SHAP ofrecen perspectivas distintas: la primera mide la ganancia total en los árboles; la segunda, el impacto marginal por predicción. Ambas son útiles según el objetivo del análisis.
+
+4. **Validación empírica por ablación:** Al eliminar la característica con mayor mean |SHAP| (`CUSTOMER_ID_AVG_AMOUNT_30DAY_WINDOW`), el rendimiento empeora de forma significativa (AUPRC −4.47 pp). Esto demuestra que la importancia cuantificada por SHAP se traduce en contribución predictiva real, no en correlación espuria.
+
+5. **Recomendación para producción:** Los force plots y los códigos de razón derivados de SHAP pueden integrarse en sistemas de alerta para soportar la investigación manual de transacciones sospechosas por parte de analistas de fraude.

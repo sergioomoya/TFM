@@ -217,7 +217,7 @@ Analizar qué variables impulsan las predicciones del modelo de detección de fr
 
 ### 4.6 Validación por ablación (eliminación de top feature SHAP)
 
-Para validar que la importancia SHAP refleja contribución real al modelo, se eliminó la característica con mayor mean |SHAP| (`CUSTOMER_ID_AVG_AMOUNT_30DAY_WINDOW`), se reentrenó el XGBoost baseline con las 14 restantes y se compararon métricas.
+Para validar que la importancia SHAP refleja contribución real al modelo, se ejecutó un **experimento de ablación**: eliminar la característica con mayor mean |SHAP| (`CUSTOMER_ID_AVG_AMOUNT_30DAY_WINDOW`), reentrenar el XGBoost baseline con las 14 restantes y comparar métricas en el mismo conjunto de test.
 
 | Modelo | AUC ROC | AUPRC | CP@100 |
 |--------|---------|-------|--------|
@@ -225,8 +225,17 @@ Para validar que la importancia SHAP refleja contribución real al modelo, se el
 | D (ablación, 14 features) | 0.8498 | 0.5942 | 0.2714 |
 | **Δ** | **−0.0121** | **−0.0447** | −0.0014 |
 
-**Conclusión:** La ablación confirma que la top feature SHAP aporta valor predictivo; AUPRC cae ~4.5 pp al eliminarla. El ranking mean |SHAP| de las 14 restantes **cambia** tras reentrenar (TX_AMOUNT pasa a 1.º, CUSTOMER_ID_AVG_AMOUNT_7DAY_WINDOW a 2.º).  
-**Script:** `run_experiment_d_ablation.py` — Archivos: `experiment_d_ablation_comparison.csv`, `experiment_d_ablation_shap_ranking.csv`.
+![Comparación de métricas: modelo completo vs ablación](results/figures/experiment_d_ablation_metrics_comparison.png)
+
+**Figura 4a.** Comparación de métricas entre el modelo completo y el modelo ablated. La degradación de AUPRC (−4.47 pp) confirma que la top feature SHAP aporta valor predictivo real.
+
+![Ranking mean |SHAP| tras ablación](results/figures/experiment_d_ablation_shap_ranking.png)
+
+**Figura 4b.** Ranking de importancia (mean |SHAP|) del modelo reentrenado sin la top feature. `TX_AMOUNT` pasa a la primera posición; el ranking no se mantiene respecto al modelo original.
+
+**Conclusiones de la ablación:** (1) La top feature SHAP contribuye de forma no redundante al rendimiento; (2) el ranking de las 14 restantes cambia tras reentrenar (redistribución de importancia); (3) la ablación proporciona evidencia causal que complementa el análisis SHAP.
+
+**Script:** `run_experiment_d_ablation.py` — Figuras: `experiment_d_ablation_metrics_comparison.png`, `experiment_d_ablation_shap_ranking.png`, `experiment_d_ablation_shap_beeswarm.png`.
 
 ---
 
@@ -308,6 +317,9 @@ Para validar que la importancia SHAP refleja contribución real al modelo, se el
 | `experiment_d_shap_force_normal.png` | Force plot transacción normal con contexto |
 | `experiment_d_shap_dependence_tx_amount.png` | Dependence plot TX_AMOUNT |
 | `experiment_d_shap_dependence_terminal_id_risk_7day_window.png` | Dependence plot riesgo terminal |
+| `experiment_d_ablation_metrics_comparison.png` | Comparación de métricas full vs ablated |
+| `experiment_d_ablation_shap_ranking.png` | Ranking mean \|SHAP\| del modelo ablated |
+| `experiment_d_ablation_shap_beeswarm.png` | Beeswarm SHAP del modelo ablated |
 
 ### 7.3 Reproducibilidad
 
