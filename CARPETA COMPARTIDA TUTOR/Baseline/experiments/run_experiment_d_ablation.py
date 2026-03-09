@@ -283,19 +283,11 @@ def main():
             else "Las métricas no mostraron degradación significativa."
         ) + "\n")
 
-    # Copiar figuras a figuras_experimentos (junto con el resto de figuras del TFM)
-    figuras_dir = PROJECT_ROOT / 'figuras_experimentos'
-    figuras_dir.mkdir(parents=True, exist_ok=True)
     ablation_figures = [
         'experiment_d_ablation_metrics_comparison.png',
         'experiment_d_ablation_shap_ranking.png',
         'experiment_d_ablation_shap_beeswarm.png',
     ]
-    for fname in ablation_figures:
-        src = FIGURES_DIR / fname
-        if src.exists():
-            shutil.copy2(src, figuras_dir / fname)
-            print(f"  Copiado a {figuras_dir / fname}")
 
     print(f"\n✓ Resultados guardados:")
     print(f"  - {RESULTS_DIR / 'experiment_d_ablation_comparison.csv'}")

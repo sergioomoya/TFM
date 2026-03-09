@@ -181,13 +181,13 @@ Analizar qué variables impulsan las predicciones del modelo de detección de fr
 
 #### Feature Importance
 
-![Feature Importance](../figuras_experimentos/experiment_d_feature_importance.png)
+![Feature Importance](results/figures/experiment_d_feature_importance.png)
 
 **Figura 3.** Las 10 variables más importantes según la ganancia (Gain) de XGBoost baseline. `TERMINAL_ID_RISK_7DAY_WINDOW` domina con el 38.8% de la ganancia total, más del triple que la segunda variable.
 
 #### SHAP Beeswarm Plot
 
-![SHAP Beeswarm](../figuras_experimentos/experiment_d_shap_beeswarm.png)
+![SHAP Beeswarm](results/figures/experiment_d_shap_beeswarm.png)
 
 **Figura 4.** Gráfico Beeswarm de SHAP (1000 muestras del test). Los puntos rojos representan valores altos de la variable, los azules valores bajos.
 
@@ -225,11 +225,11 @@ Para validar que la importancia SHAP refleja contribución real al modelo, se ej
 | D (ablación, 14 features) | 0.8498 | 0.5942 | 0.2714 |
 | **Δ** | **−0.0121** | **−0.0447** | −0.0014 |
 
-![Comparación de métricas: modelo completo vs ablación](../figuras_experimentos/experiment_d_ablation_metrics_comparison.png)
+![Comparación de métricas: modelo completo vs ablación](results/figures/experiment_d_ablation_metrics_comparison.png)
 
 **Figura 4a.** Comparación de métricas entre el modelo completo y el modelo ablated. La degradación de AUPRC (−4.47 pp) confirma que la top feature SHAP aporta valor predictivo real.
 
-![Ranking mean |SHAP| tras ablación](../figuras_experimentos/experiment_d_ablation_shap_ranking.png)
+![Ranking mean |SHAP| tras ablación](results/figures/experiment_d_ablation_shap_ranking.png)
 
 **Figura 4b.** Ranking de importancia (mean |SHAP|) del modelo reentrenado sin la top feature. `TX_AMOUNT` pasa a la primera posición; el ranking no se mantiene respecto al modelo original.
 

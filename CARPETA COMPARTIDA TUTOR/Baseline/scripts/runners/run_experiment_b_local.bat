@@ -10,6 +10,6 @@ if not exist "%CONDA_EXE%" (
     exit /b 1
 )
 
-cd /d "%~dp0"
+cd /d "%~dp0..\.."
 "%CONDA_EXE%" run -n tfm python experiments/run_experiment_b_standalone.py
 exit /b %ERRORLEVEL%

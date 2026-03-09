@@ -7,7 +7,8 @@
 
 $ErrorActionPreference = "Stop"
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-Set-Location $scriptDir
+$projectRoot = Split-Path -Parent (Split-Path -Parent $scriptDir)
+Set-Location $projectRoot
 
 $condaExe = "$env:USERPROFILE\anaconda3\Scripts\conda.exe"
 if (-not (Test-Path $condaExe)) { $condaExe = "$env:USERPROFILE\miniconda3\Scripts\conda.exe" }
@@ -21,7 +22,7 @@ if (Test-Path "execution.lock") { Remove-Item "execution.lock" -Force }
 if (Test-Path "execution_progress.txt") { Remove-Item "execution_progress.txt" -Force }
 
 $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
-$logDir = "ch7_execution_logs"
+$logDir = "Chapter_7_DeepLearning\execution_logs"
 if (-not (Test-Path $logDir)) { New-Item -ItemType Directory -Path $logDir | Out-Null }
 
 $mainLog = "$logDir/ch7_execution_$timestamp.log"
@@ -32,8 +33,8 @@ Write-Host "Log principal: $mainLog" -ForegroundColor Gray
 Write-Host "Monitor: $monitorLog" -ForegroundColor Gray
 
 # Lanzar monitor en segundo plano (cada 2 min)
-$monitorLogPath = Join-Path $scriptDir $monitorLog
-$progressPath = Join-Path $scriptDir "execution_progress.txt"
+$monitorLogPath = Join-Path $projectRoot $monitorLog
+$progressPath = Join-Path $projectRoot "execution_progress.txt"
 $monitorJob = Start-Job -ScriptBlock {
     param($monLog, $progPath, $intervalSec)
     $start = Get-Date

@@ -1,4 +1,4 @@
-# 📋 Instrucciones para Continuar el Trabajo (Post-Crash)
+﻿# 📋 Instrucciones para Continuar el Trabajo (Post-Crash)
 
 ## Situación Actual
 - Cursor crashea por OOM al trabajar con Chapter 7
@@ -75,21 +75,21 @@ plt.plot(x, conv_test)
 
 ### Pre-ejecución
 ```powershell
-cd "C:<Ruta>aseline"
+cd "C:\Programacion\GitHub\TFM\CARPETA COMPARTIDA TUTOR\Baseline"
 wsl --shutdown  # Libera RAM de WSL
 docker compose down --remove-orphans  # Limpia contenedores
 ```
 
 ### Ejecución (ELIGE UNA)
 
-**Opción 1 - Doble clic (más fácil):**
+**Opcion 1 - Doble clic (mas facil):**
 ```
-run_ch7_externo.bat
+scripts\runners\run_ch7_externo.bat
 ```
 
-**Opción 2 - PowerShell:**
+**Opcion 2 - PowerShell:**
 ```powershell
-.\run_ch7_externo.ps1
+.\scripts\runners\run_ch7_externo.ps1
 ```
 
 **Opción 3 - Docker directo:**
@@ -167,8 +167,8 @@ ch7-gpu:
 ## 🎯 Resultado Esperado
 
 Al finalizar correctamente:
-- Archivo: `execution_results/unified_report_*.json`
-- Archivo: `execution_results/unified_report_*.txt`
+- Archivo: `logs/execution_results/unified_report_*.json`
+- Archivo: `logs/execution_results/unified_report_*.txt`
 - Notebook ejecutado: 484/484 celdas
 
 ---

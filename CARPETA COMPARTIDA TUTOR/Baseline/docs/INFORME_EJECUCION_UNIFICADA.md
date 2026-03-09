@@ -79,4 +79,4 @@ Se espera obtener:
 La ejecución unificada permite verificar la integridad del código y la consistencia de los resultados a través de todos los capítulos. El uso de GPU en el Capítulo 7 es crítico para reducir los tiempos de entrenamiento de las redes neuronales recurrentes.
 
 ---
-*Nota: Los resultados detallados se adjuntarán en el archivo `execution_results/unified_report_*.txt` y `*.json` generados por el script de automatización.*
+*Nota: Los resultados detallados se adjuntaran en el archivo `logs/execution_results/unified_report_*.txt` y `*.json` generados por el script de automatizacion.*

@@ -8,7 +8,7 @@ if not exist "%CONDA_EXE%" (
     exit /b 1
 )
 
-cd /d "%~dp0"
+cd /d "%~dp0..\.."
 echo Ejecutando Experimento A variantes de balance con entorno tfm...
 "%CONDA_EXE%" run -n tfm python experiments/run_experiment_a_balance_controlled.py
 exit /b %ERRORLEVEL%

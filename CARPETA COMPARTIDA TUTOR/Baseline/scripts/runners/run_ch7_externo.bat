@@ -1,6 +1,7 @@
 @echo off
 REM Ejecutar Chapter 7 SIN Cursor - evita OOM
-REM Doble-clic o: run_ch7_externo.bat
+REM Doble-clic o: scripts\runners\run_ch7_externo.bat
+cd /d "%~dp0..\.."
 echo Deteniendo contenedores previos...
 docker compose down 2>nul
 docker ps -q --filter "name=ch7" 2>nul | for /f %i in ('docker ps -q --filter "name=ch7"') do docker stop %i 2>nul

@@ -270,6 +270,6 @@ TypeError: Argument 'placement' has incorrect type (expected pandas._libs.intern
 
 ## Monitorización continua activa
 
-Script: `monitor_ch7_continuo.ps1` — ejecutándose en segundo plano. Escribe en `monitor_ch7_continuo_*.log` cada 60 s.
+Script: `scripts/monitoring/monitor_ch7_continuo.ps1` — ejecutándose en segundo plano. Escribe en `Chapter_7_DeepLearning/execution_logs/monitor_ch7_continuo_*.log` cada 60 s.
 
-Para lanzarlo manualmente: `.\monitor_ch7_continuo.ps1`
+Para lanzarlo manualmente: `.\scripts\monitoring\monitor_ch7_continuo.ps1`

@@ -15,7 +15,8 @@ if (-not (Test-Path $condaExe)) {
 }
 
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-Set-Location $scriptDir
+$projectRoot = Split-Path -Parent (Split-Path -Parent $scriptDir)
+Set-Location $projectRoot
 
 # Crear directorio de resultados si no existe
 $null = New-Item -Path "experiments\results" -ItemType Directory -Force
@@ -24,7 +25,7 @@ $null = New-Item -Path "experiments\results" -ItemType Directory -Force
 $monitorJob = Start-Job -ScriptBlock {
     param($wd)
     Set-Location $wd
-    & powershell -File ".\monitor_recursos_a_balance.ps1" -Interval 10 -DurationMin 60
+    & powershell -File ".\scripts\monitoring\monitor_recursos_a_balance.ps1" -Interval 10 -DurationMin 60
 } -ArgumentList (Get-Location).Path
 
 Write-Host "Monitor de recursos iniciado (Job ID: $($monitorJob.Id))" -ForegroundColor Cyan

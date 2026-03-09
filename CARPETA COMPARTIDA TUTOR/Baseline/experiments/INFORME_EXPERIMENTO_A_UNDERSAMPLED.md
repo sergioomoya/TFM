@@ -45,7 +45,7 @@ Valores posibles:
 
 **Recomendado (entorno tfm + monitor):**
 ```powershell
-.\run_experiment_a_balance_controlled.ps1
+.\scripts\runners\run_experiment_a_balance_controlled.ps1
 ```
 - Activa conda tfm automáticamente
 - Monitor de GPU/RAM en background

@@ -784,6 +784,13 @@ def prequential_grid_search(transactions_df,
                             performance_metrics_list_grid=['roc_auc'],
                             performance_metrics_list=['AUC ROC'],
                             n_jobs=-1):
+    # Skorch/NeuralNet: n_jobs>1 causa MemoryError (cada worker importa torch)
+    try:
+        from skorch import NeuralNetClassifier
+        if isinstance(classifier, NeuralNetClassifier):
+            n_jobs = 1
+    except ImportError:
+        pass
     
     estimators = [('scaler', sklearn.preprocessing.StandardScaler()), ('clf', classifier)]
     pipe = sklearn.pipeline.Pipeline(estimators)
@@ -1367,20 +1374,19 @@ class FraudDataset(torch.utils.data.Dataset):
 def get_dataloader_config(batch_size=None):
     """
     Auto-configuración óptima de DataLoader con Mixed Precision.
-    - num_workers: 2 con AMP (AMP ahorra VRAM, permite prefetching)
-    - batch_size: Mayor con AMP (más batch_size = mejor GPU utilization)
-    - prefetch_factor: 4 para mantener GPU ocupada
+    Ajustado para GPU infrautilizada (VRAM 2-4 GB de 16 GB, util 0-28%):
+    - batch_size mayor para saturar GPU
+    - num_workers y prefetch_factor aumentados para evitar que GPU espere datos
     """
     cuda_available = torch.cuda.is_available()
     n_cpus = os.cpu_count() or 4
     
-    # Con AMP, usamos VRAM más eficientemente, permitiendo prefetching
-    # y aprovechando mejor la GPU
+    # Más workers y prefetch para saturar GPU (monitoreo mostró CPU como posible cuello de botella)
     if cuda_available:
-        nw = min(8, (n_cpus or 4) - 2)  # Más workers = menor riesgo de que GPU espere datos
-        nw = max(2, nw)  # Mínimo 2 para prefetch efectivo
+        nw = min(12, (n_cpus or 4) - 1)  # Más workers para alimentar GPU sin parar
+        nw = max(4, nw)  # Mínimo 4 para prefetch efectivo
         pin_mem = True
-        prefetch = 8   # Más prefetch para modelos pequeños (GPU muy rápida vs carga de datos)
+        prefetch = 12   # Mayor prefetch para que GPU no espere lotes
     else:
         nw = 0
         pin_mem = False
@@ -1390,15 +1396,15 @@ def get_dataloader_config(batch_size=None):
         try:
             props = torch.cuda.get_device_properties(0)
             vram_gb = props.total_memory / (1024 ** 3)
-            # Modelos MLP/LSTM del capítulo: VRAM baja (~2GB con bs=2048); subir batch para saturar GPU
+            # VRAM infrautilizada (<50%): subir batch para mejorar GPU utilization
             if vram_gb < 4:
                 batch_size = 512
             elif vram_gb < 8:
                 batch_size = 2048
             elif vram_gb < 16:
-                batch_size = 8192
+                batch_size = 10240   # Subido desde 8192
             else:
-                batch_size = 8192   # RTX 5080: balance GPU util vs RAM (GridSearch usa mucha memoria)
+                batch_size = 12288   # 16GB+: subir para saturar (antes 8192, VRAM ~15% usada)
         except Exception:
             batch_size = 1024
     elif batch_size is None:

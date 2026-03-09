@@ -12,7 +12,7 @@ Uso:
     python run_unified_notebooks.py --notebook Chapter_7_DeepLearning/Chapter_7_Unified.ipynb --timeout 0
 
 Ejecutar desde la raíz del proyecto (Baseline).
-Genera reporte JSON y de texto en execution_results/.
+Genera reporte JSON y de texto en logs/execution_results/.
 """
 
 import argparse
@@ -51,7 +51,7 @@ UNIFIED_NOTEBOOKS = [
     "Chapter_7_DeepLearning/Chapter_7_Unified.ipynb",
 ]
 
-RESULTS_DIR = Path("execution_results")
+RESULTS_DIR = Path("logs/execution_results")
 
 
 # =============================================================================

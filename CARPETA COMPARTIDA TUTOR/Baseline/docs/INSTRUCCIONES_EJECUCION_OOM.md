@@ -8,9 +8,9 @@ Si Cursor se cierra por falta de memoria al ejecutar el notebook:
 2. Abre **PowerShell** o **CMD** en la carpeta del proyecto
 3. Ejecuta:
    ```
-   .\run_ch7_externo.ps1
+   .\scripts\runners\run_ch7_externo.ps1
    ```
-   (o doble-clic en `run_ch7_externo.bat`)
+   (o doble-clic en `scripts\runners\run_ch7_externo.bat`)
 4. La salida se guarda en `execution_output.txt`
 5. Progreso en `execution_progress.txt`
 6. Cuando termine (o falle), abre Cursor para revisar y corregir

@@ -1,7 +1,10 @@
 # Ejecuta Ch7 tras Ch5. Requiere que performances_model_selection.pkl exista (de Ch5).
-# Uso: .\run_ch7_post_ch5.ps1
+# Uso: .\scripts\runners\run_ch7_post_ch5.ps1
 
 $ErrorActionPreference = "Continue"
+$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$projectRoot = Split-Path -Parent (Split-Path -Parent $scriptDir)
+Set-Location $projectRoot
 $ch5Pkl = "Chapter_5_ModelValidationAndSelection\performances_model_selection.pkl"
 
 if (-not (Test-Path $ch5Pkl)) {

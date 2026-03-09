@@ -11,7 +11,7 @@ if not exist "%CONDA_EXE%" (
     exit /b 1
 )
 
-cd /d "%~dp0"
+cd /d "%~dp0..\.."
 echo Ejecutando Capítulo 7 (Deep Learning) con entorno tfm...
 "%CONDA_EXE%" run -n tfm python run_unified_notebooks.py --notebook Chapter_7_DeepLearning/Chapter_7_Unified.ipynb --timeout 0
 exit /b %ERRORLEVEL%

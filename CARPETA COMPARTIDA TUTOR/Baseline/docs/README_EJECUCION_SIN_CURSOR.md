@@ -17,14 +17,14 @@ Esto es un **bug conocido de Cursor** en versiones recientes, no un problema de 
 
 ### 2. Ejecuta desde el Explorador de archivos
 
-**Opción A - Doble clic (más fácil):**
+**Opcion A - Doble clic (mas facil):**
 ```
-run_ch7_externo.bat
+scripts\runners\run_ch7_externo.bat
 ```
 
-**Opción B - PowerShell:**
+**Opcion B - PowerShell:**
 ```powershell
-.\run_ch7_externo.ps1
+.\scripts\runners\run_ch7_externo.ps1
 ```
 
 **Opción C - CMD manual:**
@@ -48,7 +48,7 @@ Celda 134/484 | 12:53:12
 ### 4. Cuando termine
 
 - Si hay errores: Abre Cursor, corrige, cierra Cursor, vuelve a ejecutar
-- Si termina bien: Los resultados estarán en `execution_results/`
+- Si termina bien: Los resultados estarán en `logs/execution_results/`
 
 ## Por qué funciona
 
@@ -101,5 +101,5 @@ docker compose run --rm ch7-gpu
 
 ---
 
-**Versión del documento:** 2025-02-22  
-**Estado:** Solución activa para OOM en Cursor
+**Version del documento:** 2026-02-22  
+**Estado:** Solucion activa para OOM en Cursor

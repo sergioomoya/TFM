@@ -18,7 +18,7 @@ Este proyecto sigue la filosofía **"Docker First"**. No necesitas instalar Pyth
 - (Opcional) Drivers de NVIDIA si deseas usar aceleración GPU.
 
 ### Ejecución de Experimentos
-Para ejecutar la batería de experimentos (A, C, D) y generar el reporte automáticamente:
+Para ejecutar la bateria de experimentos (A, B, C, D) y generar el reporte automaticamente:
 
 ```bash
 docker compose run --rm experiments
@@ -54,20 +54,34 @@ docker compose run --rm ch7-gpu
 
 ```text
 .
-├── Chapter_X_.../             # Cuadernos originales del libro (adaptados)
-├── experiments/               # FRAMEWORK DE EXPERIMENTACIÓN (Aportación TFM)
-│   ├── config.py              # Configuración centralizada
-│   ├── data_utils.py          # Funciones de carga y métricas
-│   ├── run_experiment.py      # Script orquestador
-│   ├── experiment_a_...ipynb  # Baseline
-│   ├── experiment_c_...ipynb  # Test de Data Leakage
-│   └── experiment_d_...ipynb  # Interpretabilidad (XAI)
-├── sprints/                   # Documentación de gestión del proyecto (Agile)
-├── docs/                      # Documentación adicional (DIFERENCIAS_Y_APORTACIONES, informes, instrucciones)
-├── Dockerfile                 # Definición de imagen CPU
-├── Dockerfile.gpu             # Definición de imagen GPU (NVIDIA)
-├── docker-compose.yml         # Orquestación de servicios
-└── requirements.txt           # Dependencias pineadas
+├── Chapter_1_BookContent/          # Contenido introductorio del libro
+├── Chapter_2_Background/           # Marco teórico: fraude con tarjeta de crédito
+├── Chapter_3_GettingStarted/       # Simulación de datos y feature engineering
+├── Chapter_4_PerformanceMetrics/   # Métricas de evaluación
+├── Chapter_5_ModelValidation.../   # Validación y selección de modelos
+├── Chapter_6_ImbalancedLearning/   # Técnicas para datos desbalanceados
+├── Chapter_7_DeepLearning/         # Redes neuronales y autoencoders
+├── Chapter_References/             # Bibliografía y funciones compartidas
+├── experiments/                    # FRAMEWORK DE EXPERIMENTACIÓN (Aportación TFM)
+│   ├── config.py                   #   Configuración centralizada
+│   ├── data_utils.py               #   Funciones de carga y métricas
+│   ├── run_experiment.py           #   Script orquestador
+│   ├── experiment_a_...ipynb       #   Baseline
+│   ├── experiment_b_...ipynb       #   Cost-sensitive learning
+│   ├── experiment_c_...ipynb       #   Test de Data Leakage
+│   ├── experiment_d_...ipynb       #   Interpretabilidad (XAI)
+│   └── results/                    #   Resultados y figuras (gitignoreados)
+├── scripts/                        # Scripts auxiliares de ejecución
+│   ├── runners/                    #   Lanzadores (.ps1/.bat)
+│   └── monitoring/                 #   Monitorización de recursos y progreso
+├── docs/                           # Documentación: memoria, informes, instrucciones
+├── sprints/                        # Documentación de gestión del proyecto (Agile)
+├── logs/                           # Logs de ejecución centralizados (gitignoreados)
+├── run_unified_notebooks.py        # Punto de entrada: ejecuta cuadernos unificados
+├── Dockerfile                      # Definición de imagen CPU
+├── Dockerfile.gpu                  # Definición de imagen GPU (NVIDIA)
+├── docker-compose.yml              # Orquestación de servicios
+└── requirements.txt                # Dependencias pineadas
 ```
 
 ## 🛠️ Desarrollo y Contribución

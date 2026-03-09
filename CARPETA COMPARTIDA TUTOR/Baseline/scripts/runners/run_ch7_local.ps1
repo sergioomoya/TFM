@@ -13,7 +13,8 @@ if (-not (Test-Path $condaExe)) {
 }
 
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-Set-Location $scriptDir
+$projectRoot = Split-Path -Parent (Split-Path -Parent $scriptDir)
+Set-Location $projectRoot
 
 Write-Host "Ejecutando Capítulo 7 (Deep Learning) con entorno tfm..." -ForegroundColor Cyan
 & $condaExe run -n tfm python run_unified_notebooks.py --notebook Chapter_7_DeepLearning/Chapter_7_Unified.ipynb --timeout 0

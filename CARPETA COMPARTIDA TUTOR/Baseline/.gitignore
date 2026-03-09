@@ -79,13 +79,14 @@ notebook-cache/
 # ---------------------
 # Archivos temporales de ejecución
 # ---------------------
-execution_results/
 execution_results.json
 execution_progress.txt
 execution_log.txt
 execution.lock
-ch7_execution.log
-ch7_run_log.txt
-ch7_supervision_*.log
-monitor_ch7_continuo_*.log
-monitor_ch7_py.log
+*.log
+
+# ---------------------
+# Logs de ejecución por capítulo y centralizados
+# ---------------------
+**/execution_logs/
+logs/

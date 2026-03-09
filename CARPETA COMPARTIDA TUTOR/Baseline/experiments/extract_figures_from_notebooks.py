@@ -15,7 +15,7 @@ from pathlib import Path
 # Raíz del proyecto
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 RESULTS_DIR = Path(__file__).resolve().parent / "results"
-OUTPUT_DIR = PROJECT_ROOT / "figuras_experimentos"
+OUTPUT_DIR = Path(__file__).resolve().parent / "results" / "figures"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # Mapeo: nombre del notebook ejecutado -> lista de nombres de figuras (en orden de aparición)

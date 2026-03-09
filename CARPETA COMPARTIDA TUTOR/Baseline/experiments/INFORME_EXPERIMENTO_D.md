@@ -117,7 +117,7 @@ Este enfoque es estándar en la literatura de interpretabilidad y selección de 
 | D (ablación, 14 features) | 0.8498 | 0.5942 | 0.2714 |
 | **Δ (ablated − full)** | **−0.0121** | **−0.0447** | −0.0014 |
 
-![Comparación de métricas: modelo completo vs ablación](../figuras_experimentos/experiment_d_ablation_metrics_comparison.png)
+![Comparación de métricas: modelo completo vs ablación](results/figures/experiment_d_ablation_metrics_comparison.png)
 
 **Figura 5.** Comparación de AUC ROC, AUPRC y CP@100 entre el modelo con 15 features (completo) y el modelo reentrenado sin `CUSTOMER_ID_AVG_AMOUNT_30DAY_WINDOW` (ablación). La degradación de AUPRC (−4.47 pp) confirma que esta variable aporta valor predictivo real.
 
@@ -134,11 +134,11 @@ Al reentrenar con 14 features, el modelo redistribuye el poder predictivo entre 
 | 5 | TERMINAL_ID_NB_TX_30DAY_WINDOW | 0.290 |
 | ... | ... | ... |
 
-![Ranking mean |SHAP| tras ablación](../figuras_experimentos/experiment_d_ablation_shap_ranking.png)
+![Ranking mean |SHAP| tras ablación](results/figures/experiment_d_ablation_shap_ranking.png)
 
 **Figura 6.** Ranking de importancia (mean |SHAP|) del modelo ablated. `TX_AMOUNT` pasa a la primera posición; `CUSTOMER_ID_AVG_AMOUNT_7DAY_WINDOW` escala al segundo lugar, evidenciando la redistribución de importancia.
 
-![Beeswarm SHAP modelo ablated](../figuras_experimentos/experiment_d_ablation_shap_beeswarm.png)
+![Beeswarm SHAP modelo ablated](results/figures/experiment_d_ablation_shap_beeswarm.png)
 
 **Figura 7.** Beeswarm SHAP del modelo reentrenado sin la top feature. Muestra la dispersión de contribuciones de cada variable restante (1000 muestras de test).
 

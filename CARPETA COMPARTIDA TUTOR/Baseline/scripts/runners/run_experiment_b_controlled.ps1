@@ -10,6 +10,7 @@ if (-not (Test-Path $condaExe)) {
 }
 
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-Set-Location $scriptDir
+$projectRoot = Split-Path -Parent (Split-Path -Parent $scriptDir)
+Set-Location $projectRoot
 & $condaExe run -n tfm python experiments/run_experiment_b_controlled.py
 exit $LASTEXITCODE
