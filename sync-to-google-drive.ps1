@@ -8,9 +8,18 @@
     1. Guarda el progreso en GitHub (add, commit, push)
     2. Sincroniza el directorio maestro con Google Drive (robocopy /MIR)
 
+.PARAMETER Mensaje
+    Mensaje del commit. Si no se indica, pide introducirlo manualmente.
+
 .EXAMPLE
     .\sync-to-google-drive.ps1
+.EXAMPLE
+    .\sync-to-google-drive.ps1 -Mensaje "experiments: informe A y figuras SHAP"
 #>
+param(
+    [Parameter(Mandatory=$false)]
+    [string]$Mensaje
+)
 
 $ErrorActionPreference = "Stop"
 $Origen = "C:\Programacion\GitHub\TFM"
@@ -25,11 +34,24 @@ if ([string]::IsNullOrWhiteSpace($status)) {
     Write-Host "No hay cambios pendientes. El repositorio está limpio. Saltando commit/push." -ForegroundColor Yellow
 } else {
     git add -A
-    $mensajeCommit = "Sync: progreso guardado $(Get-Date -Format 'yyyy-MM-dd HH:mm')"
-    git commit -m $mensajeCommit
-    if ($LASTEXITCODE -eq 0) {
-        git push
-        Write-Host "Progreso guardado en GitHub correctamente." -ForegroundColor Green
+    Write-Host "Archivos a commitear:" -ForegroundColor Gray
+    git diff --cached --name-status | ForEach-Object { Write-Host "  $_" -ForegroundColor Gray }
+    Write-Host ""
+    if ([string]::IsNullOrWhiteSpace($Mensaje)) {
+        $mensajeCommit = Read-Host "Introduce el mensaje del commit (Enter=cancelar)"
+    } else {
+        $mensajeCommit = $Mensaje
+        Write-Host "Mensaje: $mensajeCommit" -ForegroundColor Gray
+    }
+    if ([string]::IsNullOrWhiteSpace($mensajeCommit)) {
+        Write-Host "Commit cancelado. Ejecutando solo sincronización con Google Drive." -ForegroundColor Yellow
+        git reset HEAD .
+    } else {
+        git commit -m $mensajeCommit
+        if ($LASTEXITCODE -eq 0) {
+            git push
+            Write-Host "Progreso guardado en GitHub correctamente." -ForegroundColor Green
+        }
     }
 }
 
