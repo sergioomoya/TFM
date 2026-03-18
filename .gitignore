@@ -35,6 +35,12 @@ ehthumbs_vista.db
 Desktop.ini
 $RECYCLE.BIN/
 
+# Temporales de Microsoft Office (Word, Excel, etc.)
+~$*
+~WRL*.tmp
+~*.tmp
+*.tmp
+
 # Linux
 *~
 
