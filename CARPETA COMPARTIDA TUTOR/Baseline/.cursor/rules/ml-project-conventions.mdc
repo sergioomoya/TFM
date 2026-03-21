@@ -1,0 +1,35 @@
+---
+description: Convenciones para el proyecto de ML/TFM. Estructura de experimentos, reproducibilidad, datos y figuras.
+alwaysApply: true
+---
+
+# Convenciones del Proyecto ML/TFM
+
+## Estructura de Experimentos
+
+- Código de experimentos en `experiments/`.
+- Resultados en `experiments/results/` organizados por tipo: `figures/`, `models/`, `metrics/`, `logs/`.
+- Cada experimento debe ser reproducible: fijar random seeds, documentar hiperparámetros, registrar versiones de dependencias relevantes.
+
+## Datos
+
+- Los datasets NO se commiten al repositorio (incluir en `.gitignore`).
+- Documentar la procedencia, versión y proceso de obtención de cada dataset.
+- Si se aplican transformaciones al dataset, encapsularlas en scripts reproducibles (no en pasos manuales).
+
+## Modelos y Checkpoints
+
+- Los modelos entrenados NO se commiten (`.gitignore` para `*.pkl`, `*.pt`, `*.h5`, `*.joblib`, `*.onnx`).
+- Documentar dónde se almacenan (disco local, HuggingFace Hub, etc.) y cómo recuperarlos.
+
+## Figuras y Visualizaciones
+
+- Las figuras para el TFM se generan siempre por código (no manualmente) para garantizar reproducibilidad.
+- Formato vectorial (SVG o PDF) para publicación; PNG como complemento para revisión rápida.
+- Usar estilos consistentes (paleta de colores, tipografía, tamaño) en todas las figuras. Si existe un archivo de configuración de estilo (`mplstyle`, constantes de estilo), usarlo.
+
+## Código Python
+
+- Type hints en firmas de funciones y retornos.
+- Docstrings en funciones públicas: qué hace, parámetros, retorno.
+- Configuración de experimentos en archivos dedicados (YAML, JSON o constantes Python), no dispersa por el código.

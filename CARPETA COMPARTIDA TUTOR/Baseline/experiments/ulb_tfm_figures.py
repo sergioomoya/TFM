@@ -11,20 +11,32 @@ Requisitos:
 Salidas (formato vectorial, dpi=300):
 - desbalance_clases.svg
 - roc_vs_pr.svg
-- shap_beeswarm.pdf
-- shap_force_plot.svg
+- shap_beeswarm.pdf  (⚠ ver nota abajo)
+- shap_waterfall_tp.png, shap_waterfall_tn.png (explicabilidad local; waterfall estático)
+
+NOTA (coherencia con la memoria del TFM)
+-----------------------------------------
+Este script entrena XGBoost sobre el CSV ULB (V1..V28, Time, Amount). El
+``shap_beeswarm.pdf`` generado aquí muestra importancias SHAP sobre esas
+variables PCA, NO sobre TERMINAL_ID_RISK_*, CUSTOMER_ID_*, TX_AMOUNT, etc.
+
+Para el beeswarm alineado con el marco teórico de la memoria, ejecutar **después**:
+  python experiments/generate_shap_beeswarm_transformed_dataset.py
+Ese script sobrescribe ``shap_beeswarm.pdf`` con el modelo sobre el dataset
+transformado del proyecto (mismo pipeline que Experimento D).
 
 Convención de colores (estricta):
 - Azul  -> transacciones legítimas (Class = 0)
 - Rojo  -> transacciones fraudulentas (Class = 1)
 """
 
-import os
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
+from matplotlib.patches import Patch
 import seaborn as sns
 
 from sklearn.model_selection import train_test_split
@@ -109,15 +121,16 @@ def load_dataset(data_path: Path) -> pd.DataFrame:
 
 def grafico_desbalance_clases(df: pd.DataFrame, output_path: Path) -> None:
     """
-    Scatter plot de V1 vs V2 con submuestreo visual:
-    - 50.000 transacciones legítimas (Class = 0)
-    - Todos los fraudes (Class = 1)
+    Visualización del desbalance en (V1, V2):
 
-    Azul  -> legítimo
-    Rojo  -> fraude
+    - Clase 0 (legítima): densidad con ``hexbin`` y escala de azules para evitar
+      overplotting y mostrar dónde se concentra la mayoría de los datos.
+    - Clase 1 (fraude): ``scatter`` encima en rojo oscuro con borde blanco fino.
+
+    Mantiene la semántica azul = legítimo, rojo = fraude.
     """
 
-    print("Generando Gráfico 1: desbalance de clases (V1 vs V2)...")
+    print("Generando Gráfico 1: desbalance de clases (hexbin + scatter, V1 vs V2)...")
 
     legit = df[df["Class"] == 0]
     fraud = df[df["Class"] == 1]
@@ -125,37 +138,60 @@ def grafico_desbalance_clases(df: pd.DataFrame, output_path: Path) -> None:
     n_legit_sample = min(50000, len(legit))
     legit_sample = legit.sample(n=n_legit_sample, random_state=RANDOM_STATE)
 
-    plt.figure(figsize=(8, 8))
+    fig, ax = plt.subplots(figsize=(9, 8))
 
-    # Puntos legítimos primero (para que queden debajo)
-    plt.scatter(
-        legit_sample["V1"],
-        legit_sample["V2"],
-        c=COLOR_LEGIT,
-        alpha=0.2,
-        s=8,
-        label="Legítima (Class 0)",
-        edgecolors="none",
+    # Capa 1: densidad de la clase mayoritaria (azules)
+    hb = ax.hexbin(
+        legit_sample["V1"].values,
+        legit_sample["V2"].values,
+        gridsize=55,
+        cmap="Blues",
+        mincnt=1,
+        linewidths=0.0,
+        edgecolors="face",
+        alpha=0.92,
     )
+    cb = fig.colorbar(hb, ax=ax, fraction=0.046, pad=0.04)
+    cb.set_label("Cuenta en celda hexagonal (clase legítima)", rotation=270, labelpad=18)
 
-    # Puntos de fraude encima
-    plt.scatter(
+    # Capa 2: fraudes destacados sobre la densidad
+    ax.scatter(
         fraud["V1"],
         fraud["V2"],
-        c=COLOR_FRAUD,
-        alpha=0.7,
-        s=20,
+        c="firebrick",
+        s=15,
+        alpha=0.95,
+        edgecolors="white",
+        linewidths=0.6,
         label="Fraude (Class 1)",
-        edgecolors="k",
-        linewidths=0.2,
+        zorder=5,
     )
 
-    plt.xlabel("V1")
-    plt.ylabel("V2")
-    plt.title("Representación espacial del desbalance extremo (V1 vs V2)")
-    plt.legend(loc="best")
-    plt.tight_layout()
+    ax.set_xlabel("V1")
+    ax.set_ylabel("V2")
+    ax.set_title(
+        "Representación espacial del desbalance: Densidad de la clase mayoritaria vs Fraude"
+    )
 
+    # Leyenda explícita (hexbin no aporta handle automático)
+    legend_handles = [
+        Patch(facecolor=COLOR_LEGIT, edgecolor="navy", linewidth=0.5, alpha=0.7, label="Clase 0 — densidad (mapa azul)"),
+        Line2D(
+            [0],
+            [0],
+            marker="o",
+            color="w",
+            markerfacecolor="firebrick",
+            markeredgecolor="white",
+            markeredgewidth=0.6,
+            markersize=7,
+            linestyle="None",
+            label="Fraude (Class 1)",
+        ),
+    ]
+    ax.legend(handles=legend_handles, loc="best", frameon=True)
+
+    plt.tight_layout()
     plt.savefig(output_path, format="svg", dpi=300, bbox_inches="tight")
     plt.close()
     print(f"Gráfico 1 guardado en: {output_path}")
@@ -202,6 +238,7 @@ def entrenar_modelo_xgboost(X_train: pd.DataFrame, y_train: pd.Series) -> XGBCla
         colsample_bytree=0.8,
         objective="binary:logistic",
         eval_metric="logloss",
+        use_label_encoder=False,
         n_jobs=-1,
         random_state=RANDOM_STATE,
         tree_method="hist",
@@ -242,6 +279,9 @@ def grafico_roc_vs_pr(
     precision, recall, _ = precision_recall_curve(y_test, y_scores)
     pr_auc = average_precision_score(y_test, y_scores)
 
+    # Baseline de un clasificador aleatorio en PR: precisión = proporción de positivos
+    proporcion_fraude = float((y_test == 1).sum()) / float(len(y_test))
+
     fig, axes = plt.subplots(1, 2, figsize=(14, 6))
 
     # ROC
@@ -258,8 +298,15 @@ def grafico_roc_vs_pr(
     # Precision-Recall
     ax_pr = axes[1]
     ax_pr.plot(recall, precision, color=COLOR_FRAUD, lw=2, label=f"AUPRC = {pr_auc:.3f}")
+    ax_pr.axhline(
+        y=proporcion_fraude,
+        color="gray",
+        linestyle="--",
+        linewidth=1.5,
+        label=f"Azar (P(clase positiva) = {proporcion_fraude:.4f})",
+    )
     ax_pr.set_xlim(0.0, 1.0)
-    ax_pr.set_ylim(0.0, 1.0)
+    ax_pr.set_ylim(0.0, 1.05)
     ax_pr.set_xlabel("Recall")
     ax_pr.set_ylabel("Precision")
     ax_pr.set_title("Curva Precision-Recall")
@@ -355,25 +402,26 @@ def seleccionar_tp_tn(
     return idx_tp, idx_tn
 
 
-def grafico_shap_force_waterfall(
+def grafico_shap_waterfall_local(
     explainer,
     model: XGBClassifier,
     X_test: pd.DataFrame,
     y_test: pd.Series,
-    output_path: Path,
+    output_dir: Path,
 ) -> None:
     """
-    Genera dos gráficos tipo "force plot" en formato estático utilizando
-    shap.plots.waterfall() para:
-    - Un Verdadero Positivo (fraude detectado correctamente).
-    - Un Verdadero Negativo (legítima correctamente clasificada).
+    Explicabilidad local con **Waterfall** estático (mejor legibilidad que force plot
+    al exportar a imagen): una figura por instancia, nombres de variables menos
+    comprimidos gracias a ``bbox_inches='tight'`` y figura ancha.
 
-    Los colores siguen la convención SHAP:
-    - Rojo: contribuciones que empujan hacia la clase positiva (riesgo alto).
-    - Azul: contribuciones que empujan hacia la clase negativa (riesgo bajo).
+    - Verdadero Positivo (TP): fraude detectado correctamente.
+    - Verdadero Negativo (TN): legítima correctamente clasificada.
+
+    Usa ``shap.plots.waterfall(..., max_display=10)`` con el objeto Explanation
+    devuelto por ``explainer(fila)``.
     """
 
-    print("Generando Gráfico 4: auditoría forense (SHAP waterfall para TP y TN)...")
+    print("Generando Gráfico 4: auditoría forense (SHAP waterfall estático TP / TN)...")
 
     idx_tp, idx_tn = seleccionar_tp_tn(model, X_test, y_test)
 
@@ -383,22 +431,41 @@ def grafico_shap_force_waterfall(
     shap_tp = explainer(x_tp)
     shap_tn = explainer(x_tn)
 
-    fig, axes = plt.subplots(2, 1, figsize=(10, 12))
+    output_dir.mkdir(parents=True, exist_ok=True)
 
-    # TP (fraude)
+    # TP: figura dedicada (PNG alta resolución para la memoria)
+    plt.figure(figsize=(11, 7))
+    shap.plots.waterfall(shap_tp[0], max_display=10, show=False)
+    plt.title("SHAP Waterfall — Verdadero Positivo (fraude detectado)", fontsize=12)
+    plt.tight_layout()
+    path_tp = output_dir / "shap_waterfall_tp.png"
+    plt.savefig(path_tp, bbox_inches="tight", dpi=300)
+    plt.close()
+
+    # TN: figura dedicada
+    plt.figure(figsize=(11, 7))
+    shap.plots.waterfall(shap_tn[0], max_display=10, show=False)
+    plt.title("SHAP Waterfall — Verdadero Negativo (transacción legítima)", fontsize=12)
+    plt.tight_layout()
+    path_tn = output_dir / "shap_waterfall_tn.png"
+    plt.savefig(path_tn, bbox_inches="tight", dpi=300)
+    plt.close()
+
+    # Opcional: versión vectorial combinada para impresión
+    fig, axes = plt.subplots(2, 1, figsize=(11, 14))
     plt.sca(axes[0])
     shap.plots.waterfall(shap_tp[0], max_display=10, show=False)
-    axes[0].set_title("Auditoría SHAP - Verdadero Positivo (Fraude detectado)")
-
-    # TN (legítima)
+    axes[0].set_title("Verdadero Positivo (fraude detectado)")
     plt.sca(axes[1])
     shap.plots.waterfall(shap_tn[0], max_display=10, show=False)
-    axes[1].set_title("Auditoría SHAP - Verdadero Negativo (Transacción legítima)")
-
+    axes[1].set_title("Verdadero Negativo (transacción legítima)")
+    plt.suptitle("Auditoría forense SHAP (Waterfall)", fontsize=13, y=1.01)
     plt.tight_layout()
-    plt.savefig(output_path, format="svg", dpi=300, bbox_inches="tight")
+    path_combo = output_dir / "shap_waterfall_combined.svg"
+    plt.savefig(path_combo, format="svg", dpi=300, bbox_inches="tight")
     plt.close()
-    print(f"Gráfico 4 guardado en: {output_path}")
+
+    print(f"Gráfico 4 guardado en:\n  {path_tp}\n  {path_tn}\n  {path_combo}")
 
 
 # =============================================================================
@@ -437,13 +504,13 @@ def main():
         FIGURES_DIR / "shap_beeswarm.pdf",
     )
 
-    # Gráfico 4: Auditoría forense (TP y TN)
-    grafico_shap_force_waterfall(
+    # Gráfico 4: Auditoría forense (waterfall estático TP / TN)
+    grafico_shap_waterfall_local(
         explainer,
         model,
         X_test,
         y_test,
-        FIGURES_DIR / "shap_force_plot.svg",
+        FIGURES_DIR,
     )
 
     print("\nProceso completado.")
@@ -453,7 +520,7 @@ def main():
         "1) desbalance_clases.svg\n"
         "2) roc_vs_pr.svg\n"
         "3) shap_beeswarm.pdf\n"
-        "4) shap_force_plot.svg\n"
+        "4) shap_waterfall_tp.png, shap_waterfall_tn.png, shap_waterfall_combined.svg\n"
     )
 
 

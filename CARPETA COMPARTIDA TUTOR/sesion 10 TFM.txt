@@ -1,0 +1,293 @@
+sesion tfm
+jue, 12 mar 2026
+
+1:23 - Sergio Moya Marín
+Hola, Valí, ¿qué tal? Bien, ¿y tú qué tal? Bien. Qué hermoso. Bien, cuéntame, ¿cómo va el avance?
+
+1:43 - BADY PATRICIO GANA CASTILLO
+Bien.
+
+1:44 - Sergio Moya Marín
+He podido terminar, digamos, la redacción de los tres apartados principales, entre comillas, que ya te comenté por correo ayer. Tanto la parte de metodología, la ejecución de los experimentos y las conclusiones. No sé si, no te he dejado mucho tiempo, no sé si las voy a echar un vistazo. No, pero en eso vamos a estar.
+
+2:13 - BADY PATRICIO GANA CASTILLO
+De hecho, se puede dar como un breve una breve introducción a qué fue lo que manejaste, eso es lo que me importa ahora mismo, para poder ver si encontramos algo que directamente es mejorable o identificable. Ya, porque me mandaste un documento ahora último, hace un par de minutos. Sí, esto era...
+
+2:39 - Sergio Moya Marín
+es que me mandaron el lunes un documento que me imagino que será, bueno, típica burocracia que nos explicarán mañana, que creo que tenemos una sesión, sobre el proceso de defensa y tal. Creo que por una parte tengo que completar yo una cierta autorización a solicitar la defensa indicando la convocatoria que quiero defender y tal. Quiero, pues, sí publicar los resultados, confianza académica, etcétera, tal. Y para ti será algo supongo que similar, ¿vale? Me imagino que lo tendré, tendrás que, digamos, completar esa solicitud. Me voy a pillar directamente y te muestro. Esta es la que he estado completando yo, ¿vale? Que es diferente porque este es de informe de autorización. Entiendo que es para ti, informe de autorización. Lo pones así también en la descripción. Esto lo tendrás que rellenar, me lo pasas y yo lo adjuntaría al apartado correspondiente.
+
+4:05 - BADY PATRICIO GANA CASTILLO
+Entonces serían dos documentos, por una parte te da que implica si es que está apto o no.
+
+4:15 - Sergio Moya Marín
+Exacto, por tu parte. Eso es.
+
+4:18 - BADY PATRICIO GANA CASTILLO
+Y por otra parte, este otro documento, el cual tiene los lineamientos de la defensa, por así decirlo. Sí.
+
+4:27 - Sergio Moya Marín
+A ver, simplemente entiendo que es un proceso, bueno, esto es burocrático, simplemente poner cuál es el título, la convocatoria a la que quiero presentarme, tengo que ver si hay que poner tus datos o son los de la directora del máster y simplemente si autorizo o no autorizo a publicar el DFM con fines didácticos y académicos.
+
+5:00 - BADY PATRICIO GANA CASTILLO
+Claro, en ese sentido esta publicación igual vale la pena preguntar si es que está asociado a la universidad la publicación o si es que se refiere a nivel público, ¿ya? Por ejemplo, resultados públicos que harían todo un tema de ética de datos, que esté sujeto a software de plagios y todo, hay un montón de cosas que se añaden con eso, ¿bien? Entonces por eso asegúrate de que esa publicación es acorde a lo que tú quieres. Por ejemplo, imagínate que tú publicas tu tesis final y te piden los resultados o te piden el contrato de entrenamiento. Entonces, si tú lo autorizas, después tendrías que también entregar esos datos o decir dónde los puedes conseguir. Ya te fijas, hay como todo un tema más burocrático todavía. Consulta bien, publicación total o parcial del TFT. Vale, muy bien.
+
+6:06 - Sergio Moya Marín
+Me imagino que lo comentarán en la próxima sesión. Me informaré bien, por si tiene alguna implicación adicional. Muy bien. Vale, entonces me queda claro. Al menos voy a llenar el que me mandaste. Te lo he pedido lo antes posible y lo voy a enviar después para que rellene lo que falta o si tengo que poner Sí, vale, yo entiendo que sí, a ver, creo que está explicado en el propio documento, vale, el nombre completo del director, el nombre completo del estudiante, el título del TFT... Vale, que por cierto, el tema del título del TFT lo modifique, que ahora lo comentamos. Ah, la pregunta es...
+
+6:56 - BADY PATRICIO GANA CASTILLO
+¿Cuánto lo modificaste? ¿Por qué? Porque parece ser un formulario. Hay un formulario para poder cambiar el nombre del...
+
+7:09 - Sergio Moya Marín
+Ah, vale. Pues lo que... Aquí, digamos, mediante gestión del desbalance, ¿vale? Esto es lo que he cambiado, que antes ponía mediante el... Coste... Voy a mirarlo porque de las últimas cosas que modifique voy a revisarlo. Cambios... ¿dónde estaban los cambios? Ahí, ¿cómo se venían los cambios de esto? Ah, control de cambios. Perdón esto no me voy aquí a revisar control de cambios te voy a mandar en un correo un documento que es el documento que tuve que utilizar con otro estudiante y generar la solicitud del cambio de título de tesis pero hay que formalizar ¿Puedes utilizarlo según el programa? Vale, de acuerdo. Aquí en la primera entrega no estaba el nombre del título, era el título del proyecto. Aplicación de técnicas de tal, pero no. Lo tengo aquí, seguramente. Lo tengo guardado en algún sitio, pero sí, lo tengo que revisar. Sí, en todo caso, ¿los últimos cambios tú los haces directamente en Drive?
+
+9:02 - BADY PATRICIO GANA CASTILLO
+¿O Drive los actualizas con los cambios?
+
+9:06 - Sergio Moya Marín
+Sí, por eso. Seguramente tengo ahí el historial. A ver... Lo que pasa es que el título... Me voy aquí a Drive. Voy a revisarlo. Aquí hay uno que está alterado el 11 de marzo. El 11 de marzo, efectivamente. Me voy a ir un segundito. Unidad. Ah, no, no disculpa... Aquí... Tu tu tu... Estudios... View... Ok... Carpeta compartida... Y aquí... ¿Por qué lo querés cambiar si se supone que es la última vez? Sí, no cuadraba con lo que al final se ha hecho. Había una incongruencia en el título. Mira, otra cosa.
+
+10:55 - Sergio Moya Marín
+Bueno, tengo que ver cómo recuperarlo, por no quitarte tiempo. Lo veo cómo recuperar el título para decirte, digamos, las dos versiones y el por qué lo había cambiado.
+
+11:12 - BADY PATRICIO GANA CASTILLO
+Ah, no, pero el archivo que te acabo de enviar al correo, ahí tienes que poner los datos porque Mari, que es la directora del máster, me dijo que el alumno es el encargado de justificar el cambio de su título.
+
+11:32 - Sergio Moya Marín
+Entonces no te preocupes por eso.
+
+11:35 - BADY PATRICIO GANA CASTILLO
+Si consideras de que es más apropiado el título, ese es el título. Pero ese es el formulario para la solicitud del cambio de título.
+
+11:45 - Sergio Moya Marín
+Vale, perfecto. De acuerdo. Bueno, pues me lo descargo y lo completo. Y veo, pongo el, bueno, también te lo justifico a ti. Al final porque no había cierta incongruencia porque hacía alusión solamente a la parte del cost sensitive y no a la gestión del desbalance, como al final sí que se ha hecho con el undersampling. Ningún problema.
+
+12:19 - BADY PATRICIO GANA CASTILLO
+por ningún problema. Bien, entonces lo que nos compete es saber cuáles fueron los avances.
+
+12:28 - Sergio Moya Marín
+¿Quieres que comentemos también lo de la semana pasada? Con lo que escribí en el correo es suficiente.
+
+12:38 - BADY PATRICIO GANA CASTILLO
+Me parece bien un resumen general.
+
+12:42 - Sergio Moya Marín
+En cuanto a la descripción metodológica, pues basándonos en en el estudio de la Universidad de Bruselas. Al final lo que hemos hecho aquí es, bueno, he explicado todo el tema, todo lo que es la generación de la base de datos, el origen y el contexto, pipeline, generación de datos simulados, ingeniería de características y todo esto, todo está y en cuanto a aportaciones mías, he diseñado estos experimentos con el primer objetivo de... A ver, un segundo, disculpa. Bueno, aquí, esto, perdona. Había una hoja experimental. Vale, aquí, esto, perdona. Definición del modelo de referencia, ¿vale?, con el que vamos a ir comparando las malas prácticas versus las buenas prácticas que aquí al final introdujimos también la parte de la gestión del desbalance con el undersampling, es decir, teníamos un experimento A que era hacer un baseline de los modelos que íbamos a utilizar para la detección de anomalías basándome en pues eso, en diferentes algoritmos que serían los de Regresión Logística, Random Forest y el XGBoost. Simplemente se entrenaron, digamos, sin ninguna modificación de lo que sería el dataset y a posteriori sí que se trató el dataset con la técnica de la undersampling y, bueno, pues, con diferentes, digamos, proporciones de transacciones legítimas y anómalas, pues, estaban diferentes resultados, digamos, y algunos de ellos mejorando el, digamos, los modelos originales.
+
+15:31 - BADY PATRICIO GANA CASTILLO
+Si es que en la comisión te preguntaran sobre cuál es tu aportación o cuál es la contribución respecto a eso en base al diseño que tú tenías recién aquí de los modelos, lo que se hace también en el preprocesamiento, ¿cuál sería o cómo responderías esa pregunta?
+
+15:51 - Sergio Moya Marín
+Eso es lo que me ha interesado. Digamos, por esta parte lo que he hecho es cuantificar, o mi Mi aportación ha sido cuantificar realmente primero el tema de la precisión, como la gráfica o digamos el indicador de la precisión deja de ser un indicador de referencia y pasándolo directamente en datos en Y el undersampling tampoco está, digamos, incluido dentro de lo que sería el tratamiento de datos del proyecto original. Es que, claro, aquí tú tienes 3 objetos.
+
+16:42 - BADY PATRICIO GANA CASTILLO
+Por una parte, tienes los experimentos con los diferentes modelos. Por otro lado, tú tienes el preprocesamiento que es Pero además, tú tienes un factor de explicabilidad que está en el título de la tesis. Sí. Entonces, si tú tuvieses esos tres componentes, ¿cuál es el componente más importante o que genera mayor contribución de este trabajo?
+
+17:09 - Sergio Moya Marín
+En este caso, pues sería la parte de la explicabilidad, ¿vale? Debido a que es algo que se nombra superficialmente en lo que es el trabajo. Original, pero no se realiza ninguna técnica al respecto.
+
+17:26 - BADY PATRICIO GANA CASTILLO
+Entonces, ¿cuáles son las técnicas que tú utilizas para la explicabilidad?
+
+17:33 - Sergio Moya Marín
+Utilizando SHAD directamente. Pero sería el tercer experimento. Eso, ¿cierto?
+
+17:39 - BADY PATRICIO GANA CASTILLO
+Tú tienes tres componentes de experimento. Esas son cosas que necesito que vayas interiorizando. ¿Dónde está lo importante de tu tesis? Porque ahora mismo tú tienes tres modelos, pero los tres modelos, ¿qué tan diferentes son? Ahí es una de las preguntas que tú tienes que plantear. ¿Es mejor XGBoost? ¿Es mejor Random Forest? ¿O es mejor...
+
+18:10 - Sergio Moya Marín
+Entonces... Bueno, eso digamos al principio se hace cuando se establece un baseline. Que por resultados el XGBoost. Directamente es como aquí se hace una eliminación de los otros dos modelos por resultados. Obtenemos mejores resultados con el XGBoost y a partir de ahí hacemos los siguientes experimentos.
+
+18:40 - BADY PATRICIO GANA CASTILLO
+¿Y esos experimentos se realizan por cada algoritmo?
+
+18:45 - Sergio Moya Marín
+Los siguientes se basan únicamente en el sg-boost. PABLO SANGUINETTI Ya, eso te recomendaría que lo explicitaras.
+
+18:51 - BADY PATRICIO GANA CASTILLO
+Porque si te fijas, se mencionan de manera general pensando en que se podrían aplicar en cualquiera de los otros, a menos de que lo tengas más arriba.
+
+19:01 - Sergio Moya Marín
+PABLO SANGUINETTI Sí, está explicado. PABLO SANGUINETTI Dice, la ejecución, un poquito más largo.
+
+19:07 - BADY PATRICIO GANA CASTILLO
+Dice, la ejecución de este ensayo se orquesta a través del framework garantizando el proporcionamiento Ya no lo dice en ningún momento de que lo que estás haciendo es tomar el mejor algoritmo y es el que estás forzándolo a los otros dos experimentos. Eso tiene que quedar explícito, sino la configuración experimental da a entender de que tú realizaste los tres algoritmos tres veces la primera vez como baseline, luego tres veces con el preprocesamiento y luego tres veces aislando clases.
+
+19:41 - Sergio Moya Marín
+Es algo que se explica en el apartado posterior, el de discusión y análisis de resultados. No sé si esto había incluido. Está al final.
+
+19:56 - BADY PATRICIO GANA CASTILLO
+En el momento va a experimentos uno generalmente genera una especie de como decreto de lo que voy a hacer pero las discusiones y resultados son las conclusiones que aparecen de esos decretos claro y el por qué ¿Y el por qué se elige?
+
+20:43 - Sergio Moya Marín
+¿Valeando cómo es la selección del modelo? Bueno, eso lo tengo que revisar todavía esto. Entonces, vale. De acuerdo. A partir de ahí, ¿qué es lo que hacemos?
+
+21:11 - BADY PATRICIO GANA CASTILLO
+El modelo ganador que es el XGBoost, básicamente lo tratamos, digamos, hacemos una variación de, por un lado, hacemos la metodología que es susceptible de la fuga de datos y la comparamos con una rama B, con una metodología robusta, aquí si lo explicas, te fijas, en el párrafo de configuración experimental aquí si estás siendo explícito diciendo que se toma el que tiene el tratamiento entonces ten ojo porque la configuración experimental de acá se puede confundir con la configuración experimental de arriba es decir tú por ejemplo en el de arriba tú le puedes poner configuración experimental general tal vez ya al que habíamos mencionado anteriormente, porque es el que da las guías para las siguientes configuraciones experimentales. Ahora, más que configuración, yo lo llamaría experimento 1 como tal, ¿no? Sí. ¿O rama A ya es un tipo de experimento? Claro, es que es el experimento...
+
+22:28 - Sergio Moya Marín
+es por no mezclar, porque el experimento 1 es como establecer el baseline el segundo experimento es tal, y entonces del segundo experimento tenemos dos ramas, la rama A de metodología deficiente, digamos que es la que es susceptible de fuga de datos, y la rama B que es la que tiene una metodología robusta, a prueba del data lake.
+
+23:00 - BADY PATRICIO GANA CASTILLO
+Ya mirad, buscaría tal vez esa definición, intenta validarlo con el propio modelo de lenguaje y preguntándole si es que esta configuración experimental, la de arriba, cierto, la que viene siendo como experimento 1, el baseline, según yo no es un experimento.
+
+23:20 - Sergio Moya Marín
+Vale, o sea, este experimento A no es, realmente. Porque realmente es el baseline, cierto, no es un experimento per se.
+
+23:29 - BADY PATRICIO GANA CASTILLO
+El experimento es cuando tú manejas las condiciones del experimento, por así decirlo. Entonces, ¿ve bien cómo puedes armar el índice para que se entienda de que el experimento 1 realmente es cuando tú empiezas a comparar los modelos?
+
+23:49 - Sergio Moya Marín
+Vale, pero yo sí que consideraría que es un experimento. O sea, al final estamos valorando tres modelos diferentes contra una misma dataset. Y además, posteriormente, o digamos en paralelo, también se está haciendo una técnica de gestión del... Sí, sí, sí.
+
+24:15 - BADY PATRICIO GANA CASTILLO
+Lo proponía solamente como una duda porque... Sí, sí, está genial.
+
+24:22 - Sergio Moya Marín
+Me encanta que hagas las aportaciones estás, no me entiendas más. Porque al final las dudas que a ti te salgan le van a salir también al comité.
+
+24:36 - BADY PATRICIO GANA CASTILLO
+Sí, ahora mismo nosotros estamos en modo comité. Todo lo que falta ahora es en nuestro foco. Si es que hay algún gap o un fallo metodológico tenemos que identificar lo antes posible pero sin ¿Cambian los experimentos porque los resultados ya están?
+
+24:58 - Sergio Moya Marín
+Los resultados ya están. A ver, no estoy cogiendo, digamos, literalmente los modelos o digamos el dataset literal de esta gente.
+
+25:15 - BADY PATRICIO GANA CASTILLO
+Al final sí que se siempre con el mismo dataset generado porque digamos mantenemos la semilla pero este baseline también es genuino o es digamos único por mi parte o sea es también en la aportación si eso no hay discusión de hecho mientras sea el mismo objeto de estudio tú puedes ocuparlo de ahí en adelante y no hay problema pero a lo que iba más que nada era comentar eso de que intentemos evidenciar cualquier agujero argumental que tengamos entonces ya tú tienes los tres experimentos explicados más abajo la hipótesis de trabajo Esa sí me hace un poquito de ruido porque eso técnicamente debéis estar mucho más arriba cuando tú hablas de las preguntas de investigación o el propio formato que viene en la tesis final de máster es la que tiene este formato.
+
+26:33 - Sergio Moya Marín
+Sí, esta normalmente está más arriba.
+
+26:35 - BADY PATRICIO GANA CASTILLO
+Les comparten una forma, ¿cierto? Un formato de trabajo...
+
+26:39 - Sergio Moya Marín
+Me subieron una plantilla pero con los títulos, o sea, no me... No había creo que nada de contenido lo voy a echarle voy a echar un vistazo a ver si pudiera ver alguna si me estoy colando y hay un digamos un guión claro porque tienen las secciones ya predefinidas son más que nada para que esta plantilla si yo diría vale pues si es plantilla esto Esto tiene que estar aquí. En información general, plantilla, TFT. Esto es. Cuánta metodología aparece. Bueno, el estado del arte, más o menos, luego metodología. Y es que simplemente ponen su apartado, tal, tal. ¿Con control F? Sí.
+
+27:34 - BADY PATRICIO GANA CASTILLO
+Bueno, con control B.
+
+27:36 - Sergio Moya Marín
+Y pones hipótesis.
+
+27:44 - Sergio Moya Marín
+creo que no encuentro nada otro ejemplo Sergio, dejame buscarlo por ahí.
+
+28:02 - BADY PATRICIO GANA CASTILLO
+El ejemplo que tengo aquí es este. Es tal cual.
+
+28:10 - Sergio Moya Marín
+Como también hace un tiempo que me lo descargué por si habían subido alguna actualización, pero este que hay aquí subido es el mismo.
+
+28:29 - BADY PATRICIO GANA CASTILLO
+Ya, pero bueno, en esencia lo que quería plantear con eso es que en este tipo de trabajos, después de las introducciones donde tú planteas las preguntas de investigación, las hipótesis y las contribuciones, ya te fijas que todavía no tienes objetivos, limitaciones, entonces mi duda es dónde está la hipótesis o las preguntas de investigación de...
+
+28:58 - Sergio Moya Marín
+Claro, a ver, si es verdad que yo aquí estos dos puntos primeros son los que hice hace tiempo y están algo desactualizados, es lo que también te comentaba ayer, entonces esto hay que ver.
+
+29:14 - BADY PATRICIO GANA CASTILLO
+¿Cuál sería la tarea? Que lo de abajo converse con lo de arriba.
+
+29:21 - Sergio Moya Marín
+¿No está mal que se repita algo de contenido?
+
+29:25 - BADY PATRICIO GANA CASTILLO
+Depende, porque una hipótesis tú la puedes evaluar a través de algún tipo de experimento. Es decir, la hipótesis tiene que ser medible. ¿Tú cómo lo mides? Con el accuracy, o con el F-score, o con el AU.
+
+29:42 - Sergio Moya Marín
+Pero la pregunta de la cual nace esa hipótesis tiene que estar en la introducción.
+
+29:47 - BADY PATRICIO GANA CASTILLO
+Y tú la contestas con esta hipótesis, que puede ser verdadera como puede ser falsa.
+
+29:52 - Sergio Moya Marín
+Vale, o sea, lo que habría que hacer es en cada uno de los experimentos, esto que he puesto yo como hipótesis de trabajo, hacer una introducción de lo que estoy aquí o digamos que esto sea la respuesta a una pregunta planteado o algo que se ha planteado...
+
+30:10 - BADY PATRICIO GANA CASTILLO
+Exacto, después de los objetivos, antes de los objetivos, antes de los objetivos tiene que estar la pregunta de investigación y la hipótesis, ambas juntitas, y de modo que cada uno de tus experimentos respondan a estas preguntas de investigación, entonces cuando tú ya tengas los resultados tomas esas preguntas y las contestas en las discusiones y ahí ya todo el documento conversa. Vale, perfecto. Entonces, ¿qué es lo que hay que hacer? Reiterar en la introducción todo lo que es sección 1 y pones ahí un comentario para añadir preguntas de investigación e hipótesis.
+
+30:52 - Sergio Moya Marín
+Sí, porque las contribuciones tú ya las tienes.
+
+30:59 - BADY PATRICIO GANA CASTILLO
+Las limitaciones y riesgos de enfoque nosotros habíamos conversado de que idealmente dejarlas al final de las discusiones. Eso es. También habría que comentarlo para cambiarlo de lugar porque imagínate alguien lee tu tesis y dice ah ya las limitaciones van desde el principio entonces no me interesa el trabajo vale ya entonces la idea es poner las limitaciones al final aquí aquí está exactamente que eso sea una sola sección arriba repite lo de abajo pues elimina lo de arriba vale vale Lo voy a revisar igualmente Ahí le puedes poner revisar o unificar con la sección 5.algo 5.3 Y lo eliminamos de aquí.
+
+32:12 - Sergio Moya Marín
+¿Dónde va? Que vienen siendo las preguntas de investigación y la hipótesis.
+
+32:21 - BADY PATRICIO GANA CASTILLO
+Que van antes del objetivo de... Ah, sí, esto lo hemos puesto aquí al principio.
+
+32:32 - Sergio Moya Marín
+Un segundo, déjame verificar eso. Sí, sí, sí, claro.
+
+32:58 - BADY PATRICIO GANA CASTILLO
+los objetivos.
+
+33:26 - Sergio Moya Marín
+Esto significa con .3 y eliminar. Solo al final. Ya. Ahora sí, te lo voy a mandar al chat.
+
+33:36 - BADY PATRICIO GANA CASTILLO
+Un segundo. Este es el orden en el cual tienen que aparecer. Bien, entonces primero es el problema, que ese es el contenido de todo lo que hablábamos. Luego vienen las preguntas, después los objetivos con los cuales tú puedes llegar a contestar esas preguntas y luego al final tú tienes la hipótesis la cual valida o no el estudio. Para que copie y pegue eso, que ese es el orden correcto.
+
+34:15 - Sergio Moya Marín
+Vale, perfecto. Ahí sí. A ver, espérate. ¿Dónde está? Objetivo...
+
+34:22 - BADY PATRICIO GANA CASTILLO
+Otra cosita que se debe darle a añadir es el tipo de estudio, el tipo de investigación, es decir, si es que es explicativo, exploratorio Si es que es cualitativo o cuantitativo.
+
+34:53 - Sergio Moya Marín
+¿En cada uno de los experimentos?
+
+34:56 - BADY PATRICIO GANA CASTILLO
+No, eso se habla en la metodología.
+
+34:59 - Sergio Moya Marín
+Basta con la metodología.
+
+35:01 - BADY PATRICIO GANA CASTILLO
+Este estudio es explicativo, este estudio es... Por ejemplo, por eso se llama explicabilidad. Ahora lo que tú tienes que decir si es que lo están midiendo de manera cualitativa o cuantitativa.
+
+35:19 - Sergio Moya Marín
+Exploratorio Hay más taxonomías, pero de momento es para que tengas claro de que eso también hay que mencionarle Vale, perfecto Yo diría que eso sería más que nada lo que se podría ir abordando por ahora y para que el documento tenga mucho más cuerpo y...
+
+35:48 - BADY PATRICIO GANA CASTILLO
+¿qué más? Eso realmente, no sé si tienes dudas, preguntas... No, en cuanto a...
+
+35:56 - Sergio Moya Marín
+no, cuando puedas echarle un vistazo para, yo que sé, si encuentras alguna pega a lo que está escrito, de la forma en la que se ha escrito, Pues nada, encantado que me lo corrijas.
+
+36:18 - BADY PATRICIO GANA CASTILLO
+Entonces la versión final va a ser, bueno, la parcialmente final en la que está en Drive. Está, sí, está. Yo ahora mismo, bueno, ahora está.
+
+36:36 - Sergio Moya Marín
+Estoy trabajando sobre una que tengo en local, pero la sincronizo con Github y con Drive.
+
+36:47 - BADY PATRICIO GANA CASTILLO
+Bueno, ya está en Github la última versión.
+
+36:52 - Sergio Moya Marín
+Sí, de hecho, bueno, aquí ahora lo voy a... Tengo una... En esta sincronización, aquí. Vale. Lo guardo. Creo que ya está guardado. Y ahora lo estoy sincronizando con Drive y con GitHub. Aquí me habrá puesto algunos cambios. Bueno, pues ya está. Bien, eso sería el enfoque por ahora.
+
+37:26 - BADY PATRICIO GANA CASTILLO
+Te diría, ¿iteras sobre lo mismo? La idea ahora es explicarlo de la mejor forma posible. Evitar las redundancias, ver a varias veces sobre el propio Gemini o GPT para que se fijen esos detalles y así los puedes unificar.
+
+37:47 - Orador no identificado
+Perfecto.
+
+37:47 - BADY PATRICIO GANA CASTILLO
+¿Y qué te recomendaría? Porque creo que igual estamos cortos aún de referencias.
+
+37:53 - Sergio Moya Marín
+Sí, tengo que redactar mejor con, digamos, con el formato, el APA este. Sí que tengo alguna, digamos, redacción con ese tipo de estilo pero me tendría que introducir alguna cosa más. Sobre todo en la parte de metodología he hecho mucha referencia, pero después a la hora de hacer los experimentos igual debería hacer más referencias. Es verdad que he puesto en la bibliografía más ejemplos.
+
+38:24 - BADY PATRICIO GANA CASTILLO
+Hay unas 15, yo esperaría que hubiesen al menos unas 40. Sí, sí, es harto lo que lo que debe justificar el trabajo porque tú en la medida que vas escribiendo empiezas a realizar afirmaciones, cada afirmación debe estar validada y sustentada por un trabajo previo, que cuando proponemos algo nuevo tiene que estar justificado, entonces esa justificación tiende a ser muy larga, por lo tanto lo que recomiendo es que busques trabajos que sean similares, armes algún tipo de deep research, y ahí buscar algunos trabajos que sean de preferencia académicos ese sería como el enfoque o la última tarea, añadir más referencias perfecto eso, ahora lo que yo creo que voy a hacer es durante el fin de semana revisar el documento y ver si encuentro algún tipo de fallo grande para poder corregirlo, reredactarlo para que tenga más sentido.
+
+39:34 - Sergio Moya Marín
+Vale, perfecto. Muy bien, muchas gracias.
+
+39:37 - BADY PATRICIO GANA CASTILLO
+Estaríamos hablando, cuídate Sergio, que te vaya bien. Igualmente. No olvides poner más imágenes en el contexto. Vale. Es siempre un crédito. Te va a ayudar para la presentación final.
+
+39:53 - Sergio Moya Marín
+Vale, perfecto. Nos vemos. Muchas gracias.
