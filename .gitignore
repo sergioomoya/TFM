@@ -65,6 +65,7 @@ $RECYCLE.BIN/
 # ============================================
 # Archivos multimedia y datos pesados (NO versionar)
 # ============================================
+*.mp3
 *.mp4
 *.avi
 *.mov
