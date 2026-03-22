@@ -289,8 +289,9 @@ def main(progress_path=None):
             ax.set_xticks(np.arange(len(model_names)))
             ax.set_xticklabels(model_names, rotation=15, ha='right')
             ax.set_ylim([0, 1.05])
-        fig.suptitle(f'Experimento A — Variante {variant_label} ({n_folds} folds)', fontsize=14, y=1.02)
-        plt.tight_layout(rect=[0, 0, 1, 0.95])
+        fig.suptitle(f'Variante {variant_label} ({n_folds} folds)', fontsize=14)
+        plt.tight_layout()
+        fig.subplots_adjust(top=0.90)
         fig.savefig(FIGURES_DIR / f'experiment_a_{suffix}_results.png', dpi=150, bbox_inches='tight')
         plt.close()
 
@@ -303,8 +304,9 @@ def main(progress_path=None):
             n_fraud = cm[1, 0] + cm[1, 1]
             recall_pct = 100 * cm[1, 1] / n_fraud if n_fraud > 0 else 0
             axes_cm[idx].set_title(f"{name}\nRecall={recall_pct:.1f}%", fontsize=11)
-        fig_cm.suptitle(f'Matrices de Confusión — {variant_label}', fontsize=13, y=1.02)
-        plt.tight_layout(rect=[0, 0, 1, 0.93])
+        fig_cm.suptitle(f'Matrices de Confusión — {variant_label}', fontsize=13)
+        plt.tight_layout()
+        fig_cm.subplots_adjust(top=0.88)
         fig_cm.savefig(FIGURES_DIR / f'experiment_a_{suffix}_confusion_matrices.png', dpi=150, bbox_inches='tight')
         plt.close()
 

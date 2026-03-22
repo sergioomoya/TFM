@@ -478,9 +478,10 @@ def _generate_figures(results_all, results_b1, confusion_matrices):
             ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.015,
                     f'{m:.3f}', ha='center', va='bottom', fontsize=7)
 
-    fig.suptitle(f'Experimento B — Comparativa de Variantes ({n_folds} folds)',
-                 fontsize=14, y=1.02)
-    plt.tight_layout(rect=[0, 0, 1, 0.95])
+    fig.suptitle(f'Cost-Sensitive — Comparativa de Variantes ({n_folds} folds)',
+                 fontsize=14)
+    plt.tight_layout()
+    fig.subplots_adjust(top=0.90)
     fig.savefig(FIGURES_DIR / 'experiment_b_cost_sensitive_results.png',
                 dpi=150, bbox_inches='tight')
     plt.close()
@@ -502,9 +503,10 @@ def _generate_figures(results_all, results_b1, confusion_matrices):
         axes_cm[idx].set_ylabel('Real')
         axes_cm[idx].set_xlabel('Predicho')
     fig_cm.suptitle(
-        f'Matrices de Confusión — Exp B1 Cost-Sensitive Moderado ({n_folds} folds, threshold=0.5)',
-        fontsize=13, y=1.02)
-    plt.tight_layout(rect=[0, 0, 1, 0.93])
+        f'Matrices de Confusión — Cost-Sensitive Moderado ({n_folds} folds, threshold=0.5)',
+        fontsize=13)
+    plt.tight_layout()
+    fig_cm.subplots_adjust(top=0.88)
     fig_cm.savefig(FIGURES_DIR / 'experiment_b_confusion_matrices.png',
                    dpi=150, bbox_inches='tight')
     plt.close()

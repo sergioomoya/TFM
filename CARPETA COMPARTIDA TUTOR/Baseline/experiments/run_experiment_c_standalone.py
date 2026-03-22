@@ -139,10 +139,11 @@ def main():
         for j, (bar, v) in enumerate(zip(bars, vals)):
             ax.annotate(f'{v:.3f}', xy=(bar.get_x() + bar.get_width()/2, bar.get_height()),
                         ha='center', va='bottom', fontsize=9)
-    fig.suptitle('Experimento C: Impacto del Data Leakage por fuente y modelo\n'
+    fig.suptitle('Impacto del Data Leakage por fuente y modelo\n'
                  f'SMOTE: k_neighbors={SMOTE_PARAMS["k_neighbors"]}, sampling_strategy={SMOTE_PARAMS["sampling_strategy"]}',
-                 fontsize=12, y=1.03)
-    plt.tight_layout(rect=[0, 0, 1, 0.92])
+                 fontsize=12)
+    plt.tight_layout()
+    fig.subplots_adjust(top=0.88)
     fig.savefig(FIGURES_DIR / 'experiment_c_leakage_comparison.png', dpi=150, bbox_inches='tight')
     plt.close()
     print(f"\n✓ Figura: {FIGURES_DIR / 'experiment_c_leakage_comparison.png'}")
