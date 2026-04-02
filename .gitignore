@@ -18,6 +18,9 @@ ENV/
 # Checkpoints temporales de Jupyter
 .ipynb_checkpoints/
 
+# Sincronización local (GitHub + Google Drive); solo en esta máquina
+sync-to-google-drive.ps1
+
 # ============================================
 # Archivos del sistema operativo (NO versionar)
 # ============================================
